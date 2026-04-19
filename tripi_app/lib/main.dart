@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'theme/tripi_theme.dart';
 import 'providers/booking_provider.dart';
+import 'providers/trip_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/explore_screen.dart';
 import 'screens/place_details_screen.dart';
@@ -19,6 +20,7 @@ void main() {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => BookingProvider()),
+        ChangeNotifierProvider(create: (_) => TripProvider()),
       ],
       child: const TripiApp(),
     ),

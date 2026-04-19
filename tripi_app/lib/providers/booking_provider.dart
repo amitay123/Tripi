@@ -90,10 +90,14 @@ class BookingProvider extends ChangeNotifier {
     final newTrip = Trip(
       id: 't${MockDataService.allTrips.length + 1}',
       userId: _currentUser!.id,
+      name: '${randomDest.name} Getaway',
+      country: randomDest.country,
       destination: randomDest,
       startDate: DateTime.now().add(const Duration(days: 14)),
       endDate: DateTime.now().add(const Duration(days: 21)),
       activities: ['Exploring ${randomDest.name}', 'Local Cuisine', 'Sightseeing'],
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
 
     MockDataService.allTrips.add(newTrip);

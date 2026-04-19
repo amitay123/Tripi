@@ -5,12 +5,42 @@ import '../theme/tripi_colors.dart';
 import '../providers/booking_provider.dart';
 import '../widgets/tripi_card.dart';
 
-class TripsScreen extends StatelessWidget {
+import '../providers/trip_provider.dart';
+import 'create_trip/create_trip_wizard.dart';
+
+class TripsScreen extends StatefulWidget {
   const TripsScreen({super.key});
 
   @override
+  State<TripsScreen> createState() => _TripsScreenState();
+}
+
+class _TripsScreenState extends State<TripsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final user = context.read<BookingProvider>().currentUser;
+      if (user != null) {
+        context.read<TripProvider>().fetchTrips(user.id);
+      }
+    });
+  }
+
+  void _startWizard(BuildContext context) {
+    final user = context.read<BookingProvider>().currentUser;
+    if (user != null) {
+      context.read<TripProvider>().startNewTrip(user.id);
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const CreateTripWizard()),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final trips = context.watch<BookingProvider>().userTrips;
+    final trips = context.watch<TripProvider>().trips;
 
     return Scaffold(
       backgroundColor: TripiColors.background,
@@ -36,7 +66,7 @@ class TripsScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: trips.isEmpty ? const EmptyTripsView() : _buildTripsList(context, trips),
+      body: trips.isEmpty ? EmptyTripsView(onPlanTrip: () => _startWizard(context)) : _buildTripsList(context, trips),
     );
   }
 
@@ -112,7 +142,7 @@ class TripsScreen extends StatelessWidget {
                 decoration: BoxDecoration(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
                   image: DecorationImage(
-                    image: NetworkImage(trip.destination.imageUrl),
+                    image: NetworkImage(trip.destination?.imageUrl ?? 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=2021&auto=format&fit=crop'),
                     fit: BoxFit.cover,
                   ),
                 ),
@@ -145,7 +175,7 @@ class TripsScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  trip.destination.name + ' Getaway',
+                  trip.name,
                   style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
                 ),
                 const SizedBox(height: 16),
@@ -177,7 +207,7 @@ class TripsScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
                 image: DecorationImage(
-                  image: NetworkImage(trip.destination.imageUrl),
+                  image: NetworkImage(trip.destination?.imageUrl ?? 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?q=80&w=2073&auto=format&fit=crop'),
                   fit: BoxFit.cover,
                 ),
               ),
@@ -193,7 +223,7 @@ class TripsScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    trip.destination.name + ' Autumn',
+                    trip.name,
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1F2937)),
                   ),
                   const SizedBox(height: 4),
@@ -209,7 +239,7 @@ class TripsScreen extends StatelessWidget {
 
   Widget _buildPlanNewTripCard(BuildContext context) {
     return TripiCard(
-      onTap: () => context.read<BookingProvider>().addMockTrip(),
+      onTap: () => _startWizard(context),
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
@@ -241,7 +271,8 @@ class TripsScreen extends StatelessWidget {
 }
 
 class EmptyTripsView extends StatelessWidget {
-  const EmptyTripsView({super.key});
+  final VoidCallback onPlanTrip;
+  const EmptyTripsView({super.key, required this.onPlanTrip});
 
   @override
   Widget build(BuildContext context) {
@@ -338,7 +369,7 @@ class EmptyTripsView extends StatelessWidget {
           ),
           const SizedBox(height: 40),
           ElevatedButton.icon(
-            onPressed: () => context.read<BookingProvider>().addMockTrip(),
+            onPressed: onPlanTrip,
             icon: const Icon(Icons.add, size: 20),
             label: const Text('Plan a New Trip'),
             style: ElevatedButton.styleFrom(

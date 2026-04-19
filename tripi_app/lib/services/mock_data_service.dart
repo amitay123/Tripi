@@ -96,10 +96,14 @@ class MockDataService {
     Trip(
       id: 't1',
       userId: 'u1',
+      name: 'Paris Getaway',
+      country: 'France',
       destination: destinations[0],
       startDate: DateTime.now().add(const Duration(days: 30)),
       endDate: DateTime.now().add(const Duration(days: 37)),
       activities: ['Eiffel Tower', 'Louvre Museum', 'Seine Cruise'],
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     ),
   ];
 
