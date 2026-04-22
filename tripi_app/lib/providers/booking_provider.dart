@@ -95,7 +95,6 @@ class BookingProvider extends ChangeNotifier {
       destination: randomDest,
       startDate: DateTime.now().add(const Duration(days: 14)),
       endDate: DateTime.now().add(const Duration(days: 21)),
-      activities: ['Exploring ${randomDest.name}', 'Local Cuisine', 'Sightseeing'],
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );

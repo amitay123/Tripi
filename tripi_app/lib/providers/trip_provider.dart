@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../services/mock_data_service.dart';
+import '../services/places_service.dart';
 
 class TripProvider extends ChangeNotifier {
+  final _placesService = PlacesService();
+
   // --- Trips List ---
   List<Trip> _trips = [];
   List<Trip> get trips => _trips;
@@ -35,12 +38,17 @@ class TripProvider extends ChangeNotifier {
   }
 
   void updateDraft(Trip updatedTrip) {
-    _draftTrip = updatedTrip;
+    // If country changed, reset city
+    if (_draftTrip != null && _draftTrip!.country != updatedTrip.country) {
+      _draftTrip = updatedTrip.copyWith(city: '');
+    } else {
+      _draftTrip = updatedTrip;
+    }
     notifyListeners();
   }
 
   void nextStep() {
-    if (_currentStep < 6) {
+    if (_currentStep < 3) {
       _currentStep++;
       notifyListeners();
     }
@@ -54,42 +62,274 @@ class TripProvider extends ChangeNotifier {
   }
 
   void goToStep(int step) {
-    if (step >= 0 && step <= 6) {
+    if (step >= 0 && step <= 3) {
       _currentStep = step;
       notifyListeners();
     }
   }
 
-  bool saveTrip() {
-    if (_draftTrip == null) return false;
+  void setAdults(int count) {
+    if (_draftTrip == null) return;
+    final breakdown = Map<String, int>.from(_draftTrip!.travelersBreakdown);
+    breakdown['adults'] = count;
+    _draftTrip = _draftTrip!.copyWith(
+      travelersBreakdown: breakdown,
+      travelersCount: count + (breakdown['children'] ?? 0),
+    );
+    notifyListeners();
+  }
 
-    // In a real app, this would be an API call
-    final newRealTrip = Trip(
-      id: 't${MockDataService.allTrips.length + 1}',
-      userId: _draftTrip!.userId,
-      name: _draftTrip!.name,
-      country: _draftTrip!.country,
-      city: _draftTrip!.city,
-      startDate: _draftTrip!.startDate,
-      endDate: _draftTrip!.endDate,
-      travelersCount: _draftTrip!.travelersCount,
-      travelersBreakdown: _draftTrip!.travelersBreakdown,
-      tripType: _draftTrip!.tripType,
-      travelStyle: _draftTrip!.travelStyle,
-      budgetTotal: _draftTrip!.budgetTotal,
-      currency: _draftTrip!.currency,
-      preferences: _draftTrip!.preferences,
-      pace: _draftTrip!.pace,
-      interests: _draftTrip!.interests,
-      createdAt: DateTime.now(),
+  void setChildren(int count) {
+    if (_draftTrip == null) return;
+    final breakdown = Map<String, int>.from(_draftTrip!.travelersBreakdown);
+    breakdown['children'] = count;
+    _draftTrip = _draftTrip!.copyWith(
+      travelersBreakdown: breakdown,
+      travelersCount: (breakdown['adults'] ?? 1) + count,
+    );
+    notifyListeners();
+  }
+
+  bool saveTrip() {
+    final draft = _draftTrip;
+    if (draft == null) return false;
+
+    // Use city name for trip name if empty
+    final finalName = draft.name.trim().isEmpty 
+        ? '${draft.city?.isNotEmpty == true ? draft.city : draft.country} Trip' 
+        : draft.name;
+
+    // Fetch dynamic image if not already set (e.g. from Google Places)
+    final imageUrl = draft.coverImageUrl ?? MockDataService.getDestinationImage(draft.city, draft.country);
+
+    // Generate days automatically
+    final generatedDays = _generateDays(draft.startDate, draft.endDate);
+
+    final newTrip = draft.copyWith(
+      id: 't${DateTime.now().millisecondsSinceEpoch}',
+      name: finalName,
+      coverImageUrl: imageUrl,
+      days: generatedDays,
       updatedAt: DateTime.now(),
-      activities: _draftTrip!.activities,
     );
 
-    MockDataService.allTrips.add(newRealTrip);
-    _trips.add(newRealTrip);
+    _trips.insert(0, newTrip);
     _draftTrip = null;
     notifyListeners();
     return true;
+  }
+
+  List<TripDay> _generateDays(DateTime start, DateTime end) {
+    List<TripDay> days = [];
+    final duration = end.difference(start).inDays + 1;
+    for (int i = 0; i < duration; i++) {
+      days.add(TripDay(
+        dayIndex: i + 1,
+        date: start.add(Duration(days: i)),
+        activities: [],
+      ));
+    }
+    return days;
+  }
+
+  // --- Itinerary Management ---
+
+  void addActivity(String tripId, int dayIndex, Activity activity) {
+    final tripIndex = _trips.indexWhere((t) => t.id == tripId);
+    if (tripIndex == -1) return;
+
+    final trip = _trips[tripIndex];
+    final updatedDays = List<TripDay>.from(trip.days);
+    
+    final dayIdx = updatedDays.indexWhere((d) => d.dayIndex == dayIndex);
+    if (dayIdx == -1) return;
+
+    final day = updatedDays[dayIdx];
+    final updatedActivities = List<Activity>.from(day.activities)..add(activity);
+    
+    updatedDays[dayIdx] = day.copyWith(activities: updatedActivities);
+
+    _trips[tripIndex] = trip.copyWith(days: updatedDays, updatedAt: DateTime.now());
+    notifyListeners();
+
+    // Trigger real-time calculation immediately
+    updateActivityTransportAuto(tripId, dayIndex, activity.id, TravelMode.driving);
+  }
+
+  void deleteActivity(String tripId, int dayIndex, String activityId) {
+    final tripIndex = _trips.indexWhere((t) => t.id == tripId);
+    if (tripIndex == -1) return;
+
+    final trip = _trips[tripIndex];
+    final updatedDays = List<TripDay>.from(trip.days);
+    
+    final dayIdx = updatedDays.indexWhere((d) => d.dayIndex == dayIndex);
+    if (dayIdx == -1) return;
+
+    final day = updatedDays[dayIdx];
+    final updatedActivities = List<Activity>.from(day.activities)
+      ..removeWhere((a) => a.id == activityId);
+    
+    updatedDays[dayIdx] = day.copyWith(activities: updatedActivities);
+
+    _trips[tripIndex] = trip.copyWith(days: updatedDays, updatedAt: DateTime.now());
+    notifyListeners();
+  }
+
+  void reorderActivities(String tripId, int dayIndex, int oldIndex, int newIndex) {
+    final tripIndex = _trips.indexWhere((t) => t.id == tripId);
+    if (tripIndex == -1) return;
+
+    final trip = _trips[tripIndex];
+    final updatedDays = List<TripDay>.from(trip.days);
+    
+    final dayIdx = updatedDays.indexWhere((d) => d.dayIndex == dayIndex);
+    if (dayIdx == -1) return;
+
+    final day = updatedDays[dayIdx];
+    final updatedActivities = List<Activity>.from(day.activities);
+    
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+    final Activity item = updatedActivities.removeAt(oldIndex);
+    updatedActivities.insert(newIndex, item);
+
+    updatedDays[dayIdx] = day.copyWith(activities: updatedActivities);
+
+    _trips[tripIndex] = trip.copyWith(days: updatedDays, updatedAt: DateTime.now());
+    notifyListeners();
+  }
+
+  void updateDayStartTime(String tripId, int dayIndex, String startTime) {
+    final tripIndex = _trips.indexWhere((t) => t.id == tripId);
+    if (tripIndex == -1) return;
+
+    final trip = _trips[tripIndex];
+    final updatedDays = List<TripDay>.from(trip.days);
+    final dayIdx = updatedDays.indexWhere((d) => d.dayIndex == dayIndex);
+    if (dayIdx == -1) return;
+
+    updatedDays[dayIdx] = updatedDays[dayIdx].copyWith(startTime: startTime);
+    _trips[tripIndex] = trip.copyWith(days: updatedDays, updatedAt: DateTime.now());
+    notifyListeners();
+  }
+
+  void updateActivityTransport(String tripId, int dayIndex, String activityId, TravelMode mode, int duration) {
+    final tripIndex = _trips.indexWhere((t) => t.id == tripId);
+    if (tripIndex == -1) return;
+
+    final trip = _trips[tripIndex];
+    final updatedDays = List<TripDay>.from(trip.days);
+    final dayIdx = updatedDays.indexWhere((d) => d.dayIndex == dayIndex);
+    if (dayIdx == -1) return;
+
+    final day = updatedDays[dayIdx];
+    final updatedActivities = day.activities.map((a) {
+      if (a.id == activityId) {
+        return a.copyWith(
+          transportModeFromPrevious: mode,
+          travelDurationFromPrevious: duration,
+        );
+      }
+      return a;
+    }).toList();
+
+    updatedDays[dayIdx] = day.copyWith(activities: updatedActivities);
+    _trips[tripIndex] = trip.copyWith(days: updatedDays, updatedAt: DateTime.now());
+    notifyListeners();
+  }
+
+  Future<void> updateActivityTransportAuto(String tripId, int dayIndex, String activityId, TravelMode mode) async {
+    final tripIndex = _trips.indexWhere((t) => t.id == tripId);
+    if (tripIndex == -1) return;
+
+    final trip = _trips[tripIndex];
+    final dayIdx = trip.days.indexWhere((d) => d.dayIndex == dayIndex);
+    if (dayIdx == -1) return;
+
+    final day = trip.days[dayIdx];
+    final activityIndex = day.activities.indexWhere((a) => a.id == activityId);
+    if (activityIndex <= 0) return;
+
+    final currentActivity = day.activities[activityIndex];
+    final previousActivity = day.activities[activityIndex - 1];
+
+    int finalDuration = 15; // Default fallback
+
+    if (currentActivity.lat != null && currentActivity.lng != null &&
+        previousActivity.lat != null && previousActivity.lng != null) {
+      
+      try {
+        final result = await _placesService.getDistanceAndDuration(
+          previousActivity.lat!, 
+          previousActivity.lng!, 
+          currentActivity.lat!, 
+          currentActivity.lng!, 
+          mode.name
+        );
+
+        if (result != null) {
+          finalDuration = (result['duration'] / 60).ceil();
+        } else {
+          // Robust Fallback: Calculate distance and estimate time based on mode
+          final distanceKm = _calculateDistance(
+            previousActivity.lat!, previousActivity.lng!,
+            currentActivity.lat!, currentActivity.lng!
+          );
+          
+          finalDuration = _estimateDuration(distanceKm, mode);
+        }
+      } catch (e) {
+        print('Error in auto transport calculation: $e');
+        finalDuration = 20; // Another fallback
+      }
+    }
+
+    updateActivityTransport(tripId, dayIndex, activityId, mode, finalDuration);
+  }
+
+  double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+    // Simple Euclidean distance for estimation (not Haversine but enough for UI feedback)
+    // 1 degree is roughly 111km
+    final dLat = (lat2 - lat1).abs();
+    final dLon = (lon2 - lon1).abs();
+    return (dLat + dLon) * 111.0; 
+  }
+
+  int _estimateDuration(double distanceKm, TravelMode mode) {
+    double speedKmh = 50.0; // driving
+    switch (mode) {
+      case TravelMode.walking: speedKmh = 5.0; break;
+      case TravelMode.driving: speedKmh = 60.0; break;
+      case TravelMode.transit: speedKmh = 25.0; break;
+      case TravelMode.flight: speedKmh = 800.0; break;
+    }
+    
+    // time = distance / speed * 60 minutes
+    // add 5 minutes for "overhead" (parking, waiting, etc)
+    return ((distanceKm / speedKmh) * 60).ceil() + 5;
+  }
+
+  void updateActivityDuration(String tripId, int dayIndex, String activityId, int duration) {
+    final tripIndex = _trips.indexWhere((t) => t.id == tripId);
+    if (tripIndex == -1) return;
+
+    final trip = _trips[tripIndex];
+    final updatedDays = List<TripDay>.from(trip.days);
+    final dayIdx = updatedDays.indexWhere((d) => d.dayIndex == dayIndex);
+    if (dayIdx == -1) return;
+
+    final day = updatedDays[dayIdx];
+    final updatedActivities = day.activities.map((a) {
+      if (a.id == activityId) {
+        return a.copyWith(duration: duration);
+      }
+      return a;
+    }).toList();
+
+    updatedDays[dayIdx] = day.copyWith(activities: updatedActivities);
+    _trips[tripIndex] = trip.copyWith(days: updatedDays, updatedAt: DateTime.now());
+    notifyListeners();
   }
 }

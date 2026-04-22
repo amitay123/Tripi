@@ -1,3 +1,8 @@
+enum TripType { leisure, business, family, friends, solo, romantic }
+enum TravelStyle { standard, luxury, budget, backpacker }
+enum TripPace { relaxed, balanced, intensive }
+enum TravelMode { walking, driving, transit, flight }
+
 class User {
   final String id;
   final String email;
@@ -48,22 +53,118 @@ class Flight {
   });
 }
 
-enum TripType { leisure, business, family, friends, other }
+class Activity {
+  final String id;
+  final String title;
+  final double? lat;
+  final double? lng;
+  final String? address;
+  final String? startTime; // "HH:mm"
+  final String? endTime;   // "HH:mm"
+  final String? notes;
+  final String? imageUrl;
+  final String source; // 'manual' or 'api'
+  final String? placeId;
+  final List<String>? types;
+  final int duration; // in minutes
+  final TravelMode? transportModeFromPrevious;
+  final int? travelDurationFromPrevious; // in minutes
 
-enum TravelStyle { budget, standard, luxury }
+  Activity({
+    required this.id,
+    required this.title,
+    this.lat,
+    this.lng,
+    this.address,
+    this.startTime,
+    this.endTime,
+    this.notes,
+    this.imageUrl,
+    this.source = 'manual',
+    this.placeId,
+    this.types,
+    this.duration = 60,
+    this.transportModeFromPrevious,
+    this.travelDurationFromPrevious,
+  });
 
-enum TripPace { relaxed, balanced, intensive }
+  Activity copyWith({
+    String? id,
+    String? title,
+    double? lat,
+    double? lng,
+    String? address,
+    String? startTime,
+    String? endTime,
+    String? notes,
+    String? imageUrl,
+    String? source,
+    String? placeId,
+    List<String>? types,
+    int? duration,
+    TravelMode? transportModeFromPrevious,
+    int? travelDurationFromPrevious,
+  }) {
+    return Activity(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      lat: lat ?? this.lat,
+      lng: lng ?? this.lng,
+      address: address ?? this.address,
+      startTime: startTime ?? this.startTime,
+      endTime: endTime ?? this.endTime,
+      notes: notes ?? this.notes,
+      imageUrl: imageUrl ?? this.imageUrl,
+      source: source ?? this.source,
+      placeId: placeId ?? this.placeId,
+      types: types ?? this.types,
+      duration: duration ?? this.duration,
+      transportModeFromPrevious: transportModeFromPrevious ?? this.transportModeFromPrevious,
+      travelDurationFromPrevious: travelDurationFromPrevious ?? this.travelDurationFromPrevious,
+    );
+  }
+}
+
+class TripDay {
+  final int dayIndex;
+  final DateTime date;
+  final List<Activity> activities;
+  final String startTime; // "HH:mm"
+
+  TripDay({
+    required this.dayIndex,
+    required this.date,
+    this.activities = const [],
+    this.startTime = "09:00",
+  });
+
+  TripDay copyWith({
+    int? dayIndex,
+    DateTime? date,
+    List<Activity>? activities,
+    String? startTime,
+  }) {
+    return TripDay(
+      dayIndex: dayIndex ?? this.dayIndex,
+      date: date ?? this.date,
+      activities: activities ?? this.activities,
+      startTime: startTime ?? this.startTime,
+    );
+  }
+}
 
 class Trip {
   final String id;
   final String userId;
   final String name;
   final String country;
+  final String? countryCode; // ISO2/3
   final String? city;
+  final String? cityPlaceId;
   final DateTime startDate;
   final DateTime endDate;
   final int travelersCount;
-  final Map<String, int> travelersBreakdown; // e.g., {'adults': 2, 'children': 1}
+  final Map<String, int> travelersBreakdown;
   final TripType tripType;
   final TravelStyle travelStyle;
   final double? budgetTotal;
@@ -73,15 +174,18 @@ class Trip {
   final List<String> interests;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final List<String> activities;
-  final Destination? destination; // Kept for backward compatibility if needed
+  final List<TripDay> days; // Changed from List<String> activities
+  final String? coverImageUrl;
+  final Destination? destination;
 
   Trip({
     required this.id,
     required this.userId,
     required this.name,
     required this.country,
+    this.countryCode,
     this.city,
+    this.cityPlaceId,
     required this.startDate,
     required this.endDate,
     this.travelersCount = 1,
@@ -95,7 +199,8 @@ class Trip {
     this.interests = const [],
     required this.createdAt,
     required this.updatedAt,
-    this.activities = const [],
+    this.days = const [],
+    this.coverImageUrl,
     this.destination,
   });
 
@@ -103,9 +208,12 @@ class Trip {
   double? get budgetDaily => (budgetTotal != null && durationDays > 0) ? budgetTotal! / durationDays : null;
 
   Trip copyWith({
+    String? id,
     String? name,
     String? country,
+    String? countryCode,
     String? city,
+    String? cityPlaceId,
     DateTime? startDate,
     DateTime? endDate,
     int? travelersCount,
@@ -117,14 +225,18 @@ class Trip {
     List<String>? preferences,
     TripPace? pace,
     List<String>? interests,
-    List<String>? activities,
+    List<TripDay>? days,
+    String? coverImageUrl,
+    DateTime? updatedAt,
   }) {
     return Trip(
-      id: id,
+      id: id ?? this.id,
       userId: userId,
       name: name ?? this.name,
       country: country ?? this.country,
+      countryCode: countryCode ?? this.countryCode,
       city: city ?? this.city,
+      cityPlaceId: cityPlaceId ?? this.cityPlaceId,
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
       travelersCount: travelersCount ?? this.travelersCount,
@@ -137,8 +249,9 @@ class Trip {
       pace: pace ?? this.pace,
       interests: interests ?? this.interests,
       createdAt: createdAt,
-      updatedAt: DateTime.now(),
-      activities: activities ?? this.activities,
+      updatedAt: updatedAt ?? this.updatedAt,
+      days: days ?? this.days,
+      coverImageUrl: coverImageUrl ?? this.coverImageUrl,
       destination: destination,
     );
   }

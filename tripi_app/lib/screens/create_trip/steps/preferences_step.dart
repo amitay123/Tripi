@@ -17,16 +17,40 @@ class PreferencesStep extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'What\'s the vibe?',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+            'Trip Preferences',
+            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF111827)),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           const Text(
-            'Tailor your trip to your personal style.',
-            style: TextStyle(color: Color(0xFF6B7280)),
+            'Customize your journey based on your style and goals.',
+            style: TextStyle(color: Color(0xFF6B7280), fontSize: 16),
           ),
           const SizedBox(height: 32),
-          _buildLabel('Trip Goals (Select up to 3)'),
+          _buildLabel('TRIP TYPE'),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: TripType.values.map((type) {
+              final isSelected = draft.tripType == type;
+              return ChoiceChip(
+                label: Text(_formatEnum(type.name)),
+                selected: isSelected,
+                onSelected: (selected) {
+                  if (selected) tripProvider.updateDraft(draft.copyWith(tripType: type));
+                },
+                selectedColor: const Color(0xFFDBEAFE),
+                labelStyle: TextStyle(
+                  color: isSelected ? const Color(0xFF2563EB) : const Color(0xFF4B5563),
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+                backgroundColor: const Color(0xFFF3F4F6),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 32),
+          _buildLabel('TRIP GOALS'),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -40,7 +64,7 @@ class PreferencesStep extends StatelessWidget {
                 onSelected: (selected) {
                   final newPrefs = List<String>.from(draft.preferences);
                   if (selected) {
-                    if (newPrefs.length < 3) newPrefs.add(goal);
+                    newPrefs.add(goal);
                   } else {
                     newPrefs.remove(goal);
                   }
@@ -53,13 +77,13 @@ class PreferencesStep extends StatelessWidget {
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 ),
                 backgroundColor: const Color(0xFFF3F4F6),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               );
             }).toList(),
           ),
           const SizedBox(height: 32),
-          _buildLabel('Planned Pace'),
+          _buildLabel('PLANNED PACE'),
           Row(
             children: TripPace.values.map((pace) {
               final isSelected = draft.pace == pace;
@@ -68,12 +92,15 @@ class PreferencesStep extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 4.0),
                   child: InkWell(
                     onTap: () => tripProvider.updateDraft(draft.copyWith(pace: pace)),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 20),
                       decoration: BoxDecoration(
-                        border: Border.all(color: isSelected ? const Color(0xFF2563EB) : const Color(0xFFE5E7EB)),
-                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isSelected ? const Color(0xFF2563EB) : const Color(0xFFE5E7EB),
+                          width: isSelected ? 2 : 1,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
                         color: isSelected ? const Color(0xFFEFF6FF) : Colors.white,
                       ),
                       child: Column(
@@ -91,6 +118,14 @@ class PreferencesStep extends StatelessWidget {
                               color: isSelected ? const Color(0xFF1E40AF) : const Color(0xFF4B5563),
                             ),
                           ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _getPaceEstimate(pace),
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: isSelected ? const Color(0xFF2563EB).withOpacity(0.8) : const Color(0xFF9CA3AF),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -99,6 +134,7 @@ class PreferencesStep extends StatelessWidget {
               );
             }).toList(),
           ),
+          const SizedBox(height: 24),
         ],
       ),
     );
@@ -109,9 +145,18 @@ class PreferencesStep extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Text(
         text,
-        style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF374151)),
+        style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF4B5563), fontSize: 12, letterSpacing: 0.5),
       ),
     );
+  }
+
+  String _getPaceEstimate(TripPace pace) {
+    switch (pace) {
+      case TripPace.relaxed: return '3-4 hours/day';
+      case TripPace.balanced: return '6-7 hours/day';
+      case TripPace.intensive: return '9-10 hours/day';
+      default: return '6-7 hours/day';
+    }
   }
 
   IconData _getPaceIcon(TripPace pace) {
@@ -119,6 +164,12 @@ class PreferencesStep extends StatelessWidget {
       case TripPace.relaxed: return Icons.airline_seat_recline_extra;
       case TripPace.balanced: return Icons.directions_walk;
       case TripPace.intensive: return Icons.directions_run;
+      default: return Icons.directions_walk;
     }
   }
+
+  String _formatEnum(String name) {
+    return name[0].toUpperCase() + name.substring(1);
+  }
 }
+

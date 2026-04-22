@@ -7,6 +7,7 @@ import '../widgets/tripi_card.dart';
 
 import '../providers/trip_provider.dart';
 import 'create_trip/create_trip_wizard.dart';
+import 'itinerary_screen.dart';
 
 class TripsScreen extends StatefulWidget {
   const TripsScreen({super.key});
@@ -56,19 +57,25 @@ class _TripsScreenState extends State<TripsScreen> {
                 color: const Color(0xFF1E40AF),
               ),
         ),
-        actions: const [
+        actions: [
           Padding(
-            padding: EdgeInsets.only(right: 16.0),
+            padding: const EdgeInsets.only(right: 16.0),
             child: CircleAvatar(
               radius: 18,
-              backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=admin_user'),
+              backgroundImage: NetworkImage('https://images.weserv.nl/?url=${Uri.encodeComponent('https://i.pravatar.cc/150?u=admin_user')}'),
             ),
           ),
         ],
       ),
       body: trips.isEmpty ? EmptyTripsView(onPlanTrip: () => _startWizard(context)) : _buildTripsList(context, trips),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _startWizard(context),
+        backgroundColor: const Color(0xFF2563EB),
+        child: const Icon(Icons.add, color: Colors.white, size: 30),
+      ),
     );
   }
+
 
   Widget _buildTripsList(BuildContext context, List<dynamic> trips) {
     return SingleChildScrollView(
@@ -130,21 +137,45 @@ class _TripsScreenState extends State<TripsScreen> {
 
   Widget _buildFeaturedTrip(BuildContext context, dynamic trip) {
     return TripiCard(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => ItineraryScreen(tripId: trip.id)),
+      ),
       padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Stack(
             children: [
-              Container(
-                height: 200,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-                  image: DecorationImage(
-                    image: NetworkImage(trip.destination?.imageUrl ?? 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=2021&auto=format&fit=crop'),
-                    fit: BoxFit.cover,
-                  ),
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                child: Image.network(
+                  trip.coverImageUrl ?? trip.destination?.imageUrl ?? 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?q=80&w=800',
+                  height: 200,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Container(
+                      height: 200,
+                      color: Colors.grey[200],
+                      child: const Center(child: CircularProgressIndicator()),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      height: 200,
+                      color: Colors.grey[200],
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.image_not_supported, color: Colors.grey),
+                          const SizedBox(height: 8),
+                          Text('Image unavailable', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                        ],
+                      ),
+                    );
+                  },
                 ),
               ),
               Positioned(
@@ -198,17 +229,25 @@ class _TripsScreenState extends State<TripsScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: TripiCard(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => ItineraryScreen(tripId: trip.id)),
+        ),
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            Container(
-              width: 70,
-              height: 70,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                image: DecorationImage(
-                  image: NetworkImage(trip.destination?.imageUrl ?? 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?q=80&w=2073&auto=format&fit=crop'),
-                  fit: BoxFit.cover,
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.network(
+                trip.coverImageUrl ?? trip.destination?.imageUrl ?? 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?q=80&w=800',
+                width: 70,
+                height: 70,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  width: 70,
+                  height: 70,
+                  color: Colors.grey[200],
+                  child: const Icon(Icons.landscape, color: Colors.grey),
                 ),
               ),
             ),

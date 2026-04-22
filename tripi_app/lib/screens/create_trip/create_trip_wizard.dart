@@ -3,11 +3,8 @@ import 'package:provider/provider.dart';
 import '../../providers/trip_provider.dart';
 import '../../theme/tripi_colors.dart';
 import 'steps/basic_info_step.dart';
-import 'steps/dates_step.dart';
-import 'steps/travelers_step.dart';
-import 'steps/budget_step.dart';
+import 'steps/dates_travelers_step.dart';
 import 'steps/preferences_step.dart';
-import 'steps/itinerary_setup_step.dart';
 import 'steps/review_step.dart';
 
 class CreateTripWizard extends StatefulWidget {
@@ -50,25 +47,25 @@ class _CreateTripWizardState extends State<CreateTripWizard> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Color(0xFF1F2937)),
+          icon: const Icon(Icons.close, color: Color(0xFF111827)),
           onPressed: () => Navigator.pop(context),
         ),
         title: Column(
           children: [
             Text(
-              'Step ${currentStep + 1} of 7',
-              style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280), fontWeight: FontWeight.w500),
+              'Step ${currentStep + 1} of 4',
+              style: const TextStyle(fontSize: 10, color: Color(0xFF9CA3AF), fontWeight: FontWeight.bold, letterSpacing: 1),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
             ClipRRect(
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(4),
               child: SizedBox(
-                width: 100,
+                width: 120,
                 height: 4,
                 child: LinearProgressIndicator(
-                  value: (currentStep + 1) / 7,
+                  value: (currentStep + 1) / 4,
                   backgroundColor: const Color(0xFFF3F4F6),
-                  valueColor: const AlwaysStoppedAnimation<Color>(TripiColors.primary),
+                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF2563EB)),
                 ),
               ),
             ),
@@ -77,11 +74,8 @@ class _CreateTripWizardState extends State<CreateTripWizard> {
         centerTitle: true,
         actions: [
           TextButton(
-            onPressed: () {
-              // Save draft logic (could be backgrounded)
-              Navigator.pop(context);
-            },
-            child: const Text('Save Draft', style: TextStyle(color: Color(0xFF6B7280))),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Save', style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -90,26 +84,17 @@ class _CreateTripWizardState extends State<CreateTripWizard> {
         physics: const NeverScrollableScrollPhysics(),
         children: const [
           BasicInfoStep(),
-          DatesStep(),
-          TravelersStep(),
-          BudgetStep(),
+          DatesTravelersStep(),
           PreferencesStep(),
-          ItinerarySetupStep(),
           ReviewStep(),
         ],
       ),
       bottomNavigationBar: SafeArea(
         child: Container(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
           decoration: BoxDecoration(
             color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, -5),
-              ),
-            ],
+            border: Border(top: BorderSide(color: Colors.black.withOpacity(0.05))),
           ),
           child: Row(
             children: [
@@ -121,11 +106,11 @@ class _CreateTripWizardState extends State<CreateTripWizard> {
                       _onStepChanged(tripProvider.currentStep);
                     },
                     style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(0, 56),
+                      minimumSize: const Size(0, 60),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       side: const BorderSide(color: Color(0xFFE5E7EB)),
                     ),
-                    child: const Text('Back', style: TextStyle(color: Color(0xFF4B5563))),
+                    child: const Text('Back', style: TextStyle(color: Color(0xFF4B5563), fontWeight: FontWeight.bold)),
                   ),
                 ),
               if (currentStep > 0) const SizedBox(width: 16),
@@ -133,31 +118,36 @@ class _CreateTripWizardState extends State<CreateTripWizard> {
                 flex: 2,
                 child: ElevatedButton(
                   onPressed: () {
-                    if (currentStep == 6) {
+                    if (currentStep == 3) {
                       if (tripProvider.saveTrip()) {
                         Navigator.pop(context);
-                        // Show success feedback
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Trip created successfully!')),
+                          const SnackBar(
+                            content: Text('Trip created! Start exploring your itinerary.'),
+                            backgroundColor: Color(0xFF16A34A),
+                          ),
                         );
                       }
                     } else {
-                      // Add validation here per step
                       if (_validateStep(currentStep, tripProvider)) {
                         tripProvider.nextStep();
                         _onStepChanged(tripProvider.currentStep);
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Please fill in all required fields.')),
+                        );
                       }
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: TripiColors.primary,
-                    minimumSize: const Size(0, 56),
+                    backgroundColor: const Color(0xFF2563EB),
+                    minimumSize: const Size(0, 60),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     elevation: 0,
                   ),
                   child: Text(
-                    currentStep == 6 ? 'Confirm & Create' : 'Next',
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    currentStep == 3 ? 'Create Trip' : 'Continue',
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                 ),
               ),
@@ -176,9 +166,10 @@ class _CreateTripWizardState extends State<CreateTripWizard> {
       case 1:
         return trip.endDate.isAfter(trip.startDate) || trip.endDate.isAtSameMomentAs(trip.startDate);
       case 2:
-        return trip.travelersCount > 0;
+        return trip.tripType != null; // Enum has a default but check is good
       default:
         return true;
     }
   }
 }
+

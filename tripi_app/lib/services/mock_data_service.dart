@@ -1,4 +1,5 @@
 import '../models/models.dart';
+import '../utils/geo_data.dart';
 
 class AdminStats {
   final int totalTrips;
@@ -58,7 +59,7 @@ class MockDataService {
       id: '1',
       name: 'Paris',
       country: 'France',
-      imageUrl: 'assets/images/paris.png',
+      imageUrl: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?q=80&w=800',
       description: 'The City of Light, where history meets high-fashion and editorial elegance.',
       rating: 4.8,
     ),
@@ -66,7 +67,7 @@ class MockDataService {
       id: '2',
       name: 'Maldives',
       country: 'Maldives',
-      imageUrl: 'assets/images/maldives.png',
+      imageUrl: 'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?q=80&w=800',
       description: 'A serene escape into the turquoise blue, perfect for the minimalist soul.',
       rating: 4.9,
     ),
@@ -74,7 +75,7 @@ class MockDataService {
       id: '3',
       name: 'Tokyo',
       country: 'Japan',
-      imageUrl: 'assets/images/tokyo.png',
+      imageUrl: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?q=80&w=800',
       description: 'A precise blend of tradition and future-forward design.',
       rating: 4.7,
     ),
@@ -98,14 +99,67 @@ class MockDataService {
       userId: 'u1',
       name: 'Paris Getaway',
       country: 'France',
+      city: 'Paris',
       destination: destinations[0],
-      startDate: DateTime.now().add(const Duration(days: 30)),
-      endDate: DateTime.now().add(const Duration(days: 37)),
-      activities: ['Eiffel Tower', 'Louvre Museum', 'Seine Cruise'],
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
+      startDate: DateTime.now().add(const Duration(days: 12)),
+      endDate: DateTime.now().add(const Duration(days: 17)),
+      createdAt: DateTime.now().subtract(const Duration(days: 5)),
+      updatedAt: DateTime.now().subtract(const Duration(days: 5)),
+      days: [
+        TripDay(
+          dayIndex: 1,
+          date: DateTime.now().add(const Duration(days: 12)),
+          activities: [
+            Activity(
+              id: 'a1',
+              title: 'Coffee at Café de Flore',
+              startTime: '09:00',
+              address: '172 Bd Saint-Germain, 75006 Paris',
+              imageUrl: 'https://images.unsplash.com/photo-1550983092-247321459255?q=80&w=400',
+            ),
+            Activity(
+              id: 'a2',
+              title: 'Louvre Museum',
+              startTime: '11:00',
+              address: 'Rue de Rivoli, 75001 Paris',
+              imageUrl: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?q=80&w=400',
+            ),
+          ],
+        ),
+        TripDay(
+          dayIndex: 2,
+          date: DateTime.now().add(const Duration(days: 13)),
+          activities: [
+            Activity(
+              id: 'a3',
+              title: 'Eiffel Tower Visit',
+              startTime: '10:00',
+              address: 'Champ de Mars, 5 Av. Anatole France, 75007 Paris',
+              imageUrl: 'https://images.unsplash.com/photo-1511739001486-6bfe10ce785f?q=80&w=400',
+            ),
+          ],
+        ),
+      ],
     ),
   ];
+
+  static final List<String> popularCountries = [
+    'France', 'Italy', 'United States', 'Japan', 'Thailand', 'Greece', 'Switzerland', 'Spain', 'Israel'
+  ];
+
+  static String getDestinationImage(String? city, String country) {
+    // Priority 1: City + Country travel image
+    // Priority 2: Country travel image
+    // Using loremflickr which is very reliable for tag-based images
+    final String cleanCountry = country.replaceAll(' ', '');
+    final String? cleanCity = city?.replaceAll(' ', '');
+    
+    if (cleanCity != null && cleanCity.isNotEmpty) {
+      return 'https://loremflickr.com/800/600/$cleanCity,$cleanCountry,travel/all';
+    }
+    return 'https://loremflickr.com/800/600/$cleanCountry,travel/all';
+  }
+
 
   static List<Trip> getTripsForUser(String userId) {
     return allTrips.where((trip) => trip.userId == userId).toList();
