@@ -19,6 +19,14 @@ class ItineraryScreen extends StatefulWidget {
 }
 
 class _ItineraryScreenState extends State<ItineraryScreen> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final tripProvider = context.watch<TripProvider>();
@@ -324,6 +332,8 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                     canvasColor: Colors.transparent, 
                   ),
                   child: ReorderableListView.builder(
+                    scrollController: _scrollController,
+                    buildDefaultDragHandles: false,
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
                     itemCount: day.activities.length,
                     onReorder: (oldIndex, newIndex) {
@@ -527,7 +537,7 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                                   index: index,
                                   child: const Padding(
                                     padding: EdgeInsets.only(left: 8.0),
-                                    child: Icon(Icons.drag_indicator, color: Color(0xFFCBD5E1), size: 24),
+                                    child: Icon(Icons.drag_handle, color: Color(0xFFCBD5E1), size: 24),
                                   ),
                                 ),
                               ],
@@ -583,37 +593,33 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
       children: [
         SizedBox(
           width: 60,
-          child: Center(
-            child: Container(width: 2, height: 40, color: const Color(0xFFE2E8F0)),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(width: 2, height: 60, color: const Color(0xFFE2E8F0)),
+              GestureDetector(
+                onTap: () => _showTransportPicker(context, trip, day, activity),
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4),
+                    ],
+                  ),
+                  child: Icon(_getTransportIcon(mode), size: 14, color: const Color(0xFF64748B)),
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(width: 8),
-        GestureDetector(
-          onTap: () => _showTransportPicker(context, trip, day, activity),
-          child: Container(
-            margin: const EdgeInsets.symmetric(vertical: 4),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-              boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: const Offset(0, 2)),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(_getTransportIcon(mode), size: 14, color: const Color(0xFF64748B)),
-                const SizedBox(width: 8),
-                Text(
-                  duration > 0 ? _formatDuration(duration) : 'Calculating...',
-                  style: const TextStyle(color: Color(0xFF475569), fontSize: 11, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(width: 4),
-                const Icon(Icons.keyboard_arrow_down, size: 12, color: Color(0xFF64748B)),
-              ],
-            ),
+        Expanded(
+          child: Text(
+            duration > 0 ? _formatDuration(duration) : 'Calculating...',
+            style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11, fontWeight: FontWeight.w500),
           ),
         ),
       ],
@@ -709,12 +715,23 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
     );
   }
 
-  void _showAddActivity(BuildContext context, Trip trip, TripDay day) {
-    Navigator.push(
+  void _showAddActivity(BuildContext context, Trip trip, TripDay day) async {
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => AddActivityScreen(tripId: trip.id, dayIndex: day.dayIndex),
       ),
     );
+    
+    // Scroll to bottom after adding
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 }
