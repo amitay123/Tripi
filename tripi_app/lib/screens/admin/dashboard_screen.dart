@@ -21,7 +21,8 @@ class DashboardScreen extends StatelessWidget {
                   children: [
                     const CircleAvatar(
                       radius: 20,
-                      backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=admin'),
+                      backgroundImage:
+                          NetworkImage('https://i.pravatar.cc/150?u=admin'),
                     ),
                     const SizedBox(width: 12),
                     Column(
@@ -29,17 +30,20 @@ class DashboardScreen extends StatelessWidget {
                       children: [
                         Text(
                           'Admin Console',
-                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: TripiColors.primary,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.labelLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: TripiColors.primary,
+                                  ),
                         ),
                         Text(
                           'GLOBAL TRAVEL OPS',
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                color: TripiColors.onSurfaceVariant.withOpacity(0.5),
-                                letterSpacing: 1,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: TripiColors.onSurfaceVariant
+                                        .withOpacity(0.5),
+                                    letterSpacing: 1,
+                                  ),
                         ),
                       ],
                     ),
@@ -51,10 +55,13 @@ class DashboardScreen extends StatelessWidget {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
-                      BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+                      BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10),
                     ],
                   ),
-                  child: const Icon(Icons.notifications_none, color: TripiColors.primary),
+                  child: const Icon(Icons.notifications_none,
+                      color: TripiColors.primary),
                 ),
               ],
             ),
@@ -95,11 +102,15 @@ class DashboardScreen extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.auto_graph_rounded, color: TripiColors.primary.withOpacity(0.5)),
+              Icon(Icons.auto_graph_rounded,
+                  color: TripiColors.primary.withOpacity(0.5)),
               const SizedBox(width: 12),
               Text(
                 'Trip Network Overview',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -148,13 +159,18 @@ class DashboardScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('MARKET REACH', style: TextStyle(fontSize: 10, letterSpacing: 1, color: TripiColors.onSurfaceVariant)),
+          const Text('MARKET REACH',
+              style: TextStyle(
+                  fontSize: 10,
+                  letterSpacing: 1,
+                  color: TripiColors.onSurfaceVariant)),
           const SizedBox(height: 8),
-          const Text('Top Destinations', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text('Top Destinations',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 24),
           Row(
             children: [
-              SizedBox(
+              const SizedBox(
                 width: 120,
                 height: 120,
                 child: Stack(
@@ -166,7 +182,9 @@ class DashboardScreen extends StatelessWidget {
                       backgroundColor: TripiColors.surfaceContainerLow,
                       color: TripiColors.primary,
                     ),
-                    const Text('72%', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text('72%',
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
@@ -191,9 +209,14 @@ class DashboardScreen extends StatelessWidget {
   Widget _buildLegendItem(Color color, String label) {
     return Row(
       children: [
-        Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
         const SizedBox(width: 8),
-        Text(label, style: const TextStyle(fontSize: 12, color: TripiColors.onSurfaceVariant)),
+        Text(label,
+            style: const TextStyle(
+                fontSize: 12, color: TripiColors.onSurfaceVariant)),
       ],
     );
   }
@@ -204,12 +227,17 @@ class DashboardScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('PLATFORM PERFORMANCE', style: TextStyle(fontSize: 10, letterSpacing: 1, color: TripiColors.onSurfaceVariant)),
+          const Text('PLATFORM PERFORMANCE',
+              style: TextStyle(
+                  fontSize: 10,
+                  letterSpacing: 1,
+                  color: TripiColors.onSurfaceVariant)),
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Usage Over Time', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text('Usage Over Time',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               Row(
                 children: [
                   _buildToggleButton('7 Days', false),
@@ -226,13 +254,16 @@ class DashboardScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: List.generate(10, (index) {
-                final height = [40, 60, 50, 80, 120, 100, 90, 110, 70, 60][index];
+                final height =
+                    [40, 60, 50, 80, 120, 100, 90, 110, 70, 60][index];
                 final isHighlight = index == 4;
                 return Container(
                   width: 20,
                   height: height.toDouble(),
                   decoration: BoxDecoration(
-                    color: isHighlight ? TripiColors.primary : TripiColors.primary.withOpacity(0.1),
+                    color: isHighlight
+                        ? TripiColors.primary
+                        : TripiColors.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                 );
@@ -248,7 +279,8 @@ class DashboardScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: isSelected ? TripiColors.primary : TripiColors.surfaceContainerHigh,
+        color:
+            isSelected ? TripiColors.primary : TripiColors.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
@@ -271,12 +303,15 @@ class DashboardScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Recent Activity', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              Icon(Icons.history, color: TripiColors.onSurfaceVariant.withOpacity(0.5)),
+              const Text('Recent Activity',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Icon(Icons.history,
+                  color: TripiColors.onSurfaceVariant.withOpacity(0.5)),
             ],
           ),
           const SizedBox(height: 24),
-          ...MockDataService.recentActivity.map((activity) => _buildActivityItem(activity)),
+          ...MockDataService.recentActivity
+              .map((activity) => _buildActivityItem(activity)),
           const SizedBox(height: 24),
           OutlinedButton(
             onPressed: () {},
@@ -297,7 +332,10 @@ class DashboardScreen extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const CircleAvatar(radius: 18, backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=sarah')),
+          const CircleAvatar(
+              radius: 18,
+              backgroundImage:
+                  NetworkImage('https://i.pravatar.cc/150?u=sarah')),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -305,16 +343,23 @@ class DashboardScreen extends StatelessWidget {
               children: [
                 RichText(
                   text: TextSpan(
-                    style: const TextStyle(color: TripiColors.onSurface, fontSize: 13),
+                    style: const TextStyle(
+                        color: TripiColors.onSurface, fontSize: 13),
                     children: [
-                      TextSpan(text: activity.userName, style: const TextStyle(fontWeight: FontWeight.bold, color: TripiColors.primary)),
+                      TextSpan(
+                          text: activity.userName,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: TripiColors.primary)),
                       const TextSpan(text: ' '),
                       TextSpan(text: activity.action),
                     ],
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(activity.timeAgo, style: const TextStyle(fontSize: 11, color: TripiColors.onSurfaceVariant)),
+                Text(activity.timeAgo,
+                    style: const TextStyle(
+                        fontSize: 11, color: TripiColors.onSurfaceVariant)),
               ],
             ),
           ),

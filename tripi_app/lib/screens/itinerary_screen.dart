@@ -30,8 +30,9 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
   @override
   Widget build(BuildContext context) {
     final tripProvider = context.watch<TripProvider>();
-    final trip = tripProvider.trips.isNotEmpty 
-        ? tripProvider.trips.firstWhere((t) => t.id == widget.tripId, orElse: () => tripProvider.trips.first)
+    final trip = tripProvider.trips.isNotEmpty
+        ? tripProvider.trips.firstWhere((t) => t.id == widget.tripId,
+            orElse: () => tripProvider.trips.first)
         : null;
 
     if (trip == null) {
@@ -48,7 +49,11 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
           centerTitle: true,
           title: Column(
             children: [
-              Text(trip.name, style: const TextStyle(color: Color(0xFF1E293B), fontSize: 16, fontWeight: FontWeight.bold)),
+              Text(trip.name,
+                  style: const TextStyle(
+                      color: Color(0xFF1E293B),
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold)),
               Text(
                 '${DateFormat('MMM dd').format(trip.startDate)} - ${DateFormat('MMM dd').format(trip.endDate)}',
                 style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
@@ -65,11 +70,15 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
             unselectedLabelColor: const Color(0xFF64748B),
             indicatorColor: TripiColors.primary,
             indicatorWeight: 3,
-            tabs: trip.days.map((day) => Tab(text: 'Day ${day.dayIndex}')).toList(),
+            tabs: trip.days
+                .map((day) => Tab(text: 'Day ${day.dayIndex}'))
+                .toList(),
           ),
         ),
         body: TabBarView(
-          children: trip.days.map((day) => _buildDayView(context, trip, day)).toList(),
+          children: trip.days
+              .map((day) => _buildDayView(context, trip, day))
+              .toList(),
         ),
         floatingActionButton: Column(
           mainAxisAlignment: MainAxisAlignment.end,
@@ -131,7 +140,8 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                   padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
                   child: Text(
                     'Day ${day.dayIndex} Route Overview',
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                        fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                 ),
                 Expanded(
@@ -176,7 +186,8 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                         BoxShadow(color: Colors.black12, blurRadius: 10),
                       ],
                     ),
-                    child: const Icon(Icons.close, color: Color(0xFF1E293B), size: 20),
+                    child: const Icon(Icons.close,
+                        color: Color(0xFF1E293B), size: 20),
                   ),
                 ),
               ),
@@ -189,8 +200,9 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
 
   void _fitBounds(GoogleMapController controller, TripDay day) {
     if (day.activities.isEmpty) return;
-    
-    final markers = day.activities.where((a) => a.lat != null && a.lng != null).toList();
+
+    final markers =
+        day.activities.where((a) => a.lat != null && a.lng != null).toList();
     if (markers.isEmpty) return;
 
     double? minLat, maxLat, minLng, maxLng;
@@ -294,7 +306,8 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                     onTap: () => _selectStartTime(context, trip, day),
                     child: Row(
                       children: [
-                        const Icon(Icons.access_time, size: 14, color: TripiColors.primary),
+                        const Icon(Icons.access_time,
+                            size: 14, color: TripiColors.primary),
                         const SizedBox(width: 4),
                         Text(
                           'Starts at ${day.startTime}',
@@ -304,7 +317,8 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                             fontSize: 14,
                           ),
                         ),
-                        const Icon(Icons.edit, size: 12, color: TripiColors.primary),
+                        const Icon(Icons.edit,
+                            size: 12, color: TripiColors.primary),
                       ],
                     ),
                   ),
@@ -318,7 +332,10 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                 ),
                 child: Text(
                   '${day.activities.length} items',
-                  style: const TextStyle(color: Color(0xFF475569), fontSize: 10, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      color: Color(0xFF475569),
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -329,7 +346,7 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
               ? _buildEmptyState(context, trip, day)
               : Theme(
                   data: ThemeData(
-                    canvasColor: Colors.transparent, 
+                    canvasColor: Colors.transparent,
                   ),
                   child: ReorderableListView.builder(
                     scrollController: _scrollController,
@@ -337,17 +354,20 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
                     itemCount: day.activities.length,
                     onReorder: (oldIndex, newIndex) {
-                      context.read<TripProvider>().reorderActivities(trip.id, day.dayIndex, oldIndex, newIndex);
+                      context.read<TripProvider>().reorderActivities(
+                          trip.id, day.dayIndex, oldIndex, newIndex);
                     },
                     itemBuilder: (context, index) {
                       final activity = day.activities[index];
                       return _buildActivityItem(
-                        context, 
-                        trip, 
-                        day, 
-                        activity, 
-                        index, 
-                        arrivalTimes.length > index ? arrivalTimes[index] : '??:??',
+                        context,
+                        trip,
+                        day,
+                        activity,
+                        index,
+                        arrivalTimes.length > index
+                            ? arrivalTimes[index]
+                            : '??:??',
                         key: ValueKey(activity.id),
                       );
                     },
@@ -364,25 +384,27 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
 
     try {
       DateTime currentTime = DateFormat('HH:mm').parse(day.startTime);
-      
+
       for (int i = 0; i < day.activities.length; i++) {
         final activity = day.activities[i];
-        
+
         if (i > 0 && activity.travelDurationFromPrevious != null) {
-          currentTime = currentTime.add(Duration(minutes: activity.travelDurationFromPrevious!));
+          currentTime = currentTime
+              .add(Duration(minutes: activity.travelDurationFromPrevious!));
         }
-        
+
         times.add(DateFormat('HH:mm').format(currentTime));
         currentTime = currentTime.add(Duration(minutes: activity.duration));
       }
     } catch (e) {
       return List.generate(day.activities.length, (index) => '??:??');
     }
-    
+
     return times;
   }
 
-  Future<void> _selectStartTime(BuildContext context, Trip trip, TripDay day) async {
+  Future<void> _selectStartTime(
+      BuildContext context, Trip trip, TripDay day) async {
     final parts = day.startTime.split(':');
     final TimeOfDay? picked = await showTimePicker(
       context: context,
@@ -392,9 +414,12 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
       ),
     );
     if (picked != null) {
-      final String formattedTime = '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+      final String formattedTime =
+          '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
       if (context.mounted) {
-        context.read<TripProvider>().updateDayStartTime(trip.id, day.dayIndex, formattedTime);
+        context
+            .read<TripProvider>()
+            .updateDayStartTime(trip.id, day.dayIndex, formattedTime);
       }
     }
   }
@@ -407,25 +432,22 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
     return '${h}h ${m}m';
   }
 
-  Widget _buildActivityItem(
-    BuildContext context, 
-    Trip trip, 
-    TripDay day, 
-    Activity activity, 
-    int index, 
-    String arrivalTime,
-    {required Key key}
-  ) {
+  Widget _buildActivityItem(BuildContext context, Trip trip, TripDay day,
+      Activity activity, int index, String arrivalTime,
+      {required Key key}) {
     return Column(
       key: key,
       children: [
         // Item 2: Transport picker MOVED to timeline
-        if (index > 0) _buildTimelineTransportDivider(context, trip, day, activity),
+        if (index > 0)
+          _buildTimelineTransportDivider(context, trip, day, activity),
         Dismissible(
           key: Key('dismiss_${activity.id}'),
           direction: DismissDirection.endToStart,
           onDismissed: (_) {
-            context.read<TripProvider>().deleteActivity(trip.id, day.dayIndex, activity.id);
+            context
+                .read<TripProvider>()
+                .deleteActivity(trip.id, day.dayIndex, activity.id);
           },
           background: Container(
             alignment: Alignment.centerRight,
@@ -460,15 +482,22 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                           shape: BoxShape.circle,
                           border: Border.all(color: Colors.white, width: 3),
                           boxShadow: [
-                            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2)),
+                            BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2)),
                           ],
                         ),
-                        child: Icon(_getCategoryIcon(activity), color: _getCategoryIconColor(activity), size: 18),
+                        child: Icon(_getCategoryIcon(activity),
+                            color: _getCategoryIconColor(activity), size: 18),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         _formatDuration(activity.duration),
-                        style: const TextStyle(color: Color(0xFF64748B), fontSize: 10, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                            color: Color(0xFF64748B),
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
                       Expanded(
@@ -491,7 +520,8 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                         children: [
                           if (activity.imageUrl != null)
                             ClipRRect(
-                              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                              borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(20)),
                               child: Image.network(
                                 activity.imageUrl!,
                                 height: 120,
@@ -506,29 +536,42 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                               children: [
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         arrivalTime,
-                                        style: const TextStyle(color: TripiColors.primary, fontWeight: FontWeight.bold, fontSize: 12),
+                                        style: const TextStyle(
+                                            color: TripiColors.primary,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12),
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
                                         activity.title,
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B)),
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                            color: Color(0xFF1E293B)),
                                       ),
                                       if (activity.address != null)
                                         Padding(
-                                          padding: const EdgeInsets.only(top: 4.0),
+                                          padding:
+                                              const EdgeInsets.only(top: 4.0),
                                           child: Text(
                                             activity.address!,
-                                            style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                                            style: const TextStyle(
+                                                color: Color(0xFF64748B),
+                                                fontSize: 12),
                                           ),
                                         ),
                                       const SizedBox(height: 12),
                                       const Text(
                                         'View Details →',
-                                        style: TextStyle(color: TripiColors.primary, fontSize: 12, fontWeight: FontWeight.bold),
+                                        style: TextStyle(
+                                            color: TripiColors.primary,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold),
                                       ),
                                     ],
                                   ),
@@ -537,7 +580,8 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                                   index: index,
                                   child: const Padding(
                                     padding: EdgeInsets.only(left: 8.0),
-                                    child: Icon(Icons.drag_handle, color: Color(0xFFCBD5E1), size: 24),
+                                    child: Icon(Icons.drag_handle,
+                                        color: Color(0xFFCBD5E1), size: 24),
                                   ),
                                 ),
                               ],
@@ -560,9 +604,13 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
   IconData _getCategoryIcon(Activity activity) {
     if (activity.types == null) return Icons.place;
     if (activity.types!.contains('lodging')) return Icons.hotel;
-    if (activity.types!.contains('restaurant') || activity.types!.contains('food') || activity.types!.contains('cafe')) return Icons.restaurant;
-    if (activity.types!.contains('airport') || activity.types!.contains('transit_station')) return Icons.flight;
-    if (activity.types!.contains('museum') || activity.types!.contains('tourist_attraction')) return Icons.local_see;
+    if (activity.types!.contains('restaurant') ||
+        activity.types!.contains('food') ||
+        activity.types!.contains('cafe')) return Icons.restaurant;
+    if (activity.types!.contains('airport') ||
+        activity.types!.contains('transit_station')) return Icons.flight;
+    if (activity.types!.contains('museum') ||
+        activity.types!.contains('tourist_attraction')) return Icons.local_see;
     if (activity.types!.contains('park')) return Icons.park;
     return Icons.place;
   }
@@ -570,9 +618,13 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
   // Item 1: Helper for Category Color
   Color _getCategoryColor(Activity activity) {
     if (activity.types == null) return Colors.white;
-    if (activity.types!.contains('lodging')) return Colors.white; // White circle, blue icon
-    if (activity.types!.contains('restaurant') || activity.types!.contains('food')) return const Color(0xFFDDD6FE); // Purple
-    if (activity.types!.contains('airport')) return const Color(0xFF0284C7); // Blue
+    if (activity.types!.contains('lodging'))
+      return Colors.white; // White circle, blue icon
+    if (activity.types!.contains('restaurant') ||
+        activity.types!.contains('food'))
+      return const Color(0xFFDDD6FE); // Purple
+    if (activity.types!.contains('airport'))
+      return const Color(0xFF0284C7); // Blue
     return Colors.white;
   }
 
@@ -580,12 +632,14 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
     if (activity.types == null) return const Color(0xFF64748B);
     if (activity.types!.contains('lodging')) return const Color(0xFF0284C7);
     if (activity.types!.contains('airport')) return Colors.white;
-    if (activity.types!.contains('restaurant') || activity.types!.contains('food')) return const Color(0xFF7C3AED);
+    if (activity.types!.contains('restaurant') ||
+        activity.types!.contains('food')) return const Color(0xFF7C3AED);
     return const Color(0xFF64748B);
   }
 
   // Item 2: Transport Picker on Timeline Line
-  Widget _buildTimelineTransportDivider(BuildContext context, Trip trip, TripDay day, Activity activity) {
+  Widget _buildTimelineTransportDivider(
+      BuildContext context, Trip trip, TripDay day, Activity activity) {
     final mode = activity.transportModeFromPrevious ?? TravelMode.driving;
     final duration = activity.travelDurationFromPrevious ?? 0;
 
@@ -606,10 +660,12 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                     shape: BoxShape.circle,
                     border: Border.all(color: const Color(0xFFE2E8F0)),
                     boxShadow: [
-                      BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4),
+                      BoxShadow(
+                          color: Colors.black.withOpacity(0.05), blurRadius: 4),
                     ],
                   ),
-                  child: Icon(_getTransportIcon(mode), size: 14, color: const Color(0xFF64748B)),
+                  child: Icon(_getTransportIcon(mode),
+                      size: 14, color: const Color(0xFF64748B)),
                 ),
               ),
             ],
@@ -619,7 +675,10 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
         Expanded(
           child: Text(
             duration > 0 ? _formatDuration(duration) : 'Calculating...',
-            style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11, fontWeight: FontWeight.w500),
+            style: const TextStyle(
+                color: Color(0xFF94A3B8),
+                fontSize: 11,
+                fontWeight: FontWeight.w500),
           ),
         ),
       ],
@@ -628,24 +687,31 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
 
   IconData _getTransportIcon(TravelMode mode) {
     switch (mode) {
-      case TravelMode.walking: return Icons.directions_walk;
-      case TravelMode.driving: return Icons.directions_car;
-      case TravelMode.transit: return Icons.directions_bus;
-      case TravelMode.flight: return Icons.flight;
+      case TravelMode.walking:
+        return Icons.directions_walk;
+      case TravelMode.driving:
+        return Icons.directions_car;
+      case TravelMode.transit:
+        return Icons.directions_bus;
+      case TravelMode.flight:
+        return Icons.flight;
     }
   }
 
-  void _showTransportPicker(BuildContext context, Trip trip, TripDay day, Activity activity) {
+  void _showTransportPicker(
+      BuildContext context, Trip trip, TripDay day, Activity activity) {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (context) => Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Transport Mode', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text('Transport Mode',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -653,11 +719,11 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                 return GestureDetector(
                   onTap: () {
                     context.read<TripProvider>().updateActivityTransportAuto(
-                      trip.id, 
-                      day.dayIndex, 
-                      activity.id, 
-                      mode,
-                    );
+                          trip.id,
+                          day.dayIndex,
+                          activity.id,
+                          mode,
+                        );
                     Navigator.pop(context);
                   },
                   child: Column(
@@ -665,16 +731,23 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: activity.transportModeFromPrevious == mode ? TripiColors.primary.withOpacity(0.1) : const Color(0xFFF1F5F9),
+                          color: activity.transportModeFromPrevious == mode
+                              ? TripiColors.primary.withOpacity(0.1)
+                              : const Color(0xFFF1F5F9),
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(
-                          _getTransportIcon(mode), 
-                          color: activity.transportModeFromPrevious == mode ? TripiColors.primary : const Color(0xFF64748B)
-                        ),
+                        child: Icon(_getTransportIcon(mode),
+                            color: activity.transportModeFromPrevious == mode
+                                ? TripiColors.primary
+                                : const Color(0xFF64748B)),
                       ),
                       const SizedBox(height: 4),
-                      Text(mode.name, style: TextStyle(fontSize: 12, color: activity.transportModeFromPrevious == mode ? TripiColors.primary : const Color(0xFF64748B))),
+                      Text(mode.name,
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: activity.transportModeFromPrevious == mode
+                                  ? TripiColors.primary
+                                  : const Color(0xFF64748B))),
                     ],
                   ),
                 );
@@ -697,12 +770,16 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
               color: Color(0xFFF1F5F9),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.map_outlined, size: 64, color: Color(0xFFCBD5E1)),
+            child: const Icon(Icons.map_outlined,
+                size: 64, color: Color(0xFFCBD5E1)),
           ),
           const SizedBox(height: 24),
           const Text(
             'No activities planned yet',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
+            style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF334155)),
           ),
           const SizedBox(height: 8),
           const Text(
@@ -719,10 +796,11 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => AddActivityScreen(tripId: trip.id, dayIndex: day.dayIndex),
+        builder: (context) =>
+            AddActivityScreen(tripId: trip.id, dayIndex: day.dayIndex),
       ),
     );
-    
+
     // Scroll to bottom after adding
     Future.delayed(const Duration(milliseconds: 300), () {
       if (_scrollController.hasClients) {

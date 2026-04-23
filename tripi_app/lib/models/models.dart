@@ -1,6 +1,9 @@
 enum TripType { leisure, business, family, friends, solo, romantic }
+
 enum TravelStyle { standard, luxury, budget, backpacker }
+
 enum TripPace { relaxed, balanced, intensive }
+
 enum TravelMode { walking, driving, transit, flight }
 
 class User {
@@ -60,7 +63,7 @@ class Activity {
   final double? lng;
   final String? address;
   final String? startTime; // "HH:mm"
-  final String? endTime;   // "HH:mm"
+  final String? endTime; // "HH:mm"
   final String? notes;
   final String? imageUrl;
   final String source; // 'manual' or 'api'
@@ -87,6 +90,49 @@ class Activity {
     this.transportModeFromPrevious,
     this.travelDurationFromPrevious,
   });
+
+  factory Activity.fromJson(Map<String, dynamic> json) {
+    return Activity(
+      id: json['id']?.toString() ?? '',
+      title: json['title']?.toString() ?? 'Activity',
+      lat: double.tryParse(json['lat']?.toString() ?? ''),
+      lng: double.tryParse(json['lng']?.toString() ?? ''),
+      address: json['address']?.toString(),
+      startTime: json['start_time']?.toString(),
+      endTime: json['end_time']?.toString(),
+      notes: json['notes']?.toString(),
+      imageUrl: json['image_url']?.toString(),
+      source: json['source']?.toString() ?? 'manual',
+      placeId: json['place_id']?.toString(),
+      types: (json['types'] as List?)?.map((e) => e.toString()).toList(),
+      duration: int.tryParse(json['duration']?.toString() ?? '') ?? 60,
+      transportModeFromPrevious: TravelMode.values.firstWhere(
+        (e) => e.name == (json['transport_mode_from_previous']?.toString() ?? 'driving'),
+        orElse: () => TravelMode.driving,
+      ),
+      travelDurationFromPrevious: int.tryParse(json['travel_duration_from_previous']?.toString() ?? ''),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'lat': lat,
+      'lng': lng,
+      'address': address,
+      'start_time': startTime,
+      'end_time': endTime,
+      'notes': notes,
+      'image_url': imageUrl,
+      'source': source,
+      'place_id': placeId,
+      'types': types,
+      'duration': duration,
+      'transport_mode_from_previous': transportModeFromPrevious?.name,
+      'travel_duration_from_previous': travelDurationFromPrevious,
+    };
+  }
 
   Activity copyWith({
     String? id,
@@ -119,8 +165,10 @@ class Activity {
       placeId: placeId ?? this.placeId,
       types: types ?? this.types,
       duration: duration ?? this.duration,
-      transportModeFromPrevious: transportModeFromPrevious ?? this.transportModeFromPrevious,
-      travelDurationFromPrevious: travelDurationFromPrevious ?? this.travelDurationFromPrevious,
+      transportModeFromPrevious:
+          transportModeFromPrevious ?? this.transportModeFromPrevious,
+      travelDurationFromPrevious:
+          travelDurationFromPrevious ?? this.travelDurationFromPrevious,
     );
   }
 }
@@ -137,6 +185,37 @@ class TripDay {
     this.activities = const [],
     this.startTime = "09:00",
   });
+
+  factory TripDay.fromJson(Map<String, dynamic> json) {
+    DateTime parseDate(dynamic val, [DateTime? fallback]) {
+      if (val == null) return fallback ?? DateTime.now();
+      try {
+        return DateTime.parse(val.toString());
+      } catch (_) {
+        return fallback ?? DateTime.now();
+      }
+    }
+
+    return TripDay(
+      dayIndex: int.tryParse(json['day_index']?.toString() ?? '') ?? 1,
+      date: parseDate(json['date']),
+      activities: (json['activities'] as List?)
+              ?.where((e) => e != null)
+              .map((e) => Activity.fromJson(Map<String, dynamic>.from(e as Map)))
+              .toList() ??
+          [],
+      startTime: json['start_time']?.toString() ?? "09:00",
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'day_index': dayIndex,
+      'date': date.toIso8601String(),
+      'activities': activities.map((e) => e.toJson()).toList(),
+      'start_time': startTime,
+    };
+  }
 
   TripDay copyWith({
     int? dayIndex,
@@ -204,11 +283,90 @@ class Trip {
     this.destination,
   });
 
+  factory Trip.fromJson(Map<String, dynamic> json) {
+    DateTime parseDate(dynamic val, [DateTime? fallback]) {
+      if (val == null) return fallback ?? DateTime.now();
+      try {
+        return DateTime.parse(val.toString());
+      } catch (_) {
+        return fallback ?? DateTime.now();
+      }
+    }
+
+    return Trip(
+      id: json['id']?.toString() ?? '',
+      userId: json['user_id']?.toString() ?? '',
+      name: json['name']?.toString() ?? 'Unnamed Trip',
+      country: json['country']?.toString() ?? '',
+      countryCode: json['country_code']?.toString(),
+      city: json['city']?.toString(),
+      cityPlaceId: json['city_place_id']?.toString(),
+      startDate: parseDate(json['start_date']),
+      endDate: parseDate(
+          json['end_date'], DateTime.now().add(const Duration(days: 1))),
+      travelersCount: int.tryParse(json['travelers_count']?.toString() ?? '') ?? 1,
+      travelersBreakdown: Map<String, int>.from(json['travelers_breakdown'] ?? {}),
+      tripType: TripType.values.firstWhere(
+        (e) => e.name == (json['trip_type']?.toString() ?? 'leisure'),
+        orElse: () => TripType.leisure,
+      ),
+      travelStyle: TravelStyle.values.firstWhere(
+        (e) => e.name == (json['travel_style']?.toString() ?? 'standard'),
+        orElse: () => TravelStyle.standard,
+      ),
+      budgetTotal: (json['budget_total'] as num?)?.toDouble() ?? 0.0,
+      currency: json['currency']?.toString() ?? 'USD',
+      preferences: List<String>.from(json['preferences'] ?? []),
+      pace: TripPace.values.firstWhere(
+        (e) => e.name == (json['pace']?.toString() ?? 'balanced'),
+        orElse: () => TripPace.balanced,
+      ),
+      interests: List<String>.from(json['interests'] ?? []),
+      createdAt: parseDate(json['created_at']),
+      updatedAt: parseDate(json['updated_at'] ?? json['created_at']),
+      days: (json['days'] as List?)
+              ?.where((e) => e != null)
+              .map((e) => TripDay.fromJson(Map<String, dynamic>.from(e as Map)))
+              .toList() ??
+          [],
+      coverImageUrl: json['cover_image_url']?.toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'user_id': userId,
+      'name': name,
+      'country': country,
+      'country_code': countryCode,
+      'city': city,
+      'city_place_id': cityPlaceId,
+      'start_date': startDate.toIso8601String(),
+      'end_date': endDate.toIso8601String(),
+      'travelers_count': travelersCount,
+      'travelers_breakdown': travelersBreakdown,
+      'trip_type': tripType.name,
+      'travel_style': travelStyle.name,
+      'budget_total': budgetTotal,
+      'currency': currency,
+      'preferences': preferences,
+      'pace': pace.name,
+      'interests': interests,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
+      'days': days.map((e) => e.toJson()).toList(),
+      'cover_image_url': coverImageUrl,
+    };
+  }
+
   int get durationDays => endDate.difference(startDate).inDays + 1;
-  double? get budgetDaily => (budgetTotal != null && durationDays > 0) ? budgetTotal! / durationDays : null;
+  double? get budgetDaily => (budgetTotal != null && durationDays > 0)
+      ? budgetTotal! / durationDays
+      : null;
 
   Trip copyWith({
     String? id,
+    String? userId,
     String? name,
     String? country,
     String? countryCode,
@@ -231,7 +389,7 @@ class Trip {
   }) {
     return Trip(
       id: id ?? this.id,
-      userId: userId,
+      userId: userId ?? this.userId,
       name: name ?? this.name,
       country: country ?? this.country,
       countryCode: countryCode ?? this.countryCode,

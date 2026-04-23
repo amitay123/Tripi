@@ -10,19 +10,21 @@ class AddActivityScreen extends StatefulWidget {
   final String tripId;
   final int dayIndex;
 
-  const AddActivityScreen({super.key, required this.tripId, required this.dayIndex});
+  const AddActivityScreen(
+      {super.key, required this.tripId, required this.dayIndex});
 
   @override
   State<AddActivityScreen> createState() => _AddActivityScreenState();
 }
 
-class _AddActivityScreenState extends State<AddActivityScreen> with SingleTickerProviderStateMixin {
+class _AddActivityScreenState extends State<AddActivityScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final _searchController = TextEditingController();
   final _titleController = TextEditingController();
   final _notesController = TextEditingController();
   TimeOfDay? _selectedTime;
-  
+
   List<Map<String, dynamic>> _searchResults = [];
   bool _isSearching = false;
   final PlacesService _placesService = PlacesService();
@@ -44,8 +46,8 @@ class _AddActivityScreenState extends State<AddActivityScreen> with SingleTicker
     );
 
     String? placeId = trip.cityPlaceId;
-    
-    // If no city, we could search for the country's center, but for now 
+
+    // If no city, we could search for the country's center, but for now
     // we'll prioritize city if available.
     if (placeId != null && placeId.isNotEmpty) {
       final details = await _placesService.getPlaceDetails(placeId);
@@ -73,18 +75,19 @@ class _AddActivityScreenState extends State<AddActivityScreen> with SingleTicker
       return;
     }
     setState(() => _isSearching = true);
-    
+
     // Pass countryCode if available in draft
     final tripProvider = context.read<TripProvider>();
-    final draft = tripProvider.trips.firstWhere((t) => t.id == widget.tripId, orElse: () => tripProvider.draftTrip ?? tripProvider.trips.first);
-    
+    final draft = tripProvider.trips.firstWhere((t) => t.id == widget.tripId,
+        orElse: () => tripProvider.draftTrip ?? tripProvider.trips.first);
+
     final places = await _placesService.autocompletePlaces(
-      query, 
+      query,
       countryCode: draft.countryCode,
       lat: _destLat,
       lng: _destLng,
     );
-    
+
     if (!mounted) return;
     setState(() {
       _isSearching = false;
@@ -101,16 +104,20 @@ class _AddActivityScreenState extends State<AddActivityScreen> with SingleTicker
 
   void _submitManual() {
     if (_titleController.text.isEmpty) return;
-    
+
     final activity = Activity(
       id: 'act_${DateTime.now().millisecondsSinceEpoch}',
       title: _titleController.text,
       notes: _notesController.text,
-      startTime: _selectedTime != null ? '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}' : null,
+      startTime: _selectedTime != null
+          ? '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}'
+          : null,
       source: 'manual',
     );
 
-    context.read<TripProvider>().addActivity(widget.tripId, widget.dayIndex, activity);
+    context
+        .read<TripProvider>()
+        .addActivity(widget.tripId, widget.dayIndex, activity);
     Navigator.pop(context);
   }
 
@@ -124,7 +131,7 @@ class _AddActivityScreenState extends State<AddActivityScreen> with SingleTicker
 
     // Fetch place details for lat/lng and photo
     final details = await _placesService.getPlaceDetails(place['place_id']);
-    
+
     if (mounted) {
       Navigator.pop(context); // hide loading
     }
@@ -135,14 +142,18 @@ class _AddActivityScreenState extends State<AddActivityScreen> with SingleTicker
       address: details?['formatted_address'] ?? place['address'],
       lat: details?['lat'],
       lng: details?['lng'],
-      types: details?['types'] != null ? List<String>.from(details!['types']) : null,
+      types: details?['types'] != null
+          ? List<String>.from(details!['types'])
+          : null,
       imageUrl: _placesService.getPhotoUrl(details?['photo_reference']),
       placeId: place['place_id'],
       source: 'api',
     );
 
     if (mounted) {
-      context.read<TripProvider>().addActivity(widget.tripId, widget.dayIndex, activity);
+      context
+          .read<TripProvider>()
+          .addActivity(widget.tripId, widget.dayIndex, activity);
       Navigator.pop(context);
     }
   }
@@ -154,7 +165,8 @@ class _AddActivityScreenState extends State<AddActivityScreen> with SingleTicker
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text('Add Activity', style: TextStyle(color: Color(0xFF1E293B))),
+        title: const Text('Add Activity',
+            style: TextStyle(color: Color(0xFF1E293B))),
         leading: IconButton(
           icon: const Icon(Icons.close, color: Color(0xFF1E293B)),
           onPressed: () => Navigator.pop(context),
@@ -225,25 +237,30 @@ class _AddActivityScreenState extends State<AddActivityScreen> with SingleTicker
                           color: const Color(0xFFF1F5F9),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Icon(Icons.place, color: Color(0xFF64748B)),
+                        child:
+                            const Icon(Icons.place, color: Color(0xFF64748B)),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(place['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
+                            Text(place['name'],
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold)),
                             const SizedBox(height: 4),
                             Text(
                               place['address'],
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                              style: const TextStyle(
+                                  fontSize: 12, color: Color(0xFF64748B)),
                             ),
                           ],
                         ),
                       ),
-                      const Icon(Icons.add_circle_outline, color: TripiColors.primary),
+                      const Icon(Icons.add_circle_outline,
+                          color: TripiColors.primary),
                     ],
                   ),
                 ),
@@ -261,7 +278,9 @@ class _AddActivityScreenState extends State<AddActivityScreen> with SingleTicker
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Activity Name', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF334155))),
+          const Text('Activity Name',
+              style: TextStyle(
+                  fontWeight: FontWeight.bold, color: Color(0xFF334155))),
           const SizedBox(height: 8),
           TextField(
             controller: _titleController,
@@ -269,15 +288,20 @@ class _AddActivityScreenState extends State<AddActivityScreen> with SingleTicker
               hintText: 'e.g. Dinner with view',
               filled: true,
               fillColor: const Color(0xFFF1F5F9),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none),
             ),
           ),
           const SizedBox(height: 24),
-          const Text('Start Time (Optional)', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF334155))),
+          const Text('Start Time (Optional)',
+              style: TextStyle(
+                  fontWeight: FontWeight.bold, color: Color(0xFF334155))),
           const SizedBox(height: 8),
           InkWell(
             onTap: () async {
-              final time = await showTimePicker(context: context, initialTime: TimeOfDay.now());
+              final time = await showTimePicker(
+                  context: context, initialTime: TimeOfDay.now());
               if (time != null) setState(() => _selectedTime = time);
             },
             child: Container(
@@ -291,17 +315,22 @@ class _AddActivityScreenState extends State<AddActivityScreen> with SingleTicker
                   const Icon(Icons.access_time, color: Color(0xFF64748B)),
                   const SizedBox(width: 12),
                   Text(
-                    _selectedTime != null 
+                    _selectedTime != null
                         ? '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}'
                         : 'Select time',
-                    style: TextStyle(color: _selectedTime != null ? Colors.black : const Color(0xFF64748B)),
+                    style: TextStyle(
+                        color: _selectedTime != null
+                            ? Colors.black
+                            : const Color(0xFF64748B)),
                   ),
                 ],
               ),
             ),
           ),
           const SizedBox(height: 24),
-          const Text('Notes', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF334155))),
+          const Text('Notes',
+              style: TextStyle(
+                  fontWeight: FontWeight.bold, color: Color(0xFF334155))),
           const SizedBox(height: 8),
           TextField(
             controller: _notesController,
@@ -310,7 +339,9 @@ class _AddActivityScreenState extends State<AddActivityScreen> with SingleTicker
               hintText: 'Any special notes...',
               filled: true,
               fillColor: const Color(0xFFF1F5F9),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none),
             ),
           ),
           const SizedBox(height: 40),
@@ -319,10 +350,15 @@ class _AddActivityScreenState extends State<AddActivityScreen> with SingleTicker
             style: ElevatedButton.styleFrom(
               minimumSize: const Size(double.infinity, 56),
               backgroundColor: TripiColors.primary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
               elevation: 0,
             ),
-            child: const Text('Add to Itinerary', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+            child: const Text('Add to Itinerary',
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white)),
           ),
         ],
       ),

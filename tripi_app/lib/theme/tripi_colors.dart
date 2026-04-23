@@ -10,5 +10,6 @@ class TripiColors {
   static const Color surfaceContainerLowest = Color(0xFFFFFFFF);
   static const Color onSurface = Color(0xFF2D3335);
   static const Color onSurfaceVariant = Color(0xFF5A6062);
-  static const Color outlineVariant = Color(0x26ADB3B5); // 15% opacity of #ADB3B5
+  static const Color outlineVariant =
+      Color(0x26ADB3B5); // 15% opacity of #ADB3B5
 }

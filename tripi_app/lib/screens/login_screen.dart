@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../theme/tripi_colors.dart';
+import '../services/supabase_service.dart';
 import '../providers/booking_provider.dart';
+import '../models/models.dart' as models;
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,18 +15,53 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  bool _hasError = false;
+  bool _isLoading = false;
+  String? _errorMessage;
 
-  void _handleSignIn() {
-    final route = context.read<BookingProvider>().login(
-          _emailController.text.trim(),
-          _passwordController.text.trim(),
-        );
-    if (route != null) {
-      Navigator.pushReplacementNamed(context, route);
-    } else {
+  Future<void> _handleSignIn() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      setState(() => _errorMessage = 'Please enter email and password');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      debugPrint('Attempting login for: $email');
+      await SupabaseService.signIn(email: email, password: password);
+      debugPrint('Login successful');
+      
+      // Sync with BookingProvider
+      if (mounted) {
+        final supabaseUser = SupabaseService.currentUser;
+        if (supabaseUser != null) {
+          final userModel = models.User(
+            id: supabaseUser.id,
+            email: supabaseUser.email ?? '',
+            name: supabaseUser.userMetadata?['full_name']?.toString() ?? 'Traveler',
+          );
+          context.read<BookingProvider>().updateUser(userModel);
+        }
+        Navigator.pushReplacementNamed(context, '/explore');
+      }
+    } catch (e) {
+      debugPrint('Login failed: $e');
+      String errorMsg = e.toString();
+      if (errorMsg.contains('Email not confirmed')) {
+        errorMsg = 'Your email has not been confirmed yet. Please check your inbox for the confirmation link and try again.';
+      } else if (errorMsg.contains('Invalid login credentials')) {
+        errorMsg = 'Invalid email or password. Please try again.';
+      }
+      
       setState(() {
-        _hasError = true;
+        _errorMessage = errorMsg;
+        _isLoading = false;
       });
     }
   }
@@ -71,7 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
             const SizedBox(height: 40),
-            if (_hasError) _buildErrorBanner(),
+            if (_errorMessage != null) _buildErrorBanner(),
             const SizedBox(height: 32),
             _buildInputField(
               context,
@@ -79,7 +116,7 @@ class _LoginScreenState extends State<LoginScreen> {
               'traveler@voyage.com',
               _emailController,
               Icons.email_outlined,
-              hasError: _hasError,
+              hasError: _errorMessage != null,
             ),
             const SizedBox(height: 24),
             _buildInputField(
@@ -89,7 +126,7 @@ class _LoginScreenState extends State<LoginScreen> {
               _passwordController,
               Icons.lock_outline,
               isPassword: true,
-              hasError: _hasError,
+              hasError: _errorMessage != null,
               suffix: Text(
                 'Forgot?',
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
@@ -100,16 +137,25 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             const SizedBox(height: 40),
             ElevatedButton(
-              onPressed: _handleSignIn,
+              onPressed: _isLoading ? null : _handleSignIn,
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 56),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Text('Sign In'),
-                  SizedBox(width: 8),
-                  Icon(Icons.chevron_right, size: 20),
+                children: [
+                  if (_isLoading)
+                    const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white),
+                    )
+                  else ...[
+                    const Text('Sign In'),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.chevron_right, size: 20),
+                  ],
                 ],
               ),
             ),
@@ -132,14 +178,16 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 40),
             Row(
               children: [
-                Expanded(child: _buildSocialButton(Icons.g_mobiledata, 'Google')),
+                Expanded(
+                    child: _buildSocialButton(Icons.g_mobiledata, 'Google')),
                 const SizedBox(width: 16),
                 Expanded(child: _buildSocialButton(Icons.apple, 'Apple')),
               ],
             ),
             const SizedBox(height: 64),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Text(
                   'Don\'t have an account? ',
@@ -172,7 +220,8 @@ class _LoginScreenState extends State<LoginScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFFF8E8E8),
         borderRadius: BorderRadius.circular(16),
-        border: const Border(left: BorderSide(color: Color(0xFFB00020), width: 4)),
+        border:
+            const Border(left: BorderSide(color: Color(0xFFB00020), width: 4)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -185,11 +234,13 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 const Text(
                   'Authentication Failed',
-                  style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFB00020)),
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold, color: Color(0xFFB00020)),
                 ),
                 Text(
-                  'Invalid email or password. Please try again.',
-                  style: TextStyle(color: const Color(0xFFB00020).withOpacity(0.8)),
+                  _errorMessage!,
+                  style: TextStyle(
+                      color: const Color(0xFFB00020).withOpacity(0.8)),
                 ),
               ],
             ),
@@ -232,13 +283,18 @@ class _LoginScreenState extends State<LoginScreen> {
           obscureText: isPassword,
           decoration: InputDecoration(
             hintText: hint,
-            prefixIcon: Icon(icon, color: hasError ? const Color(0xFFB00020) : TripiColors.onSurfaceVariant),
+            prefixIcon: Icon(icon,
+                color: hasError
+                    ? const Color(0xFFB00020)
+                    : TripiColors.onSurfaceVariant),
             filled: true,
             fillColor: Colors.white,
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(28),
               borderSide: BorderSide(
-                color: hasError ? const Color(0xFFB00020) : TripiColors.outlineVariant.withOpacity(0.2),
+                color: hasError
+                    ? const Color(0xFFB00020)
+                    : TripiColors.outlineVariant.withOpacity(0.2),
                 width: 1.5,
               ),
             ),
@@ -249,7 +305,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 width: 1.5,
               ),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
           ),
         ),
       ],

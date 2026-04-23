@@ -39,7 +39,8 @@ class TicketScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   _buildTicketInfo('PASSENGER', 'Amitay'),
-                  _buildTicketInfo('CLASS', 'Economy', crossAxisAlignment: CrossAxisAlignment.end),
+                  _buildTicketInfo('CLASS', 'Economy',
+                      crossAxisAlignment: CrossAxisAlignment.end),
                 ],
               ),
               const SizedBox(height: 32),
@@ -48,15 +49,18 @@ class TicketScreen extends StatelessWidget {
                 children: [
                   _buildStation(context, flight.from, 'New York'),
                   const Icon(Icons.flight, color: TripiColors.primary),
-                  _buildStation(context, flight.to, 'Paris', crossAxisAlignment: CrossAxisAlignment.end),
+                  _buildStation(context, flight.to, 'Paris',
+                      crossAxisAlignment: CrossAxisAlignment.end),
                 ],
               ),
               const SizedBox(height: 32),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildTicketInfo('DATE', DateFormat('MMM dd, yyyy').format(flight.departure)),
-                  _buildTicketInfo('GATE', 'G24', crossAxisAlignment: CrossAxisAlignment.end),
+                  _buildTicketInfo('DATE',
+                      DateFormat('MMM dd, yyyy').format(flight.departure)),
+                  _buildTicketInfo('GATE', 'G24',
+                      crossAxisAlignment: CrossAxisAlignment.end),
                 ],
               ),
               const SizedBox(height: 24),
@@ -64,7 +68,9 @@ class TicketScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   _buildTicketInfo('SEAT', booking.selectedSeat ?? 'TBA'),
-                  _buildTicketInfo('BAGGAGE', '${booking.extraBaggageCount + 1}pc', crossAxisAlignment: CrossAxisAlignment.end),
+                  _buildTicketInfo(
+                      'BAGGAGE', '${booking.extraBaggageCount + 1}pc',
+                      crossAxisAlignment: CrossAxisAlignment.end),
                 ],
               ),
               const SizedBox(height: 48),
@@ -76,7 +82,8 @@ class TicketScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Center(
-                  child: Text('||||||||||||||||||||||||||||||||||||||||', style: TextStyle(letterSpacing: 4, fontSize: 24)),
+                  child: Text('||||||||||||||||||||||||||||||||||||||||',
+                      style: TextStyle(letterSpacing: 4, fontSize: 24)),
                 ),
               ),
             ],
@@ -86,23 +93,33 @@ class TicketScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTicketInfo(String label, String value, {CrossAxisAlignment crossAxisAlignment = CrossAxisAlignment.start}) {
+  Widget _buildTicketInfo(String label, String value,
+      {CrossAxisAlignment crossAxisAlignment = CrossAxisAlignment.start}) {
     return Column(
       crossAxisAlignment: crossAxisAlignment,
       children: [
-        Text(label, style: const TextStyle(fontSize: 10, color: TripiColors.onSurfaceVariant, letterSpacing: 1)),
+        Text(label,
+            style: const TextStyle(
+                fontSize: 10,
+                color: TripiColors.onSurfaceVariant,
+                letterSpacing: 1)),
         const SizedBox(height: 4),
-        Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        Text(value,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
       ],
     );
   }
 
-  Widget _buildStation(BuildContext context, String code, String city, {CrossAxisAlignment crossAxisAlignment = CrossAxisAlignment.start}) {
+  Widget _buildStation(BuildContext context, String code, String city,
+      {CrossAxisAlignment crossAxisAlignment = CrossAxisAlignment.start}) {
     return Column(
       crossAxisAlignment: crossAxisAlignment,
       children: [
-        Text(code, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-        Text(city, style: const TextStyle(fontSize: 12, color: TripiColors.onSurfaceVariant)),
+        Text(code,
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+        Text(city,
+            style: const TextStyle(
+                fontSize: 12, color: TripiColors.onSurfaceVariant)),
       ],
     );
   }

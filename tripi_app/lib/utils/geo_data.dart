@@ -66,18 +66,75 @@ class GeoData {
   ];
 
   static const Map<String, List<String>> majorCities = {
-    'FR': ['Paris', 'Lyon', 'Marseille', 'Nice', 'Bordeaux', 'Toulouse', 'Strasbourg'],
+    'FR': [
+      'Paris',
+      'Lyon',
+      'Marseille',
+      'Nice',
+      'Bordeaux',
+      'Toulouse',
+      'Strasbourg'
+    ],
     'IT': ['Rome', 'Venice', 'Florence', 'Milan', 'Naples', 'Turin', 'Palermo'],
-    'JP': ['Tokyo', 'Kyoto', 'Osaka', 'Sapporo', 'Fukuoka', 'Hiroshima', 'Nagoya'],
-    'US': ['New York', 'Los Angeles', 'Chicago', 'Miami', 'San Francisco', 'Las Vegas', 'Seattle', 'Boston', 'Austin'],
+    'JP': [
+      'Tokyo',
+      'Kyoto',
+      'Osaka',
+      'Sapporo',
+      'Fukuoka',
+      'Hiroshima',
+      'Nagoya'
+    ],
+    'US': [
+      'New York',
+      'Los Angeles',
+      'Chicago',
+      'Miami',
+      'San Francisco',
+      'Las Vegas',
+      'Seattle',
+      'Boston',
+      'Austin'
+    ],
     'TH': ['Bangkok', 'Phuket', 'Chiang Mai', 'Pattaya', 'Koh Samui', 'Krabi'],
-    'GB': ['London', 'Edinburgh', 'Manchester', 'Birmingham', 'Glasgow', 'Liverpool', 'Oxford'],
-    'ES': ['Madrid', 'Barcelona', 'Seville', 'Valencia', 'Malaga', 'Bilbao', 'Granada'],
+    'GB': [
+      'London',
+      'Edinburgh',
+      'Manchester',
+      'Birmingham',
+      'Glasgow',
+      'Liverpool',
+      'Oxford'
+    ],
+    'ES': [
+      'Madrid',
+      'Barcelona',
+      'Seville',
+      'Valencia',
+      'Malaga',
+      'Bilbao',
+      'Granada'
+    ],
     'GR': ['Athens', 'Santorini', 'Mykonos', 'Crete', 'Rhodes', 'Thessaloniki'],
     'CH': ['Zurich', 'Geneva', 'Lucerne', 'Interlaken', 'Bern', 'Zermatt'],
-    'IL': ['Tel Aviv', 'Jerusalem', 'Haifa', 'Eilat', 'Netanya', 'Beersheba', 'Tiberias'],
+    'IL': [
+      'Tel Aviv',
+      'Jerusalem',
+      'Haifa',
+      'Eilat',
+      'Netanya',
+      'Beersheba',
+      'Tiberias'
+    ],
     'DE': ['Berlin', 'Munich', 'Hamburg', 'Frankfurt', 'Cologne', 'Dresden'],
-    'CA': ['Toronto', 'Vancouver', 'Montreal', 'Ottawa', 'Calgary', 'Quebec City'],
+    'CA': [
+      'Toronto',
+      'Vancouver',
+      'Montreal',
+      'Ottawa',
+      'Calgary',
+      'Quebec City'
+    ],
     'AU': ['Sydney', 'Melbourne', 'Brisbane', 'Perth', 'Adelaide', 'Cairns'],
     'BR': ['Rio de Janeiro', 'Sao Paulo', 'Brasilia', 'Salvador', 'Fortaleza'],
     'MX': ['Mexico City', 'Cancun', 'Guadalajara', 'Monterrey', 'Tulum'],

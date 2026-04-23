@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/trip_provider.dart';
-import '../../theme/tripi_colors.dart';
 import 'steps/basic_info_step.dart';
 import 'steps/dates_travelers_step.dart';
 import 'steps/preferences_step.dart';
@@ -16,6 +15,7 @@ class CreateTripWizard extends StatefulWidget {
 
 class _CreateTripWizardState extends State<CreateTripWizard> {
   final PageController _pageController = PageController();
+  bool _isSaving = false;
 
   @override
   void dispose() {
@@ -54,7 +54,11 @@ class _CreateTripWizardState extends State<CreateTripWizard> {
           children: [
             Text(
               'Step ${currentStep + 1} of 4',
-              style: const TextStyle(fontSize: 10, color: Color(0xFF9CA3AF), fontWeight: FontWeight.bold, letterSpacing: 1),
+              style: const TextStyle(
+                  fontSize: 10,
+                  color: Color(0xFF9CA3AF),
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1),
             ),
             const SizedBox(height: 8),
             ClipRRect(
@@ -65,7 +69,8 @@ class _CreateTripWizardState extends State<CreateTripWizard> {
                 child: LinearProgressIndicator(
                   value: (currentStep + 1) / 4,
                   backgroundColor: const Color(0xFFF3F4F6),
-                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF2563EB)),
+                  valueColor:
+                      const AlwaysStoppedAnimation<Color>(Color(0xFF2563EB)),
                 ),
               ),
             ),
@@ -75,7 +80,9 @@ class _CreateTripWizardState extends State<CreateTripWizard> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Save', style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.bold)),
+            child: const Text('Save',
+                style: TextStyle(
+                    color: Color(0xFF2563EB), fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -94,7 +101,8 @@ class _CreateTripWizardState extends State<CreateTripWizard> {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
           decoration: BoxDecoration(
             color: Colors.white,
-            border: Border(top: BorderSide(color: Colors.black.withOpacity(0.05))),
+            border:
+                Border(top: BorderSide(color: Colors.black.withOpacity(0.05))),
           ),
           child: Row(
             children: [
@@ -107,48 +115,86 @@ class _CreateTripWizardState extends State<CreateTripWizard> {
                     },
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size(0, 60),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
                       side: const BorderSide(color: Color(0xFFE5E7EB)),
                     ),
-                    child: const Text('Back', style: TextStyle(color: Color(0xFF4B5563), fontWeight: FontWeight.bold)),
+                    child: const Text('Back',
+                        style: TextStyle(
+                            color: Color(0xFF4B5563),
+                            fontWeight: FontWeight.bold)),
                   ),
                 ),
               if (currentStep > 0) const SizedBox(width: 16),
               Expanded(
                 flex: 2,
                 child: ElevatedButton(
-                  onPressed: () {
-                    if (currentStep == 3) {
-                      if (tripProvider.saveTrip()) {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Trip created! Start exploring your itinerary.'),
-                            backgroundColor: Color(0xFF16A34A),
-                          ),
-                        );
-                      }
-                    } else {
-                      if (_validateStep(currentStep, tripProvider)) {
-                        tripProvider.nextStep();
-                        _onStepChanged(tripProvider.currentStep);
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Please fill in all required fields.')),
-                        );
-                      }
-                    }
-                  },
+                  onPressed: _isSaving
+                      ? null
+                      : () async {
+                          if (currentStep == 3) {
+                            setState(() => _isSaving = true);
+                            final success = await tripProvider.saveTrip();
+                            setState(() => _isSaving = false);
+
+                            if (success && mounted) {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                      'Trip created! Start exploring your itinerary.'),
+                                  backgroundColor: Color(0xFF16A34A),
+                                ),
+                              );
+                            } else if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(tripProvider.lastError ??
+                                      'Failed to save trip. Please check your connection or database setup.'),
+                                  backgroundColor: Colors.red,
+                                  duration: const Duration(seconds: 5),
+                                  action: SnackBarAction(
+                                    label: 'DISMISS',
+                                    textColor: Colors.white,
+                                    onPressed: () {},
+                                  ),
+                                ),
+                              );
+                            }
+                          } else {
+                            if (_validateStep(currentStep, tripProvider)) {
+                              tripProvider.nextStep();
+                              _onStepChanged(tripProvider.currentStep);
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text(
+                                        'Please fill in all required fields.')),
+                              );
+                            }
+                          }
+                        },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF2563EB),
                     minimumSize: const Size(0, 60),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
                     elevation: 0,
                   ),
-                  child: Text(
-                    currentStep == 3 ? 'Create Trip' : 'Continue',
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
+                  child: _isSaving
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
+                        )
+                      : Text(
+                          currentStep == 3 ? 'Create Trip' : 'Continue',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16),
+                        ),
                 ),
               ),
             ],
@@ -164,7 +210,8 @@ class _CreateTripWizardState extends State<CreateTripWizard> {
       case 0:
         return trip.name.isNotEmpty && trip.country.isNotEmpty;
       case 1:
-        return trip.endDate.isAfter(trip.startDate) || trip.endDate.isAtSameMomentAs(trip.startDate);
+        return trip.endDate.isAfter(trip.startDate) ||
+            trip.endDate.isAtSameMomentAs(trip.startDate);
       case 2:
         return trip.tripType != null; // Enum has a default but check is good
       default:
@@ -172,4 +219,3 @@ class _CreateTripWizardState extends State<CreateTripWizard> {
     }
   }
 }
-

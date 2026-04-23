@@ -18,7 +18,10 @@ class DatesTravelersStep extends StatelessWidget {
         children: [
           const Text(
             'Dates & Travelers',
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF111827)),
+            style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF111827)),
           ),
           const SizedBox(height: 12),
           const Text(
@@ -35,8 +38,8 @@ class DatesTravelersStep extends StatelessWidget {
                   'Departure',
                   draft.startDate,
                   () => _selectDate(
-                    context, 
-                    draft.startDate, 
+                    context,
+                    draft.startDate,
                     (d) {
                       tripProvider.updateDraft(draft.copyWith(startDate: d));
                       if (draft.endDate.isBefore(d)) {
@@ -53,10 +56,11 @@ class DatesTravelersStep extends StatelessWidget {
                   'Return',
                   draft.endDate,
                   () => _selectDate(
-                    context, 
-                    draft.endDate, 
+                    context,
+                    draft.endDate,
                     (d) => tripProvider.updateDraft(draft.copyWith(endDate: d)),
-                    firstDate: draft.startDate, // Prevent selecting earlier date
+                    firstDate:
+                        draft.startDate, // Prevent selecting earlier date
                   ),
                 ),
               ),
@@ -72,11 +76,15 @@ class DatesTravelersStep extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.calendar_today, size: 14, color: Color(0xFF2563EB)),
+                const Icon(Icons.calendar_today,
+                    size: 14, color: Color(0xFF2563EB)),
                 const SizedBox(width: 8),
                 Text(
                   'Duration: ${draft.durationDays} days',
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E40AF), fontSize: 12),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1E40AF),
+                      fontSize: 12),
                 ),
               ],
             ),
@@ -106,7 +114,8 @@ class DatesTravelersStep extends StatelessWidget {
     );
   }
 
-  Widget _buildDateCard(BuildContext context, String label, DateTime date, VoidCallback onTap) {
+  Widget _buildDateCard(
+      BuildContext context, String label, DateTime date, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -120,11 +129,18 @@ class DatesTravelersStep extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: const TextStyle(fontSize: 10, color: Color(0xFF6B7280), fontWeight: FontWeight.bold)),
+            Text(label,
+                style: const TextStyle(
+                    fontSize: 10,
+                    color: Color(0xFF6B7280),
+                    fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Text(
               DateFormat('MMM dd, yyyy').format(date),
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+              style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1F2937)),
             ),
           ],
         ),
@@ -132,7 +148,8 @@ class DatesTravelersStep extends StatelessWidget {
     );
   }
 
-  Widget _buildCounterRow(String label, int value, Function(int) onChanged, {int min = 1}) {
+  Widget _buildCounterRow(String label, int value, Function(int) onChanged,
+      {int min = 1}) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -143,12 +160,21 @@ class DatesTravelersStep extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF374151))),
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF374151))),
           Row(
             children: [
-              _buildCounterButton(Icons.remove, () => value > min ? onChanged(value - 1) : null),
+              _buildCounterButton(Icons.remove,
+                  () => value > min ? onChanged(value - 1) : null),
               const SizedBox(width: 24),
-              Text(value.toString(), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF111827))),
+              Text(value.toString(),
+                  style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF111827))),
               const SizedBox(width: 24),
               _buildCounterButton(Icons.add, () => onChanged(value + 1)),
             ],
@@ -170,7 +196,11 @@ class DatesTravelersStep extends StatelessWidget {
           border: Border.all(color: const Color(0xFFE5E7EB)),
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Icon(icon, color: onTap == null ? const Color(0xFFD1D5DB) : const Color(0xFF2563EB), size: 20),
+        child: Icon(icon,
+            color: onTap == null
+                ? const Color(0xFFD1D5DB)
+                : const Color(0xFF2563EB),
+            size: 20),
       ),
     );
   }
@@ -180,18 +210,25 @@ class DatesTravelersStep extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Text(
         text,
-        style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF4B5563), fontSize: 12, letterSpacing: 0.5),
+        style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF4B5563),
+            fontSize: 12,
+            letterSpacing: 0.5),
       ),
     );
   }
 
-  Future<void> _selectDate(BuildContext context, DateTime initial, Function(DateTime) onSelected, {DateTime? firstDate}) async {
+  Future<void> _selectDate(
+      BuildContext context, DateTime initial, Function(DateTime) onSelected,
+      {DateTime? firstDate}) async {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    
+
     final picked = await showDatePicker(
       context: context,
-      initialDate: initial.isBefore(firstDate ?? today) ? (firstDate ?? today) : initial,
+      initialDate:
+          initial.isBefore(firstDate ?? today) ? (firstDate ?? today) : initial,
       firstDate: firstDate ?? today,
       lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
       builder: (context, child) {

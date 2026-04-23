@@ -18,7 +18,8 @@ class BookingProvider extends ChangeNotifier {
   String? login(String email, String password) {
     // Check for hardcoded admin
     if (email == 'admin@tripi.com' && password == 'admin') {
-      _currentUser = User(id: 'admin', email: 'admin@tripi.com', name: 'System Admin');
+      _currentUser =
+          User(id: 'admin', email: 'admin@tripi.com', name: 'System Admin');
       notifyListeners();
       return '/admin';
     }
@@ -45,6 +46,11 @@ class BookingProvider extends ChangeNotifier {
     _currentUser = newUser;
     notifyListeners();
     return true;
+  }
+
+  void updateUser(User? user) {
+    _currentUser = user;
+    notifyListeners();
   }
 
   void logout() {
@@ -85,8 +91,9 @@ class BookingProvider extends ChangeNotifier {
     if (_currentUser == null) return;
 
     final randomDest = MockDataService.destinations[
-        DateTime.now().millisecondsSinceEpoch % MockDataService.destinations.length];
-    
+        DateTime.now().millisecondsSinceEpoch %
+            MockDataService.destinations.length];
+
     final newTrip = Trip(
       id: 't${MockDataService.allTrips.length + 1}',
       userId: _currentUser!.id,
@@ -105,6 +112,8 @@ class BookingProvider extends ChangeNotifier {
 
   List<Trip> get userTrips {
     if (_currentUser == null) return [];
-    return MockDataService.allTrips.where((trip) => trip.userId == _currentUser!.id).toList();
+    return MockDataService.allTrips
+        .where((trip) => trip.userId == _currentUser!.id)
+        .toList();
   }
 }

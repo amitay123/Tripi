@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../theme/tripi_colors.dart';
-import '../providers/booking_provider.dart';
 import '../widgets/tripi_card.dart';
 
 import '../providers/trip_provider.dart';
@@ -17,26 +16,28 @@ class TripsScreen extends StatefulWidget {
 }
 
 class _TripsScreenState extends State<TripsScreen> {
+  bool _isLoading = true;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final user = context.read<BookingProvider>().currentUser;
-      if (user != null) {
-        context.read<TripProvider>().fetchTrips(user.id);
-      }
-    });
+    _loadTrips();
+  }
+
+  Future<void> _loadTrips() async {
+    setState(() => _isLoading = true);
+    await context.read<TripProvider>().fetchTrips();
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
   }
 
   void _startWizard(BuildContext context) {
-    final user = context.read<BookingProvider>().currentUser;
-    if (user != null) {
-      context.read<TripProvider>().startNewTrip(user.id);
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const CreateTripWizard()),
-      );
-    }
+    context.read<TripProvider>().startNewTrip();
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const CreateTripWizard()),
+    );
   }
 
   @override
@@ -62,12 +63,17 @@ class _TripsScreenState extends State<TripsScreen> {
             padding: const EdgeInsets.only(right: 16.0),
             child: CircleAvatar(
               radius: 18,
-              backgroundImage: NetworkImage('https://images.weserv.nl/?url=${Uri.encodeComponent('https://i.pravatar.cc/150?u=admin_user')}'),
+              backgroundImage: NetworkImage(
+                  'https://images.weserv.nl/?url=${Uri.encodeComponent('https://i.pravatar.cc/150?u=admin_user')}'),
             ),
           ),
         ],
       ),
-      body: trips.isEmpty ? EmptyTripsView(onPlanTrip: () => _startWizard(context)) : _buildTripsList(context, trips),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : trips.isEmpty
+              ? EmptyTripsView(onPlanTrip: () => _startWizard(context))
+              : _buildTripsList(context, trips),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _startWizard(context),
         backgroundColor: const Color(0xFF2563EB),
@@ -75,7 +81,6 @@ class _TripsScreenState extends State<TripsScreen> {
       ),
     );
   }
-
 
   Widget _buildTripsList(BuildContext context, List<dynamic> trips) {
     return SingleChildScrollView(
@@ -112,11 +117,16 @@ class _TripsScreenState extends State<TripsScreen> {
             children: [
               const Text(
                 'Upcoming',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1F2937)),
               ),
               TextButton(
                 onPressed: () {},
-                child: const Text('See All', style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.bold)),
+                child: const Text('See All',
+                    style: TextStyle(
+                        color: Color(0xFF2563EB), fontWeight: FontWeight.bold)),
               ),
             ],
           ),
@@ -139,7 +149,8 @@ class _TripsScreenState extends State<TripsScreen> {
     return TripiCard(
       onTap: () => Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => ItineraryScreen(tripId: trip.id)),
+        MaterialPageRoute(
+            builder: (context) => ItineraryScreen(tripId: trip.id)),
       ),
       padding: EdgeInsets.zero,
       child: Column(
@@ -148,9 +159,12 @@ class _TripsScreenState extends State<TripsScreen> {
           Stack(
             children: [
               ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(32)),
                 child: Image.network(
-                  trip.coverImageUrl ?? trip.destination?.imageUrl ?? 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?q=80&w=800',
+                  trip.coverImageUrl ??
+                      trip.destination?.imageUrl ??
+                      'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?q=80&w=800',
                   height: 200,
                   width: double.infinity,
                   fit: BoxFit.cover,
@@ -169,9 +183,12 @@ class _TripsScreenState extends State<TripsScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.image_not_supported, color: Colors.grey),
+                          const Icon(Icons.image_not_supported,
+                              color: Colors.grey),
                           const SizedBox(height: 8),
-                          Text('Image unavailable', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                          Text('Image unavailable',
+                              style: TextStyle(
+                                  color: Colors.grey[600], fontSize: 12)),
                         ],
                       ),
                     );
@@ -182,14 +199,18 @@ class _TripsScreenState extends State<TripsScreen> {
                 top: 20,
                 right: 20,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.9),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: const Text(
                     'IN 12 DAYS',
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                    style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5),
                   ),
                 ),
               ),
@@ -202,19 +223,28 @@ class _TripsScreenState extends State<TripsScreen> {
               children: [
                 Text(
                   '${DateFormat('MMM dd').format(trip.startDate).toUpperCase()} - ${DateFormat('MMM dd').format(trip.endDate).toUpperCase()}',
-                  style: const TextStyle(color: Color(0xFF6B7280), fontSize: 12, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      color: Color(0xFF6B7280),
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   trip.name,
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+                  style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1F2937)),
                 ),
                 const SizedBox(height: 16),
-                Row(
+                const Row(
                   children: [
-                    const Icon(Icons.airplanemode_active, size: 18, color: Color(0xFF6B7280)),
-                    const SizedBox(width: 8),
-                    const Text('CDG • Air France', style: TextStyle(color: Color(0xFF6B7280), fontSize: 14)),
+                    Icon(Icons.airplanemode_active,
+                        size: 18, color: Color(0xFF6B7280)),
+                    SizedBox(width: 8),
+                    Text('CDG • Air France',
+                        style:
+                            TextStyle(color: Color(0xFF6B7280), fontSize: 14)),
                   ],
                 ),
               ],
@@ -231,7 +261,8 @@ class _TripsScreenState extends State<TripsScreen> {
       child: TripiCard(
         onTap: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => ItineraryScreen(tripId: trip.id)),
+          MaterialPageRoute(
+              builder: (context) => ItineraryScreen(tripId: trip.id)),
         ),
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -239,7 +270,9 @@ class _TripsScreenState extends State<TripsScreen> {
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
               child: Image.network(
-                trip.coverImageUrl ?? trip.destination?.imageUrl ?? 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?q=80&w=800',
+                trip.coverImageUrl ??
+                    trip.destination?.imageUrl ??
+                    'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?q=80&w=800',
                 width: 70,
                 height: 70,
                 fit: BoxFit.cover,
@@ -258,15 +291,22 @@ class _TripsScreenState extends State<TripsScreen> {
                 children: [
                   Text(
                     '${DateFormat('MMM dd').format(trip.startDate).toUpperCase()} - ${DateFormat('MMM dd').format(trip.endDate).toUpperCase()}',
-                    style: const TextStyle(color: Color(0xFF6B7280), fontSize: 10, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                        color: Color(0xFF6B7280),
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     trip.name,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1F2937)),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Color(0xFF1F2937)),
                   ),
                   const SizedBox(height: 4),
-                  const Text('Planning stage', style: TextStyle(color: Color(0xFF6B7280), fontSize: 12)),
+                  const Text('Planning stage',
+                      style: TextStyle(color: Color(0xFF6B7280), fontSize: 12)),
                 ],
               ),
             ),
@@ -292,15 +332,19 @@ class _TripsScreenState extends State<TripsScreen> {
             child: const Icon(Icons.add, color: Color(0xFF2563EB), size: 30),
           ),
           const SizedBox(width: 16),
-          Column(
+          const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Plan New Trip',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E40AF)),
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Color(0xFF1E40AF)),
               ),
-              const SizedBox(height: 4),
-              const Text('Start your next adventure', style: TextStyle(color: Color(0xFF6B7280), fontSize: 12)),
+              SizedBox(height: 4),
+              Text('Start your next adventure',
+                  style: TextStyle(color: Color(0xFF6B7280), fontSize: 12)),
             ],
           ),
         ],
@@ -335,7 +379,10 @@ class EmptyTripsView extends StatelessWidget {
                     color: Colors.white,
                     shape: BoxShape.circle,
                     boxShadow: [
-                      BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 40, spreadRadius: 10),
+                      BoxShadow(
+                          color: Colors.black.withOpacity(0.03),
+                          blurRadius: 40,
+                          spreadRadius: 10),
                     ],
                   ),
                 ),
@@ -346,18 +393,21 @@ class EmptyTripsView extends StatelessWidget {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(40),
                     boxShadow: [
-                      BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 20),
+                      BoxShadow(
+                          color: Colors.black.withOpacity(0.02),
+                          blurRadius: 20),
                     ],
                   ),
                   child: Center(
                     child: Container(
                       width: 100,
                       height: 100,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFDBEAFE),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFDBEAFE),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.explore, color: Color(0xFF2563EB), size: 40),
+                      child: const Icon(Icons.explore,
+                          color: Color(0xFF2563EB), size: 40),
                     ),
                   ),
                 ),
@@ -370,10 +420,13 @@ class EmptyTripsView extends StatelessWidget {
                       color: Colors.white,
                       shape: BoxShape.circle,
                       boxShadow: [
-                        BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+                        BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10),
                       ],
                     ),
-                    child: const Icon(Icons.airplanemode_active, color: Color(0xFF6B7280), size: 24),
+                    child: const Icon(Icons.airplanemode_active,
+                        color: Color(0xFF6B7280), size: 24),
                   ),
                 ),
                 Positioned(
@@ -385,10 +438,13 @@ class EmptyTripsView extends StatelessWidget {
                       color: Colors.white,
                       shape: BoxShape.circle,
                       boxShadow: [
-                        BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+                        BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10),
                       ],
                     ),
-                    child: const Icon(Icons.map, color: Color(0xFF2563EB), size: 24),
+                    child: const Icon(Icons.map,
+                        color: Color(0xFF2563EB), size: 24),
                   ),
                 ),
               ],
@@ -398,7 +454,10 @@ class EmptyTripsView extends StatelessWidget {
           const Text(
             'No adventures yet?',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+            style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1F2937)),
           ),
           const SizedBox(height: 16),
           const Text(
@@ -414,7 +473,8 @@ class EmptyTripsView extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               minimumSize: const Size(double.infinity, 64),
               backgroundColor: const Color(0xFF0056B3),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(32)),
             ),
           ),
           const SizedBox(height: 24),
@@ -422,7 +482,10 @@ class EmptyTripsView extends StatelessWidget {
             onPressed: () {},
             child: const Text(
               'BROWSE POPULAR DESTINATIONS',
-              style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.bold, letterSpacing: 0.5),
+              style: TextStyle(
+                  color: Color(0xFF2563EB),
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5),
             ),
           ),
           const Spacer(flex: 3),

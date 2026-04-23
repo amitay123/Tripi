@@ -43,8 +43,10 @@ class FlightSearchScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     _buildStation(context, flight.from, 'New York'),
-                    const Icon(Icons.flight_takeoff, color: TripiColors.primary),
-                    _buildStation(context, flight.to, 'Paris', crossAxisAlignment: CrossAxisAlignment.end),
+                    const Icon(Icons.flight_takeoff,
+                        color: TripiColors.primary),
+                    _buildStation(context, flight.to, 'Paris',
+                        crossAxisAlignment: CrossAxisAlignment.end),
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -62,18 +64,20 @@ class FlightSearchScreen extends StatelessWidget {
                         ),
                         Text(
                           DateFormat('MMM dd, HH:mm').format(flight.departure),
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: TripiColors.onSurfaceVariant,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: TripiColors.onSurfaceVariant,
+                                  ),
                         ),
                       ],
                     ),
                     Text(
                       '\$${flight.price.toStringAsFixed(0)}',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            color: TripiColors.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style:
+                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                color: TripiColors.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
                     ),
                   ],
                 ),
@@ -85,7 +89,8 @@ class FlightSearchScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStation(BuildContext context, String code, String city, {CrossAxisAlignment crossAxisAlignment = CrossAxisAlignment.start}) {
+  Widget _buildStation(BuildContext context, String code, String city,
+      {CrossAxisAlignment crossAxisAlignment = CrossAxisAlignment.start}) {
     return Column(
       crossAxisAlignment: crossAxisAlignment,
       children: [

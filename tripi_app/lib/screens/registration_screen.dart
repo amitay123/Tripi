@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../theme/tripi_colors.dart';
 import '../widgets/tripi_card.dart';
+import '../services/supabase_service.dart';
 import '../providers/booking_provider.dart';
+import '../models/models.dart' as models;
 
 class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({super.key});
@@ -15,34 +17,65 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  bool _isLoading = false;
   String? _errorMessage;
 
-  void _handleSignUp() {
+  Future<void> _handleSignUp() async {
+    final name = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (name.isEmpty || email.isEmpty || password.isEmpty) {
+      setState(() => _errorMessage = 'Please fill in all required fields.');
+      return;
+    }
+
+    if (password.length < 6) {
+      setState(() => _errorMessage = 'Password must be at least 6 characters.');
+      return;
+    }
+
     setState(() {
+      _isLoading = true;
       _errorMessage = null;
     });
 
-    if (_nameController.text.isNotEmpty && _emailController.text.isNotEmpty) {
-      final email = _emailController.text.trim();
-      final success = context.read<BookingProvider>().register(
-            _nameController.text.trim(),
-            email,
-          );
-      
-      if (success) {
-        Navigator.pushReplacementNamed(context, '/explore');
-      } else {
-        setState(() {
-          if (email == 'admin@tripi.com') {
-            _errorMessage = 'This email address is already in use by the system administrator. Please use a different email.';
-          } else {
-            _errorMessage = 'Registration failed. This email may already be registered.';
+    try {
+      final response = await SupabaseService.signUp(
+        email: email,
+        password: password,
+        name: name,
+      );
+
+      if (mounted) {
+        if (response.session == null) {
+          // This usually means email confirmation is enabled in Supabase
+          setState(() {
+            _isLoading = false;
+            _errorMessage = 'Registration successful! Please check your email to confirm your account before signing in.';
+          });
+          // Optionally, wait a few seconds and go back to login
+          Future.delayed(const Duration(seconds: 5), () {
+            if (mounted) Navigator.pop(context);
+          });
+        } else {
+          // Sync with BookingProvider if session exists
+          final supabaseUser = response.user;
+          if (supabaseUser != null) {
+            final userModel = models.User(
+              id: supabaseUser.id,
+              email: supabaseUser.email ?? '',
+              name: supabaseUser.userMetadata?['full_name']?.toString() ?? name,
+            );
+            context.read<BookingProvider>().updateUser(userModel);
           }
-        });
+          Navigator.pushReplacementNamed(context, '/explore');
+        }
       }
-    } else {
+    } catch (e) {
       setState(() {
-        _errorMessage = 'Please fill in all required fields.';
+        _errorMessage = e.toString();
+        _isLoading = false;
       });
     }
   }
@@ -74,7 +107,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             children: [
               const SizedBox(height: 16),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   color: TripiColors.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
@@ -112,18 +146,29 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildInputField(context, 'FULL NAME', 'Enter your full name', _nameController),
+                    _buildInputField(context, 'FULL NAME',
+                        'Enter your full name', _nameController),
                     const SizedBox(height: 20),
-                    _buildInputField(context, 'EMAIL ADDRESS', 'hello@example.com', _emailController),
+                    _buildInputField(context, 'EMAIL ADDRESS',
+                        'hello@example.com', _emailController),
                     const SizedBox(height: 20),
-                    _buildInputField(context, 'PASSWORD', 'Min. 8 characters', _passwordController, isPassword: true),
+                    _buildInputField(context, 'PASSWORD', 'Min. 8 characters',
+                        _passwordController,
+                        isPassword: true),
                     const SizedBox(height: 32),
                     ElevatedButton(
-                      onPressed: _handleSignUp,
+                      onPressed: _isLoading ? null : _handleSignUp,
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size(double.infinity, 56),
                       ),
-                      child: const Text('Sign Up'),
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Text('Sign Up'),
                     ),
                     const SizedBox(height: 32),
                     Row(
@@ -133,7 +178,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 16.0),
                           child: Text(
                             'OR REGISTER WITH',
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelSmall
+                                ?.copyWith(
                                   color: TripiColors.onSurfaceVariant,
                                   letterSpacing: 1,
                                 ),
@@ -145,9 +193,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     const SizedBox(height: 32),
                     Row(
                       children: [
-                        Expanded(child: _buildSocialButton(context, Icons.g_mobiledata, 'Google')),
+                        Expanded(
+                            child: _buildSocialButton(
+                                context, Icons.g_mobiledata, 'Google')),
                         const SizedBox(width: 16),
-                        Expanded(child: _buildSocialButton(context, Icons.apple, 'Apple')),
+                        Expanded(
+                            child: _buildSocialButton(
+                                context, Icons.apple, 'Apple')),
                       ],
                     ),
                   ],
@@ -189,7 +241,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFFF8E8E8),
         borderRadius: BorderRadius.circular(16),
-        border: const Border(left: BorderSide(color: Color(0xFFB00020), width: 4)),
+        border:
+            const Border(left: BorderSide(color: Color(0xFFB00020), width: 4)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -207,7 +260,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     );
   }
 
-  Widget _buildInputField(BuildContext context, String label, String hint, TextEditingController controller, {bool isPassword = false}) {
+  Widget _buildInputField(BuildContext context, String label, String hint,
+      TextEditingController controller,
+      {bool isPassword = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -231,7 +286,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               borderRadius: BorderRadius.circular(28),
               borderSide: BorderSide.none,
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
           ),
         ),
       ],

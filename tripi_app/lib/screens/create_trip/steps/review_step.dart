@@ -18,7 +18,10 @@ class ReviewStep extends StatelessWidget {
         children: [
           const Text(
             'Review your trip',
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF111827)),
+            style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF111827)),
           ),
           const SizedBox(height: 12),
           const Text(
@@ -30,7 +33,11 @@ class ReviewStep extends StatelessWidget {
             'Basic Identity',
             [
               _buildDetail('Trip Name', draft.name),
-              _buildDetail('Destination', '${draft.city ?? ''}, ${draft.country}'.trim().replaceAll(RegExp(r'^,\s*'), '')),
+              _buildDetail(
+                  'Destination',
+                  '${draft.city ?? ''}, ${draft.country}'
+                      .trim()
+                      .replaceAll(RegExp(r'^,\s*'), '')),
             ],
             () => tripProvider.goToStep(0),
           ),
@@ -38,7 +45,8 @@ class ReviewStep extends StatelessWidget {
           _buildSummaryCard(
             'Time & People',
             [
-              _buildDetail('Dates', '${DateFormat('MMM dd').format(draft.startDate)} - ${DateFormat('MMM dd, yyyy').format(draft.endDate)}'),
+              _buildDetail('Dates',
+                  '${DateFormat('MMM dd').format(draft.startDate)} - ${DateFormat('MMM dd, yyyy').format(draft.endDate)}'),
               _buildDetail('Duration', '${draft.durationDays} Days'),
               _buildDetail('Travelers', '${draft.travelersCount} Adults'),
             ],
@@ -48,9 +56,19 @@ class ReviewStep extends StatelessWidget {
           _buildSummaryCard(
             'Style & Vibe',
             [
-              _buildDetail('Trip Type', draft.tripType.name[0].toUpperCase() + draft.tripType.name.substring(1)),
-              _buildDetail('Goals', draft.preferences.isEmpty ? 'General' : draft.preferences.join(', ')),
-              _buildDetail('Pace', draft.pace.name[0].toUpperCase() + draft.pace.name.substring(1)),
+              _buildDetail(
+                  'Trip Type',
+                  draft.tripType.name[0].toUpperCase() +
+                      draft.tripType.name.substring(1)),
+              _buildDetail(
+                  'Goals',
+                  draft.preferences.isEmpty
+                      ? 'General'
+                      : draft.preferences.join(', ')),
+              _buildDetail(
+                  'Pace',
+                  draft.pace.name[0].toUpperCase() +
+                      draft.pace.name.substring(1)),
             ],
             () => tripProvider.goToStep(2),
           ),
@@ -62,14 +80,15 @@ class ReviewStep extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: const Color(0xFFBBF7D0)),
             ),
-            child: Row(
+            child: const Row(
               children: [
-                const Icon(Icons.check_circle, color: Color(0xFF16A34A)),
-                const SizedBox(width: 16),
-                const Expanded(
+                Icon(Icons.check_circle, color: Color(0xFF16A34A)),
+                SizedBox(width: 16),
+                Expanded(
                   child: Text(
                     'Your trip is ready to be created! We will generate a custom itinerary for you in the next step.',
-                    style: TextStyle(color: Color(0xFF166534), fontSize: 13, height: 1.4),
+                    style: TextStyle(
+                        color: Color(0xFF166534), fontSize: 13, height: 1.4),
                   ),
                 ),
               ],
@@ -81,7 +100,8 @@ class ReviewStep extends StatelessWidget {
     );
   }
 
-  Widget _buildSummaryCard(String title, List<Widget> details, VoidCallback onEdit) {
+  Widget _buildSummaryCard(
+      String title, List<Widget> details, VoidCallback onEdit) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -96,10 +116,19 @@ class ReviewStep extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(title.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF4B5563), fontSize: 11, letterSpacing: 0.5)),
+              Text(title.toUpperCase(),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF4B5563),
+                      fontSize: 11,
+                      letterSpacing: 0.5)),
               InkWell(
                 onTap: onEdit,
-                child: const Text('Edit', style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.bold, fontSize: 12)),
+                child: const Text('Edit',
+                    style: TextStyle(
+                        color: Color(0xFF2563EB),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12)),
               ),
             ],
           ),
@@ -116,12 +145,16 @@ class ReviewStep extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+          Text(label,
+              style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
           const SizedBox(height: 2),
-          Text(value, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF111827))),
+          Text(value,
+              style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF111827))),
         ],
       ),
     );
   }
 }
-

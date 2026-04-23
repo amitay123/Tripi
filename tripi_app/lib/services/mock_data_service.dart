@@ -1,5 +1,4 @@
 import '../models/models.dart';
-import '../utils/geo_data.dart';
 
 class AdminStats {
   final int totalTrips;
@@ -48,10 +47,22 @@ class MockDataService {
   );
 
   static final List<ActivityLog> recentActivity = [
-    ActivityLog(userName: 'Sarah Chen', action: 'created a new trip to Kyoto', timeAgo: '12 minutes ago'),
-    ActivityLog(userName: 'Marcus Wright', action: 'updated travel preferences', timeAgo: '45 minutes ago'),
-    ActivityLog(userName: 'Amitay Gilad', action: 'approved 4 enterprise bookings', timeAgo: '2 hours ago'),
-    ActivityLog(userName: 'Elena Rodriguez', action: 'requested support for flight #AX90', timeAgo: '5 hours ago'),
+    ActivityLog(
+        userName: 'Sarah Chen',
+        action: 'created a new trip to Kyoto',
+        timeAgo: '12 minutes ago'),
+    ActivityLog(
+        userName: 'Marcus Wright',
+        action: 'updated travel preferences',
+        timeAgo: '45 minutes ago'),
+    ActivityLog(
+        userName: 'Amitay Gilad',
+        action: 'approved 4 enterprise bookings',
+        timeAgo: '2 hours ago'),
+    ActivityLog(
+        userName: 'Elena Rodriguez',
+        action: 'requested support for flight #AX90',
+        timeAgo: '5 hours ago'),
   ];
 
   static final List<Destination> destinations = [
@@ -59,23 +70,28 @@ class MockDataService {
       id: '1',
       name: 'Paris',
       country: 'France',
-      imageUrl: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?q=80&w=800',
-      description: 'The City of Light, where history meets high-fashion and editorial elegance.',
+      imageUrl:
+          'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?q=80&w=800',
+      description:
+          'The City of Light, where history meets high-fashion and editorial elegance.',
       rating: 4.8,
     ),
     Destination(
       id: '2',
       name: 'Maldives',
       country: 'Maldives',
-      imageUrl: 'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?q=80&w=800',
-      description: 'A serene escape into the turquoise blue, perfect for the minimalist soul.',
+      imageUrl:
+          'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?q=80&w=800',
+      description:
+          'A serene escape into the turquoise blue, perfect for the minimalist soul.',
       rating: 4.9,
     ),
     Destination(
       id: '3',
       name: 'Tokyo',
       country: 'Japan',
-      imageUrl: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?q=80&w=800',
+      imageUrl:
+          'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?q=80&w=800',
       description: 'A precise blend of tradition and future-forward design.',
       rating: 4.7,
     ),
@@ -115,14 +131,16 @@ class MockDataService {
               title: 'Coffee at Café de Flore',
               startTime: '09:00',
               address: '172 Bd Saint-Germain, 75006 Paris',
-              imageUrl: 'https://images.unsplash.com/photo-1550983092-247321459255?q=80&w=400',
+              imageUrl:
+                  'https://images.unsplash.com/photo-1550983092-247321459255?q=80&w=400',
             ),
             Activity(
               id: 'a2',
               title: 'Louvre Museum',
               startTime: '11:00',
               address: 'Rue de Rivoli, 75001 Paris',
-              imageUrl: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?q=80&w=400',
+              imageUrl:
+                  'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?q=80&w=400',
             ),
           ],
         ),
@@ -135,7 +153,8 @@ class MockDataService {
               title: 'Eiffel Tower Visit',
               startTime: '10:00',
               address: 'Champ de Mars, 5 Av. Anatole France, 75007 Paris',
-              imageUrl: 'https://images.unsplash.com/photo-1511739001486-6bfe10ce785f?q=80&w=400',
+              imageUrl:
+                  'https://images.unsplash.com/photo-1511739001486-6bfe10ce785f?q=80&w=400',
             ),
           ],
         ),
@@ -144,7 +163,15 @@ class MockDataService {
   ];
 
   static final List<String> popularCountries = [
-    'France', 'Italy', 'United States', 'Japan', 'Thailand', 'Greece', 'Switzerland', 'Spain', 'Israel'
+    'France',
+    'Italy',
+    'United States',
+    'Japan',
+    'Thailand',
+    'Greece',
+    'Switzerland',
+    'Spain',
+    'Israel'
   ];
 
   static String getDestinationImage(String? city, String country) {
@@ -153,13 +180,12 @@ class MockDataService {
     // Using loremflickr which is very reliable for tag-based images
     final String cleanCountry = country.replaceAll(' ', '');
     final String? cleanCity = city?.replaceAll(' ', '');
-    
+
     if (cleanCity != null && cleanCity.isNotEmpty) {
       return 'https://loremflickr.com/800/600/$cleanCity,$cleanCountry,travel/all';
     }
     return 'https://loremflickr.com/800/600/$cleanCountry,travel/all';
   }
-
 
   static List<Trip> getTripsForUser(String userId) {
     return allTrips.where((trip) => trip.userId == userId).toList();

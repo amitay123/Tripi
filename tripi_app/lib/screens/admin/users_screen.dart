@@ -38,10 +38,14 @@ class UsersScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 24),
-                  _buildUserItem(context, 'Alex Johnson', 'alex@example.com', 'ADMINISTRATOR', true),
-                  _buildUserItem(context, 'Marcus Chen', 'marcus.c@example.com', 'TRAVELER', false),
-                  _buildUserItem(context, 'Sarah Miller', 'sarah.m@example.com', 'PLANNER', true),
-                  _buildUserItem(context, 'David Wright', 'd.wright@example.com', 'TRAVELER', true),
+                  _buildUserItem(context, 'Alex Johnson', 'alex@example.com',
+                      'ADMINISTRATOR', true),
+                  _buildUserItem(context, 'Marcus Chen', 'marcus.c@example.com',
+                      'TRAVELER', false),
+                  _buildUserItem(context, 'Sarah Miller', 'sarah.m@example.com',
+                      'PLANNER', true),
+                  _buildUserItem(context, 'David Wright',
+                      'd.wright@example.com', 'TRAVELER', true),
                 ],
               ),
             ),
@@ -95,12 +99,14 @@ class UsersScreen extends StatelessWidget {
         children: [
           const Text(
             'Team Overview',
-            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(
+                color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
             'You have 24 active team members this month with a 98% security compliance rate.',
-            style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 13),
+            style:
+                TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 13),
           ),
           const SizedBox(height: 24),
           Row(
@@ -120,8 +126,16 @@ class UsersScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(value, style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
-        Text(label, style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 9, letterSpacing: 0.5)),
+        Text(value,
+            style: const TextStyle(
+                color: Colors.white,
+                fontSize: 28,
+                fontWeight: FontWeight.bold)),
+        Text(label,
+            style: TextStyle(
+                color: Colors.white.withOpacity(0.6),
+                fontSize: 9,
+                letterSpacing: 0.5)),
       ],
     );
   }
@@ -130,7 +144,8 @@ class UsersScreen extends StatelessWidget {
     return TextField(
       decoration: InputDecoration(
         hintText: 'Search by name, email or role...',
-        prefixIcon: const Icon(Icons.search, color: TripiColors.onSurfaceVariant),
+        prefixIcon:
+            const Icon(Icons.search, color: TripiColors.onSurfaceVariant),
         filled: true,
         fillColor: TripiColors.surfaceContainerHigh.withOpacity(0.5),
         border: OutlineInputBorder(
@@ -147,20 +162,25 @@ class UsersScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)],
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)
+        ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(icon, size: 18, color: TripiColors.onSurfaceVariant),
           const SizedBox(width: 8),
-          Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+          Text(label,
+              style:
+                  const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
         ],
       ),
     );
   }
 
-  Widget _buildUserItem(BuildContext context, String name, String email, String role, bool isOnline) {
+  Widget _buildUserItem(BuildContext context, String name, String email,
+      String role, bool isOnline) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: TripiCard(
@@ -174,7 +194,8 @@ class UsersScreen extends StatelessWidget {
                   children: [
                     CircleAvatar(
                       radius: 24,
-                      backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=$name'),
+                      backgroundImage:
+                          NetworkImage('https://i.pravatar.cc/150?u=$name'),
                     ),
                     if (isOnline)
                       Container(
@@ -193,12 +214,18 @@ class UsersScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                      Text(email, style: const TextStyle(color: TripiColors.onSurfaceVariant, fontSize: 12)),
+                      Text(name,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 16)),
+                      Text(email,
+                          style: const TextStyle(
+                              color: TripiColors.onSurfaceVariant,
+                              fontSize: 12)),
                     ],
                   ),
                 ),
-                const Icon(Icons.more_vert, color: TripiColors.onSurfaceVariant),
+                const Icon(Icons.more_vert,
+                    color: TripiColors.onSurfaceVariant),
               ],
             ),
             const SizedBox(height: 20),
@@ -206,19 +233,26 @@ class UsersScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
                     color: TripiColors.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     role,
-                    style: const TextStyle(color: TripiColors.primary, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                    style: const TextStyle(
+                        color: TripiColors.primary,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5),
                   ),
                 ),
                 TextButton.icon(
                   onPressed: () {},
-                  icon: const Text('Profile', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  icon: const Text('Profile',
+                      style:
+                          TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                   label: const Icon(Icons.arrow_forward, size: 14),
                 ),
               ],

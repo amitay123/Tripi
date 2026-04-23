@@ -21,7 +21,8 @@ class _BaggageScreenState extends State<BaggageScreen> {
       appBar: AppBar(
         backgroundColor: TripiColors.background,
         elevation: 0,
-        title: Text('Add Baggage', style: Theme.of(context).textTheme.headlineSmall),
+        title: Text('Add Baggage',
+            style: Theme.of(context).textTheme.headlineSmall),
       ),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -35,21 +36,27 @@ class _BaggageScreenState extends State<BaggageScreen> {
             const SizedBox(height: 8),
             Text(
               'Add more space for your memories.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: TripiColors.onSurfaceVariant),
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: TripiColors.onSurfaceVariant),
             ),
             const SizedBox(height: 48),
             TripiCard(
               padding: const EdgeInsets.all(24),
               child: Row(
                 children: [
-                  const Icon(Icons.luggage, size: 48, color: TripiColors.primary),
+                  const Icon(Icons.luggage,
+                      size: 48, color: TripiColors.primary),
                   const SizedBox(width: 24),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Checked Bag', style: Theme.of(context).textTheme.titleLarge),
-                        Text('Up to 23kg', style: Theme.of(context).textTheme.bodySmall),
+                        Text('Checked Bag',
+                            style: Theme.of(context).textTheme.titleLarge),
+                        Text('Up to 23kg',
+                            style: Theme.of(context).textTheme.bodySmall),
                       ],
                     ),
                   ),
@@ -60,7 +67,8 @@ class _BaggageScreenState extends State<BaggageScreen> {
                       }),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: Text('$_count', style: Theme.of(context).textTheme.headlineSmall),
+                        child: Text('$_count',
+                            style: Theme.of(context).textTheme.headlineSmall),
                       ),
                       _buildCounterButton(Icons.add, () {
                         setState(() => _count++);
@@ -73,7 +81,10 @@ class _BaggageScreenState extends State<BaggageScreen> {
             const Spacer(),
             Text(
               'Total: \$${_count * 50}',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context)
+                  .textTheme
+                  .headlineMedium
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
             ElevatedButton(
@@ -95,7 +106,7 @@ class _BaggageScreenState extends State<BaggageScreen> {
       child: Container(
         width: 32,
         height: 32,
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: TripiColors.surfaceContainerHigh,
           shape: BoxShape.circle,
         ),

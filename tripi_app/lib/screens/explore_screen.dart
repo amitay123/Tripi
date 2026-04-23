@@ -32,7 +32,8 @@ class _MainScaffoldState extends State<MainScaffold> {
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.9),
-          border: const Border(top: BorderSide(color: TripiColors.surfaceContainerLow)),
+          border: const Border(
+              top: BorderSide(color: TripiColors.surfaceContainerLow)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -58,7 +59,9 @@ class _MainScaffoldState extends State<MainScaffold> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             decoration: BoxDecoration(
-              color: isSelected ? TripiColors.primary.withOpacity(0.1) : Colors.transparent,
+              color: isSelected
+                  ? TripiColors.primary.withOpacity(0.1)
+                  : Colors.transparent,
               borderRadius: BorderRadius.circular(24),
             ),
             child: Icon(
@@ -117,7 +120,8 @@ class ExploreContent extends StatelessWidget {
                 ),
                 const CircleAvatar(
                   radius: 24,
-                  backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=tripi'),
+                  backgroundImage:
+                      NetworkImage('https://i.pravatar.cc/150?u=tripi'),
                 ),
               ],
             ),
@@ -125,7 +129,8 @@ class ExploreContent extends StatelessWidget {
             TextField(
               decoration: InputDecoration(
                 hintText: 'Search destinations...',
-                prefixIcon: const Icon(Icons.search, color: TripiColors.onSurfaceVariant),
+                prefixIcon: const Icon(Icons.search,
+                    color: TripiColors.onSurfaceVariant),
                 filled: true,
                 fillColor: TripiColors.surfaceContainerHigh,
                 border: OutlineInputBorder(
@@ -153,7 +158,9 @@ class ExploreContent extends StatelessWidget {
                 final destination = MockDataService.destinations[index];
                 return TripiCard(
                   onTap: () {
-                    context.read<BookingProvider>().selectDestination(destination);
+                    context
+                        .read<BookingProvider>()
+                        .selectDestination(destination);
                     Navigator.pushNamed(context, '/place-details');
                   },
                   child: Column(
@@ -164,7 +171,8 @@ class ExploreContent extends StatelessWidget {
                         width: double.infinity,
                         color: TripiColors.surfaceContainerLow,
                         child: const Center(
-                          child: Icon(Icons.image, color: TripiColors.outlineVariant, size: 48),
+                          child: Icon(Icons.image,
+                              color: TripiColors.outlineVariant, size: 48),
                         ),
                       ),
                       Padding(
@@ -177,31 +185,42 @@ class ExploreContent extends StatelessWidget {
                               children: [
                                 Text(
                                   destination.name,
-                                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .headlineSmall
+                                      ?.copyWith(
                                         fontWeight: FontWeight.bold,
                                       ),
                                 ),
                                 Text(
                                   destination.country,
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.copyWith(
                                         color: TripiColors.onSurfaceVariant,
                                       ),
                                 ),
                               ],
                             ),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
                                 color: TripiColors.primary.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: Row(
                                 children: [
-                                  const Icon(Icons.star, size: 16, color: TripiColors.primary),
+                                  const Icon(Icons.star,
+                                      size: 16, color: TripiColors.primary),
                                   const SizedBox(width: 4),
                                   Text(
                                     destination.rating.toString(),
-                                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelLarge
+                                        ?.copyWith(
                                           color: TripiColors.primary,
                                         ),
                                   ),

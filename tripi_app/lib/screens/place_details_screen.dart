@@ -11,7 +11,8 @@ class PlaceDetailsScreen extends StatelessWidget {
     final destination = context.watch<BookingProvider>().selectedDestination;
 
     if (destination == null) {
-      return const Scaffold(body: Center(child: Text('No destination selected')));
+      return const Scaffold(
+          body: Center(child: Text('No destination selected')));
     }
 
     return Scaffold(
@@ -27,7 +28,8 @@ class PlaceDetailsScreen extends StatelessWidget {
                   width: double.infinity,
                   color: TripiColors.surfaceContainerLow,
                   child: const Center(
-                    child: Icon(Icons.image, color: TripiColors.outlineVariant, size: 64),
+                    child: Icon(Icons.image,
+                        color: TripiColors.outlineVariant, size: 64),
                   ),
                 ),
                 Padding(
@@ -42,9 +44,10 @@ class PlaceDetailsScreen extends StatelessWidget {
                       const SizedBox(height: 8),
                       Text(
                         destination.country,
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              color: TripiColors.onSurfaceVariant,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  color: TripiColors.onSurfaceVariant,
+                                ),
                       ),
                       const SizedBox(height: 32),
                       Text(
@@ -70,8 +73,10 @@ class PlaceDetailsScreen extends StatelessWidget {
                             ),
                       ),
                       const SizedBox(height: 16),
-                      _buildHighlightItem(context, '01', 'Artistic Mornings', 'Visit the world-renowned Louvre Museum.'),
-                      _buildHighlightItem(context, '02', 'River Cruises', 'Experience the Seine at sunset.'),
+                      _buildHighlightItem(context, '01', 'Artistic Mornings',
+                          'Visit the world-renowned Louvre Museum.'),
+                      _buildHighlightItem(context, '02', 'River Cruises',
+                          'Experience the Seine at sunset.'),
                       const SizedBox(height: 120), // Space for FAB
                     ],
                   ),
@@ -85,7 +90,8 @@ class PlaceDetailsScreen extends StatelessWidget {
             child: CircleAvatar(
               backgroundColor: Colors.white,
               child: IconButton(
-                icon: const Icon(Icons.arrow_back, color: TripiColors.onSurface),
+                icon:
+                    const Icon(Icons.arrow_back, color: TripiColors.onSurface),
                 onPressed: () => Navigator.pop(context),
               ),
             ),
@@ -106,7 +112,8 @@ class PlaceDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHighlightItem(BuildContext context, String number, String title, String subtitle) {
+  Widget _buildHighlightItem(
+      BuildContext context, String number, String title, String subtitle) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 24.0),
       child: Row(

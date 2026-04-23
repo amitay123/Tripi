@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'theme/tripi_theme.dart';
 import 'providers/booking_provider.dart';
 import 'providers/trip_provider.dart';
@@ -15,13 +17,27 @@ import 'screens/ticket_screen.dart';
 import 'screens/registration_screen.dart';
 import 'screens/admin/admin_scaffold.dart';
 
-void main() {
+Future<void> main() async {
+  debugPrint('App initialization started');
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Enable Google Fonts runtime fetching to avoid white screen crash when fonts are missing from assets.
+  // If CORS issues occur, we should bundle the fonts instead.
+  GoogleFonts.config.allowRuntimeFetching = true;
+
+  // Initialize Supabase
+  await Supabase.initialize(
+    url: 'https://fbtoyhnjwyhssozetfhw.supabase.co',
+    anonKey: 'sb_publishable_DWgDyHuCNZLMHIbIkVuCkA_eTe_Z4Vw',
+  );
+
   // Catch Flutter errors
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.presentError(details);
     debugPrint('GLOBAL ERROR: ${details.exception}');
   };
 
+  debugPrint('Supabase initialized, starting app');
   runApp(
     MultiProvider(
       providers: [
@@ -38,6 +54,7 @@ class TripiApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('TripiApp building...');
     return MaterialApp(
       title: 'Tripi',
       debugShowCheckedModeBanner: false,
@@ -52,14 +69,20 @@ class TripiApp extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                    const Icon(Icons.error_outline,
+                        color: Colors.red, size: 48),
                     const SizedBox(height: 16),
-                    const Text('Something went wrong', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                    const Text('Something went wrong',
+                        style: TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
-                    Text(details.exception.toString(), textAlign: TextAlign.center, style: const TextStyle(color: Colors.grey)),
+                    Text(details.exception.toString(),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.grey)),
                     const SizedBox(height: 24),
                     ElevatedButton(
-                      onPressed: () => Navigator.of(context).pushReplacementNamed('/'),
+                      onPressed: () =>
+                          Navigator.of(context).pushReplacementNamed('/'),
                       child: const Text('Return to Login'),
                     ),
                   ],
