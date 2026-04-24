@@ -90,7 +90,7 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                       city: '',
                       countryCode: '',
                       cityPlaceId: ''));
-                  _internalCityController?.text = '';
+                  _internalCityController?.clear();
                 },
                 decoration: _inputDecoration('Search country...'),
                 style:
@@ -128,9 +128,9 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
           const SizedBox(height: 16),
           _buildLabel('City'),
           Opacity(
-            opacity: draft.country.isNotEmpty ? 1.0 : 0.5,
+            opacity: (draft.countryCode ?? '').isNotEmpty ? 1.0 : 0.5,
             child: AbsorbPointer(
-              absorbing: draft.country.isEmpty,
+              absorbing: (draft.countryCode ?? '').isEmpty,
               child: Autocomplete<Map<String, dynamic>>(
                 initialValue: TextEditingValue(text: draft.city ?? ''),
                 displayStringForOption: (option) =>

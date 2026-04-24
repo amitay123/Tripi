@@ -53,6 +53,7 @@ class SupabaseService {
         .from('trips')
         .select()
         .eq('user_id', userId)
+        .filter('deleted_at', 'is', null) // Only fetch non-deleted trips
         .order('created_at', ascending: false);
 
     if ((response as List).isNotEmpty) {
@@ -65,30 +66,40 @@ class SupabaseService {
         .toList();
   }
 
-  /// Create a new trip
+  /// Soft deletes a trip by setting deleted_at
+  static Future<void> deleteTrip(String tripId) async {
+    await _client
+        .from('trips')
+        .update({'deleted_at': DateTime.now().toIso8601String()})
+        .eq('id', tripId);
+  }
+
+  /// Create or update a trip
   static Future<models.Trip> createTrip(models.Trip trip) async {
     final json = trip.toJson();
-    // Remove id from json if it's empty to let database generate it
-    if (json['id'] == null ||
-        json['id'].toString().isEmpty ||
-        json['id'].toString().startsWith('t')) {
+    
+    // For upsert, if id exists and is not a temporary one, keep it.
+    // Otherwise remove it to let DB generate a new UUID.
+    if (trip.id.isEmpty || trip.id.startsWith('t')) {
       json.remove('id');
+    } else {
+      json['id'] = trip.id;
     }
 
-    debugPrint('***** SupabaseService: Attempting to create trip with payload: $json');
+    debugPrint('***** SupabaseService: Attempting to upsert trip with payload: $json');
 
     try {
-      final response = await _client.from('trips').insert(json).select();
+      final response = await _client.from('trips').upsert(json).select();
 
       if (response == null || (response as List).isEmpty) {
         debugPrint(
-            '***** SupabaseService: Insert appeared to succeed but no data was returned. Check RLS policies.');
+            '***** SupabaseService: Upsert appeared to succeed but no data was returned. Check RLS policies.');
         throw Exception(
             'Failed to retrieve saved trip. This might be due to Row Level Security (RLS) policies.');
       }
 
       final savedData = (response as List).first;
-      debugPrint('***** SupabaseService: Trip created successfully: $savedData');
+      debugPrint('***** SupabaseService: Trip upserted successfully: $savedData');
       
       try {
         return models.Trip.fromJson(savedData);
@@ -124,8 +135,8 @@ class SupabaseService {
     await _client.from('trips').update(trip.toJson()).eq('id', trip.id);
   }
 
-  /// Delete a trip
-  static Future<void> deleteTrip(String tripId) async {
+  /// Hard delete a trip (use with caution)
+  static Future<void> hardDeleteTrip(String tripId) async {
     await _client.from('trips').delete().eq('id', tripId);
   }
 }

@@ -28,6 +28,28 @@ class ReviewStep extends StatelessWidget {
             'Double check everything before we start planning your itinerary.',
             style: TextStyle(color: Color(0xFF6B7280), fontSize: 16),
           ),
+          const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0FDF4),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFBBF7D0)),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Color(0xFF16A34A)),
+                SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    'Your trip is ready to be created! We will generate a custom itinerary for you in the next step.',
+                    style: TextStyle(
+                        color: Color(0xFF166534), fontSize: 13, height: 1.4),
+                  ),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 32),
           _buildSummaryCard(
             'Basic Identity',
@@ -35,9 +57,10 @@ class ReviewStep extends StatelessWidget {
               _buildDetail('Trip Name', draft.name),
               _buildDetail(
                   'Destination',
-                  '${draft.city ?? ''}, ${draft.country}'
-                      .trim()
-                      .replaceAll(RegExp(r'^,\s*'), '')),
+                  [
+                    if (draft.city?.isNotEmpty == true) draft.city,
+                    if (draft.country.isNotEmpty == true) draft.country,
+                  ].join(', ')),
             ],
             () => tripProvider.goToStep(0),
           ),
@@ -73,28 +96,6 @@ class ReviewStep extends StatelessWidget {
             () => tripProvider.goToStep(2),
           ),
           const SizedBox(height: 32),
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF0FDF4),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFBBF7D0)),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.check_circle, color: Color(0xFF16A34A)),
-                SizedBox(width: 16),
-                Expanded(
-                  child: Text(
-                    'Your trip is ready to be created! We will generate a custom itinerary for you in the next step.',
-                    style: TextStyle(
-                        color: Color(0xFF166534), fontSize: 13, height: 1.4),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 40),
         ],
       ),
     );

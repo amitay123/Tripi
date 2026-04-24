@@ -20,6 +20,18 @@ class TripProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> deleteTrip(String tripId) async {
+    try {
+      await SupabaseService.deleteTrip(tripId);
+      _trips.removeWhere((t) => t.id == tripId);
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error deleting trip: $e');
+      _lastError = e.toString();
+      notifyListeners();
+    }
+  }
+
   // --- Wizard State ---
   Trip? _draftTrip;
   int _currentStep = 0;
@@ -41,8 +53,15 @@ class TripProvider extends ChangeNotifier {
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
       days: [],
+      currentStep: 0,
     );
     _currentStep = 0;
+    notifyListeners();
+  }
+
+  void resumeTrip(Trip trip) {
+    _draftTrip = trip;
+    _currentStep = trip.currentStep;
     notifyListeners();
   }
 
@@ -99,8 +118,8 @@ class TripProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> saveTrip() async {
-    print('***** TripProvider: saveTrip() called');
+  Future<bool> saveTrip({bool isCompleted = false}) async {
+    print('***** TripProvider: saveTrip(isCompleted: $isCompleted) called');
     final draft = _draftTrip;
     final userId = SupabaseService.currentUser?.id;
     
@@ -133,17 +152,25 @@ class TripProvider extends ChangeNotifier {
       coverImageUrl: imageUrl,
       days: generatedDays,
       updatedAt: DateTime.now(),
+      currentStep: _currentStep,
+      isCompleted: isCompleted,
     );
 
     try {
       _lastError = null;
       final savedTrip = await SupabaseService.createTrip(newTrip);
-      _trips.insert(0, savedTrip);
-      _draftTrip = null;
+      
+      // Refresh the entire list from DB to ensure local state perfectly matches DB
+      await fetchTrips();
+      
+      // Update draft with the saved version from our refreshed list
+      _draftTrip = _trips.firstWhere((t) => t.id == savedTrip.id, orElse: () => savedTrip);
+      
+      print('***** saveTrip SUCCEEDED. Trips count: ${_trips.length}');
       notifyListeners();
       return true;
     } catch (e) {
-      debugPrint('Error saving trip: $e');
+      print('***** saveTrip ERROR: $e');
       _lastError = e.toString();
       if (e is PostgrestException) {
         debugPrint('Postgrest Error Details: ${e.message}, Code: ${e.code}');
@@ -152,6 +179,12 @@ class TripProvider extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  void clearDraft() {
+    _draftTrip = null;
+    _currentStep = 0;
+    notifyListeners();
   }
 
   List<TripDay> _generateDays(DateTime start, DateTime end) {

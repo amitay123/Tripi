@@ -14,11 +14,31 @@ class CreateTripWizard extends StatefulWidget {
 }
 
 class _CreateTripWizardState extends State<CreateTripWizard> {
-  final PageController _pageController = PageController();
+  late PageController _pageController;
+  late TripProvider _tripProvider;
   bool _isSaving = false;
 
   @override
+  void initState() {
+    super.initState();
+    _tripProvider = context.read<TripProvider>();
+    _pageController = PageController(initialPage: _tripProvider.currentStep);
+    _tripProvider.addListener(_syncPageController);
+  }
+
+  void _syncPageController() {
+    if (!mounted) return;
+    if (_pageController.hasClients) {
+      final currentPage = _pageController.page?.round() ?? 0;
+      if (currentPage != _tripProvider.currentStep) {
+        _onStepChanged(_tripProvider.currentStep);
+      }
+    }
+  }
+
+  @override
   void dispose() {
+    _tripProvider.removeListener(_syncPageController);
     _pageController.dispose();
     super.dispose();
   }
@@ -29,6 +49,32 @@ class _CreateTripWizardState extends State<CreateTripWizard> {
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
+  }
+
+  bool _validateStep(int step, TripProvider provider) {
+    final trip = provider.draftTrip;
+    if (trip == null) return false;
+
+    switch (step) {
+      case 0:
+        final hasName = trip.name.trim().isNotEmpty;
+        final hasCountry = (trip.countryCode ?? '').isNotEmpty;
+        
+        final cityName = (trip.city ?? '').trim();
+        final cityId = (trip.cityPlaceId ?? '').trim();
+        
+        // City is valid if it's empty OR if it has a place ID (was selected)
+        final cityValid = cityName.isEmpty || cityId.isNotEmpty;
+        
+        return hasName && hasCountry && cityValid;
+      case 1:
+        return trip.endDate.isAfter(trip.startDate) ||
+            trip.endDate.isAtSameMomentAs(trip.startDate);
+      case 2:
+        return true;
+      default:
+        return true;
+    }
   }
 
   @override
@@ -78,12 +124,29 @@ class _CreateTripWizardState extends State<CreateTripWizard> {
         ),
         centerTitle: true,
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Save',
-                style: TextStyle(
-                    color: Color(0xFF2563EB), fontWeight: FontWeight.bold)),
-          ),
+          if (tripProvider.currentStep > 0 && tripProvider.currentStep < 3)
+            TextButton(
+              onPressed: _isSaving ? null : () async {
+                setState(() => _isSaving = true);
+                final success = await tripProvider.saveTrip();
+                setState(() => _isSaving = false);
+
+                if (success && mounted) {
+                  Navigator.pop(context);
+                } else if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                          tripProvider.lastError ?? 'Failed to save draft'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+              child: const Text('Save',
+                  style: TextStyle(
+                      color: Color(0xFF2563EB), fontWeight: FontWeight.bold)),
+            ),
         ],
       ),
       body: PageView(
@@ -134,10 +197,11 @@ class _CreateTripWizardState extends State<CreateTripWizard> {
                       : () async {
                           if (currentStep == 3) {
                             setState(() => _isSaving = true);
-                            final success = await tripProvider.saveTrip();
+                            final success = await tripProvider.saveTrip(isCompleted: true);
                             setState(() => _isSaving = false);
 
                             if (success && mounted) {
+                              tripProvider.clearDraft();
                               Navigator.pop(context);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
@@ -152,12 +216,6 @@ class _CreateTripWizardState extends State<CreateTripWizard> {
                                   content: Text(tripProvider.lastError ??
                                       'Failed to save trip. Please check your connection or database setup.'),
                                   backgroundColor: Colors.red,
-                                  duration: const Duration(seconds: 5),
-                                  action: SnackBarAction(
-                                    label: 'DISMISS',
-                                    textColor: Colors.white,
-                                    onPressed: () {},
-                                  ),
                                 ),
                               );
                             }
@@ -166,10 +224,19 @@ class _CreateTripWizardState extends State<CreateTripWizard> {
                               tripProvider.nextStep();
                               _onStepChanged(tripProvider.currentStep);
                             } else {
+                              final trip = tripProvider.draftTrip!;
+                              String message = 'Please fill in all required fields.';
+                              if (currentStep == 0) {
+                                if (trip.name.trim().isEmpty) {
+                                  message = 'Please enter a trip name.';
+                                } else if ((trip.countryCode ?? '').isEmpty) {
+                                  message = 'Please select a country from the list.';
+                                } else if (trip.city != null && trip.city!.trim().isNotEmpty && (trip.cityPlaceId ?? '').isEmpty) {
+                                  message = 'Please select the city from the list or clear the field.';
+                                }
+                              }
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text(
-                                        'Please fill in all required fields.')),
+                                SnackBar(content: Text(message)),
                               );
                             }
                           }
@@ -202,20 +269,5 @@ class _CreateTripWizardState extends State<CreateTripWizard> {
         ),
       ),
     );
-  }
-
-  bool _validateStep(int step, TripProvider provider) {
-    final trip = provider.draftTrip!;
-    switch (step) {
-      case 0:
-        return trip.name.isNotEmpty && trip.country.isNotEmpty;
-      case 1:
-        return trip.endDate.isAfter(trip.startDate) ||
-            trip.endDate.isAtSameMomentAs(trip.startDate);
-      case 2:
-        return trip.tripType != null; // Enum has a default but check is good
-      default:
-        return true;
-    }
   }
 }

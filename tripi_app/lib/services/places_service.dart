@@ -39,7 +39,7 @@ class PlacesService {
   Future<List<Map<String, dynamic>>> autocompleteCountries(String input) async {
     try {
       final String url =
-          'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$input&types=(regions)&key=$_apiKey';
+          'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$input&types=country&key=$_apiKey';
       final Uri uri = kIsWeb
           ? Uri.parse('https://corsproxy.io/?${Uri.encodeComponent(url)}')
           : Uri.parse(url);

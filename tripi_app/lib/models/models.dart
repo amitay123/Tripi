@@ -256,6 +256,9 @@ class Trip {
   final List<TripDay> days; // Changed from List<String> activities
   final String? coverImageUrl;
   final Destination? destination;
+  final int currentStep;
+  final bool isCompleted;
+  final DateTime? deletedAt;
 
   Trip({
     required this.id,
@@ -281,6 +284,9 @@ class Trip {
     this.days = const [],
     this.coverImageUrl,
     this.destination,
+    this.currentStep = 0,
+    this.isCompleted = false,
+    this.deletedAt,
   });
 
   factory Trip.fromJson(Map<String, dynamic> json) {
@@ -330,6 +336,9 @@ class Trip {
               .toList() ??
           [],
       coverImageUrl: json['cover_image_url']?.toString(),
+      currentStep: int.tryParse(json['current_step']?.toString() ?? '0') ?? 0,
+      isCompleted: json['is_completed'] == true,
+      deletedAt: json['deleted_at'] != null ? DateTime.parse(json['deleted_at'].toString()) : null,
     );
   }
 
@@ -356,6 +365,9 @@ class Trip {
       'updated_at': updatedAt.toIso8601String(),
       'days': days.map((e) => e.toJson()).toList(),
       'cover_image_url': coverImageUrl,
+      'current_step': currentStep,
+      'is_completed': isCompleted,
+      'deleted_at': deletedAt?.toIso8601String(),
     };
   }
 
@@ -386,6 +398,9 @@ class Trip {
     List<TripDay>? days,
     String? coverImageUrl,
     DateTime? updatedAt,
+    int? currentStep,
+    bool? isCompleted,
+    DateTime? deletedAt,
   }) {
     return Trip(
       id: id ?? this.id,
@@ -411,6 +426,9 @@ class Trip {
       days: days ?? this.days,
       coverImageUrl: coverImageUrl ?? this.coverImageUrl,
       destination: destination,
+      currentStep: currentStep ?? this.currentStep,
+      isCompleted: isCompleted ?? this.isCompleted,
+      deletedAt: deletedAt ?? this.deletedAt,
     );
   }
 }

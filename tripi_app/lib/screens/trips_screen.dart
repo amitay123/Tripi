@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../theme/tripi_colors.dart';
 import '../widgets/tripi_card.dart';
+import '../models/models.dart';
 
 import '../providers/trip_provider.dart';
 import 'create_trip/create_trip_wizard.dart';
@@ -40,6 +41,252 @@ class _TripsScreenState extends State<TripsScreen> {
     );
   }
 
+  void _showDeleteConfirmation(
+      BuildContext context, String tripId, String tripName) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Delete Trip',
+            style: TextStyle(fontWeight: FontWeight.bold)),
+        content: Text(
+            'Are you sure you want to delete "$tripName"? it will be removed from your view but kept in our records for 1 year.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('CANCEL',
+                style: TextStyle(color: Color(0xFF6B7280))),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              context.read<TripProvider>().deleteTrip(tripId);
+              Navigator.pop(dialogContext);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Trip "$tripName" deleted.'),
+                  action: SnackBarAction(
+                    label: 'DISMISS',
+                    onPressed: () {},
+                  ),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('DELETE'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _editTripField(BuildContext context, Trip trip, int targetStep) {
+    Navigator.pop(context); // Close modal first
+    
+    // Use microtask to ensure state updates and navigation happen after modal dismissal
+    Future.microtask(() {
+      if (!context.mounted) return;
+      
+      final tripProvider = context.read<TripProvider>();
+      tripProvider.resumeTrip(trip);
+      tripProvider.goToStep(targetStep);
+      
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const CreateTripWizard(),
+        ),
+      );
+    });
+  }
+
+  void _showTripInfo(BuildContext context, Trip trip) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 20,
+              offset: Offset(0, -5),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.fromLTRB(32, 12, 32, 32),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 32),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        trip.name,
+                        style: const TextStyle(
+                            fontSize: 26, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${trip.city ?? ''}, ${trip.country}'.replaceAll(RegExp(r'^,\s*'), ''),
+                        style: const TextStyle(
+                            color: Color(0xFF6B7280), fontSize: 16),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => _editTripField(context, trip, 0),
+                  icon: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.edit_outlined, color: Color(0xFF2563EB), size: 20),
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 40),
+            const Text(
+              'TRAVELERS',
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF9CA3AF),
+                  letterSpacing: 1),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                _buildInfoBadge(Icons.person,
+                    '${trip.travelersBreakdown['adults'] ?? 1} Adults',
+                    () => _editTripField(context, trip, 1)),
+                const SizedBox(width: 12),
+                _buildInfoBadge(Icons.child_care,
+                    '${trip.travelersBreakdown['children'] ?? 0} Children',
+                    () => _editTripField(context, trip, 1)),
+              ],
+            ),
+            const SizedBox(height: 32),
+            const Text(
+              'TRIP STYLE & PREFERENCES',
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF9CA3AF),
+                  letterSpacing: 1),
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                _buildInfoTag(Icons.category,
+                    'Type: ${trip.tripType.name[0].toUpperCase()}${trip.tripType.name.substring(1)}',
+                    () => _editTripField(context, trip, 2)),
+                _buildInfoTag(Icons.speed,
+                    'Pace: ${trip.pace.name[0].toUpperCase()}${trip.pace.name.substring(1)}',
+                    () => _editTripField(context, trip, 2)),
+                if (trip.preferences.isNotEmpty)
+                  ...trip.preferences.map((p) => _buildInfoTag(Icons.star, p,
+                      () => _editTripField(context, trip, 2))),
+              ],
+            ),
+            const Spacer(),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFF3F4F6),
+                  foregroundColor: const Color(0xFF4B5563),
+                  minimumSize: const Size(0, 56),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
+                  elevation: 0,
+                ),
+                child: const Text('Close',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoBadge(IconData icon, String label, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF9FAFB),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE5E7EB)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: const Color(0xFF2563EB)),
+            const SizedBox(width: 8),
+            Text(label,
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold, color: Color(0xFF1F2937))),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoTag(IconData icon, String label, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF3F4F6),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: const Color(0xFF6B7280)),
+            const SizedBox(width: 6),
+            Text(label,
+                style: const TextStyle(fontSize: 13, color: Color(0xFF4B5563))),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final trips = context.watch<TripProvider>().trips;
@@ -74,11 +321,6 @@ class _TripsScreenState extends State<TripsScreen> {
           : trips.isEmpty
               ? EmptyTripsView(onPlanTrip: () => _startWizard(context))
               : _buildTripsList(context, trips),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _startWizard(context),
-        backgroundColor: const Color(0xFF2563EB),
-        child: const Icon(Icons.add, color: Colors.white, size: 30),
-      ),
     );
   }
 
@@ -133,13 +375,15 @@ class _TripsScreenState extends State<TripsScreen> {
           const SizedBox(height: 16),
           // Featured Trip Card (First Trip)
           if (trips.isNotEmpty) _buildFeaturedTrip(context, trips[0]),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
+          // Plan New Trip Card (Now second)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16.0),
+            child: _buildPlanNewTripCard(context),
+          ),
           // Other Trips List
           ...trips.skip(1).map((trip) => _buildTripListItem(context, trip)),
           const SizedBox(height: 24),
-          // Plan New Trip Button at the bottom
-          _buildPlanNewTripCard(context),
-          const SizedBox(height: 40),
         ],
       ),
     );
@@ -147,11 +391,21 @@ class _TripsScreenState extends State<TripsScreen> {
 
   Widget _buildFeaturedTrip(BuildContext context, dynamic trip) {
     return TripiCard(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (context) => ItineraryScreen(tripId: trip.id)),
-      ),
+      onTap: () {
+        if (!trip.isCompleted) {
+          context.read<TripProvider>().resumeTrip(trip);
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const CreateTripWizard()),
+          );
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => ItineraryScreen(tripId: trip.id)),
+          );
+        }
+      },
       padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -197,7 +451,7 @@ class _TripsScreenState extends State<TripsScreen> {
               ),
               Positioned(
                 top: 20,
-                right: 20,
+                left: 20,
                 child: Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -212,6 +466,62 @@ class _TripsScreenState extends State<TripsScreen> {
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.5),
                   ),
+                ),
+              ),
+              Positioned(
+                top: 20,
+                right: 20,
+                child: Row(
+                  children: [
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => _showTripInfo(context, trip),
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withOpacity(0.9),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.2),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(Icons.info_outline,
+                              color: Colors.white, size: 20),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () =>
+                            _showDeleteConfirmation(context, trip.id, trip.name),
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.9),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.2),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(Icons.delete,
+                              color: Colors.white, size: 20),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -259,11 +569,21 @@ class _TripsScreenState extends State<TripsScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: TripiCard(
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) => ItineraryScreen(tripId: trip.id)),
-        ),
+        onTap: () {
+          if (!trip.isCompleted) {
+            context.read<TripProvider>().resumeTrip(trip);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const CreateTripWizard()),
+            );
+          } else {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => ItineraryScreen(tripId: trip.id)),
+            );
+          }
+        },
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
@@ -309,6 +629,17 @@ class _TripsScreenState extends State<TripsScreen> {
                       style: TextStyle(color: Color(0xFF6B7280), fontSize: 12)),
                 ],
               ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.info_outline,
+                  color: Color(0xFF2563EB), size: 24),
+              onPressed: () => _showTripInfo(context, trip),
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete,
+                  color: Colors.redAccent, size: 24),
+              onPressed: () =>
+                  _showDeleteConfirmation(context, trip.id, trip.name),
             ),
           ],
         ),
