@@ -23,5 +23,11 @@ jobs:
         working-directory: tripi_app
 
       - name: Deploy to Firebase Hosting
-        run: npx --yes -p firebase-tools firebase deploy --only hosting --token "${{ secrets.FIREBASE_TOKEN }}" --project tripi-app-af1ad
+        uses: w9jds/firebase-action@master
+        with:
+          args: deploy --only hosting
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          PROJECT_ID: tripi-app-af1ad
+        # Run from the tripi_app directory where firebase.json is
         working-directory: tripi_app
