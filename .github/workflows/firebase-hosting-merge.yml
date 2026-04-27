@@ -25,7 +25,7 @@ jobs:
       - name: Deploy to Firebase Hosting
         run: |
           npm install -g firebase-tools
-          firebase deploy --only hosting --token "$FIREBASE_TOKEN" --project tripi-app-af1ad --non-interactive
+          firebase deploy --only hosting --project tripi-app-af1ad --non-interactive
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         working-directory: tripi_app
