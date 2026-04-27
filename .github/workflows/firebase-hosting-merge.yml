@@ -23,10 +23,5 @@ jobs:
         working-directory: tripi_app
 
       - name: Deploy to Firebase Hosting
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseToken: '${{ secrets.FIREBASE_TOKEN }}'
-          channelId: live
-          projectId: tripi-app-af1ad
-          entryPoint: tripi_app
+        run: npx firebase-tools deploy --only hosting --token "${{ secrets.FIREBASE_TOKEN }}" --project tripi-app-af1ad
+        working-directory: tripi_app
