@@ -29,5 +29,4 @@ jobs:
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
           PROJECT_ID: tripi-app-af1ad
-        # Run from the tripi_app directory where firebase.json is
-        working-directory: tripi_app
+          PROJECT_PATH: tripi_app

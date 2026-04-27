@@ -1,4 +1,4 @@
 cd /Users/amitay/tripi
 git add .
-git commit -m "Switch to w9jds/firebase-action for reliable deployment"
+git commit -m "Fix workflow syntax: use PROJECT_PATH instead of working-directory"
 git push
