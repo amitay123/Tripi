@@ -171,8 +171,13 @@ class _LoginScreenState extends State<LoginScreen> {
               Icons.lock_outline,
               isPassword: true,
               hasError: _errorMessage != null,
-              suffix: GestureDetector(
-                onTap: _handleForgotPassword,
+              suffix: TextButton(
+                onPressed: _handleForgotPassword,
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
                 child: Text(
                   'Forgot?',
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
