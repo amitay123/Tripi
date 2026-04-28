@@ -37,8 +37,14 @@ class SupabaseService {
   }
 
   /// Send password reset email
-  static Future<void> resetPassword({required String email}) async {
-    await _client.auth.resetPasswordForEmail(email);
+  static Future<void> resetPassword({
+    required String email,
+    String? redirectTo,
+  }) async {
+    await _client.auth.resetPasswordForEmail(
+      email,
+      redirectTo: redirectTo,
+    );
   }
 
   /// Get current session

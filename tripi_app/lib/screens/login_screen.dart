@@ -17,6 +17,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
+  String? _successMessage;
 
   Future<void> _handleSignIn() async {
     final email = _emailController.text.trim();
@@ -70,42 +71,30 @@ class _LoginScreenState extends State<LoginScreen> {
     final email = _emailController.text.trim();
 
     if (email.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Please enter your email address first.'),
-          backgroundColor: const Color(0xFFB00020),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
+      setState(() {
+        _errorMessage = 'Please enter your email address first.';
+        _successMessage = null;
+      });
       return;
     }
 
     try {
-      await SupabaseService.resetPassword(email: email);
+      await SupabaseService.resetPassword(
+        email: email,
+        redirectTo: 'https://tripi-app-af1ad.web.app',
+      );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text(
-              '📧 Password reset email sent! Check your inbox.',
-            ),
-            backgroundColor: const Color(0xFF2E7D32),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            duration: const Duration(seconds: 5),
-          ),
-        );
+        setState(() {
+          _successMessage = 'Password reset email sent! Check your inbox.';
+          _errorMessage = null;
+        });
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: const Color(0xFFB00020),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        );
+        setState(() {
+          _errorMessage = e.toString();
+          _successMessage = null;
+        });
       }
     }
   }
@@ -153,6 +142,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             const SizedBox(height: 40),
             if (_errorMessage != null) _buildErrorBanner(),
+            if (_successMessage != null) _buildSuccessBanner(),
             const SizedBox(height: 32),
             _buildInputField(
               context,
@@ -293,6 +283,42 @@ class _LoginScreenState extends State<LoginScreen> {
                   _errorMessage!,
                   style: TextStyle(
                       color: const Color(0xFFB00020).withOpacity(0.8)),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSuccessBanner() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF3E0),
+        borderRadius: BorderRadius.circular(16),
+        border:
+            const Border(left: BorderSide(color: Color(0xFFE65100), width: 4)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.mark_email_read_outlined, color: Color(0xFFE65100)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Check Your Email',
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold, color: Color(0xFFE65100)),
+                ),
+                Text(
+                  _successMessage!,
+                  style: TextStyle(
+                      color: const Color(0xFFE65100).withOpacity(0.8)),
                 ),
               ],
             ),
