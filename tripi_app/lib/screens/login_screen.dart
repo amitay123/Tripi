@@ -66,6 +66,50 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _handleForgotPassword() async {
+    final email = _emailController.text.trim();
+
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please enter your email address first.'),
+          backgroundColor: const Color(0xFFB00020),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+      return;
+    }
+
+    try {
+      await SupabaseService.resetPassword(email: email);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              '📧 Password reset email sent! Check your inbox.',
+            ),
+            backgroundColor: const Color(0xFF2E7D32),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: const Color(0xFFB00020),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -127,12 +171,15 @@ class _LoginScreenState extends State<LoginScreen> {
               Icons.lock_outline,
               isPassword: true,
               hasError: _errorMessage != null,
-              suffix: Text(
-                'Forgot?',
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: TripiColors.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
+              suffix: GestureDetector(
+                onTap: _handleForgotPassword,
+                child: Text(
+                  'Forgot?',
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: TripiColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
               ),
             ),
             const SizedBox(height: 40),

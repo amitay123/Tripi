@@ -36,6 +36,11 @@ class SupabaseService {
     await _client.auth.signOut();
   }
 
+  /// Send password reset email
+  static Future<void> resetPassword({required String email}) async {
+    await _client.auth.resetPasswordForEmail(email);
+  }
+
   /// Get current session
   static Session? get currentSession => _client.auth.currentSession;
 
