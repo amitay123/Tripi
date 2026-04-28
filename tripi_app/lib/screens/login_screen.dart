@@ -73,13 +73,13 @@ class _LoginScreenState extends State<LoginScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: const Icon(Icons.arrow_back, color: TripiColors.primary),
+        automaticallyImplyLeading: false,
+        centerTitle: true,
         title: Text(
-          'AZURE NOMAD',
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+          'Tripi',
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 color: TripiColors.primary,
                 fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
               ),
         ),
       ),
