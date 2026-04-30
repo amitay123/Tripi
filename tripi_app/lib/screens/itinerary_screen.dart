@@ -566,12 +566,31 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                                           ),
                                         ),
                                       const SizedBox(height: 12),
-                                      const Text(
-                                        'View Details →',
-                                        style: TextStyle(
-                                            color: TripiColors.primary,
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.bold),
+                                      InkWell(
+                                        onTap: () {
+                                          if (activity.placeId != null) {
+                                            Navigator.pushNamed(
+                                              context,
+                                              '/place-details',
+                                              arguments: activity.placeId,
+                                            );
+                                          } else {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(content: Text('Details not available for this activity')),
+                                            );
+                                          }
+                                        },
+                                        borderRadius: BorderRadius.circular(4),
+                                        child: const Padding(
+                                          padding: EdgeInsets.symmetric(vertical: 4),
+                                          child: Text(
+                                            'View Details →',
+                                            style: TextStyle(
+                                                color: TripiColors.primary,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.bold),
+                                          ),
+                                        ),
                                       ),
                                     ],
                                   ),

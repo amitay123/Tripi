@@ -53,6 +53,16 @@ class SupabaseService {
   /// Get current user
   static User? get currentUser => _client.auth.currentUser;
 
+  /// Check if a user with the given email is registered
+  static Future<bool> isUserRegistered(String email) async {
+    final response = await _client
+        .from('profiles')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle();
+    return response != null;
+  }
+
   // --- TRIP METHODS ---
 
   /// Fetch all trips for the current authenticated user
@@ -102,7 +112,7 @@ class SupabaseService {
     try {
       final response = await _client.from('trips').upsert(json).select();
 
-      if (response == null || (response as List).isEmpty) {
+      if ((response as List).isEmpty) {
         debugPrint(
             '***** SupabaseService: Upsert appeared to succeed but no data was returned. Check RLS policies.');
         throw Exception(

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/trip_provider.dart';
-import '../../../services/mock_data_service.dart';
 import '../../../services/places_service.dart';
+import '../../../services/mock_data_service.dart';
+import 'dart:async';
 
 class BasicInfoStep extends StatefulWidget {
   const BasicInfoStep({super.key});
@@ -15,6 +16,25 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
   final PlacesService _placesService = PlacesService();
   TextEditingController? _internalCountryController;
   TextEditingController? _internalCityController;
+  late TextEditingController _nameController;
+  
+  Timer? _countryDebounce;
+  Timer? _cityDebounce;
+
+  @override
+  void initState() {
+    super.initState();
+    final tripProvider = context.read<TripProvider>();
+    _nameController = TextEditingController(text: tripProvider.draftTrip?.name ?? '');
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _countryDebounce?.cancel();
+    _cityDebounce?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,11 +63,10 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
           const SizedBox(height: 32),
           _buildLabel('Trip Name'),
           TextField(
+            controller: _nameController,
             onChanged: (val) =>
                 tripProvider.updateDraft(draft.copyWith(name: val)),
             decoration: _inputDecoration('e.g. My Dream Vacation'),
-            controller: TextEditingController(text: draft.name)
-              ..selection = TextSelection.collapsed(offset: draft.name.length),
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 24),
@@ -55,11 +74,20 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
           Autocomplete<Map<String, dynamic>>(
             initialValue: TextEditingValue(text: draft.country),
             displayStringForOption: (option) => option['description'] as String,
-            optionsBuilder: (TextEditingValue textEditingValue) async {
-              if (textEditingValue.text.isEmpty)
+            optionsBuilder: (TextEditingValue textEditingValue) {
+              if (textEditingValue.text.isEmpty) {
                 return const Iterable<Map<String, dynamic>>.empty();
-              return await _placesService
-                  .autocompleteCountries(textEditingValue.text);
+              }
+
+              if (_countryDebounce?.isActive ?? false) _countryDebounce!.cancel();
+              
+              final completer = Completer<Iterable<Map<String, dynamic>>>();
+              _countryDebounce = Timer(const Duration(milliseconds: 500), () async {
+                final results = await _placesService.autocompleteCountries(textEditingValue.text);
+                completer.complete(results);
+              });
+              
+              return completer.future;
             },
             onSelected: (selection) async {
               // we just have the description and place_id
@@ -84,14 +112,6 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
               return TextField(
                 controller: controller,
                 focusNode: focusNode,
-                onChanged: (val) {
-                  tripProvider.updateDraft(draft.copyWith(
-                      country: val,
-                      city: '',
-                      countryCode: '',
-                      cityPlaceId: ''));
-                  _internalCityController?.clear();
-                },
                 decoration: _inputDecoration('Search country...'),
                 style:
                     const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
@@ -135,11 +155,21 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                 initialValue: TextEditingValue(text: draft.city ?? ''),
                 displayStringForOption: (option) =>
                     option['description'] as String,
-                optionsBuilder: (TextEditingValue textEditingValue) async {
-                  if (textEditingValue.text.isEmpty)
+                optionsBuilder: (TextEditingValue textEditingValue) {
+                  if (textEditingValue.text.isEmpty) {
                     return const Iterable<Map<String, dynamic>>.empty();
-                  return await _placesService.autocompleteCities(
-                      textEditingValue.text, selectedCountryCode);
+                  }
+
+                  if (_cityDebounce?.isActive ?? false) _cityDebounce!.cancel();
+                  
+                  final completer = Completer<Iterable<Map<String, dynamic>>>();
+                  _cityDebounce = Timer(const Duration(milliseconds: 500), () async {
+                    final results = await _placesService.autocompleteCities(
+                        textEditingValue.text, selectedCountryCode);
+                    completer.complete(results);
+                  });
+                  
+                  return completer.future;
                 },
                 onSelected: (selection) async {
                   final details = await _placesService
@@ -161,10 +191,8 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                   return TextField(
                     controller: controller,
                     focusNode: focusNode,
-                    onChanged: (val) => tripProvider.updateDraft(
-                        draft.copyWith(city: val, cityPlaceId: '')),
                     decoration: _inputDecoration(
-                      draft.country.isEmpty
+                      draft.countryCode?.isEmpty == true
                           ? 'Select country first'
                           : 'Search city...',
                     ),
@@ -271,40 +299,6 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
           }).toList(),
         ),
       ],
-    );
-  }
-
-  Widget _optionsView(BuildContext context,
-      AutocompleteOnSelected<String> onSelected, Iterable<String> options) {
-    return Align(
-      alignment: Alignment.topLeft,
-      child: Material(
-        elevation: 8.0,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          width: MediaQuery.of(context).size.width - 48,
-          constraints: const BoxConstraints(maxHeight: 300),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE5E7EB)),
-          ),
-          child: ListView.separated(
-            padding: EdgeInsets.zero,
-            shrinkWrap: true,
-            itemCount: options.length,
-            separatorBuilder: (context, index) =>
-                const Divider(height: 1, color: Color(0xFFF3F4F6)),
-            itemBuilder: (BuildContext context, int index) {
-              final String option = options.elementAt(index);
-              return ListTile(
-                title: Text(option, style: const TextStyle(fontSize: 14)),
-                onTap: () => onSelected(option),
-              );
-            },
-          ),
-        ),
-      ),
     );
   }
 

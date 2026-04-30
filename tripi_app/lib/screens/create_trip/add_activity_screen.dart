@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
@@ -30,6 +31,7 @@ class _AddActivityScreenState extends State<AddActivityScreen>
   final PlacesService _placesService = PlacesService();
   double? _destLat;
   double? _destLng;
+  Timer? _debounce;
 
   @override
   void initState() {
@@ -70,35 +72,38 @@ class _AddActivityScreenState extends State<AddActivityScreen>
   }
 
   void _searchPlaces(String query) async {
-    if (query.isEmpty) {
-      if (mounted) setState(() => _searchResults = []);
-      return;
-    }
-    setState(() => _isSearching = true);
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () async {
+      if (query.isEmpty) {
+        if (mounted) setState(() => _searchResults = []);
+        return;
+      }
+      if (mounted) setState(() => _isSearching = true);
 
-    // Pass countryCode if available in draft
-    final tripProvider = context.read<TripProvider>();
-    final draft = tripProvider.trips.firstWhere((t) => t.id == widget.tripId,
-        orElse: () => tripProvider.draftTrip ?? tripProvider.trips.first);
+      // Pass countryCode if available in draft
+      final tripProvider = context.read<TripProvider>();
+      final draft = tripProvider.trips.firstWhere((t) => t.id == widget.tripId,
+          orElse: () => tripProvider.draftTrip ?? tripProvider.trips.first);
 
-    final places = await _placesService.autocompletePlaces(
-      query,
-      countryCode: draft.countryCode,
-      lat: _destLat,
-      lng: _destLng,
-    );
+      final places = await _placesService.autocompletePlaces(
+        query,
+        countryCode: draft.countryCode,
+        lat: _destLat,
+        lng: _destLng,
+      );
 
-    if (!mounted) return;
-    setState(() {
-      _isSearching = false;
-      _searchResults = places.map((p) {
-        final struct = p['structured_formatting'] ?? {};
-        return {
-          'name': struct['main_text'] ?? p['description'],
-          'address': struct['secondary_text'] ?? p['description'],
-          'place_id': p['place_id'],
-        };
-      }).toList();
+      if (!mounted) return;
+      setState(() {
+        _isSearching = false;
+        _searchResults = places.map((p) {
+          final struct = p['structured_formatting'] ?? {};
+          return {
+            'name': struct['main_text'] ?? p['description'] ?? 'Unknown Place',
+            'address': struct['secondary_text'] ?? '',
+            'place_id': p['place_id'],
+          };
+        }).toList();
+      });
     });
   }
 

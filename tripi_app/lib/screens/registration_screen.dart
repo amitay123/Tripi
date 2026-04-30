@@ -5,6 +5,7 @@ import '../widgets/tripi_card.dart';
 import '../services/supabase_service.dart';
 import '../providers/booking_provider.dart';
 import '../models/models.dart' as models;
+import 'package:google_fonts/google_fonts.dart';
 
 class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({super.key});
@@ -18,7 +19,84 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _showPassword = false;
   String? _errorMessage;
+  String? _successMessage;
+  bool _showSecurityError = false;
+
+  // Password strength tracking
+  bool _has8Chars = false;
+  bool _hasSymbol = false;
+  bool _hasNumber = false;
+  bool _hasUppercase = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _passwordController.addListener(_onPasswordChanged);
+  }
+
+  @override
+  void dispose() {
+    _passwordController.removeListener(_onPasswordChanged);
+    _passwordController.dispose();
+    _nameController.dispose();
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  void _onPasswordChanged() {
+    final p = _passwordController.text;
+    setState(() {
+      _has8Chars = p.length >= 8;
+      _hasSymbol = RegExp(r'[!@#$%^&*(),.?:{}|<>_\-+=\[\]\\;~/]').hasMatch(p);
+      _hasNumber = RegExp(r'[0-9]').hasMatch(p);
+      _hasUppercase = RegExp(r'[A-Z]').hasMatch(p);
+      
+      // Auto-hide security error once password becomes strong
+      if (_strengthScore == 4) {
+        _showSecurityError = false;
+      }
+    });
+  }
+
+  int get _strengthScore =>
+      (_has8Chars ? 1 : 0) +
+      (_hasSymbol ? 1 : 0) +
+      (_hasNumber ? 1 : 0) +
+      (_hasUppercase ? 1 : 0);
+
+  String get _strengthLabel {
+    switch (_strengthScore) {
+      case 0:
+      case 1:
+        return 'Weak';
+      case 2:
+        return 'Fair';
+      case 3:
+        return 'Good';
+      case 4:
+        return 'Strong';
+      default:
+        return '';
+    }
+  }
+
+  Color get _strengthColor {
+    switch (_strengthScore) {
+      case 0:
+      case 1:
+        return const Color(0xFFDC2626);
+      case 2:
+        return const Color(0xFFF59E0B);
+      case 3:
+        return const Color(0xFF10B981);
+      case 4:
+        return TripiColors.primary;
+      default:
+        return const Color(0xFFADB3B5);
+    }
+  }
 
   Future<void> _handleSignUp() async {
     final name = _nameController.text.trim();
@@ -30,14 +108,18 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       return;
     }
 
-    if (password.length < 6) {
-      setState(() => _errorMessage = 'Password must be at least 6 characters.');
+    if (password.length < 8 || _strengthScore < 4) {
+      setState(() {
+        _showSecurityError = true;
+        _errorMessage = null;
+      });
       return;
     }
 
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _successMessage = null;
     });
 
     try {
@@ -52,7 +134,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           // This usually means email confirmation is enabled in Supabase
           setState(() {
             _isLoading = false;
-            _errorMessage = 'Registration successful! Please check your email to confirm your account before signing in.';
+            _successMessage = 'Registration successful! Please check your email to confirm your account before signing in.';
+            _errorMessage = null;
           });
           // Optionally, wait a few seconds and go back to login
           Future.delayed(const Duration(seconds: 5), () {
@@ -75,6 +158,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     } catch (e) {
       setState(() {
         _errorMessage = e.toString();
+        _successMessage = null;
         _isLoading = false;
       });
     }
@@ -110,7 +194,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: TripiColors.primary.withOpacity(0.1),
+                  color: TripiColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -138,9 +222,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       color: TripiColors.onSurfaceVariant,
                     ),
               ),
-              const SizedBox(height: 32),
-              if (_errorMessage != null) _buildErrorBanner(),
-              const SizedBox(height: 24),
+              const SizedBox(height: 8),
+              if (_errorMessage != null || (_showSecurityError && _strengthScore < 4)) _buildErrorBanner(),
+              if (_successMessage != null) _buildSuccessBanner(),
+              const SizedBox(height: 12),
               TripiCard(
                 padding: const EdgeInsets.all(24),
                 child: Column(
@@ -151,10 +236,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     const SizedBox(height: 20),
                     _buildInputField(context, 'EMAIL ADDRESS',
                         'hello@example.com', _emailController),
-                    const SizedBox(height: 20),
-                    _buildInputField(context, 'PASSWORD', 'Min. 8 characters',
-                        _passwordController,
-                        isPassword: true),
+                    _buildPasswordField(),
+                    const SizedBox(height: 16),
+                    _buildStrengthGrid(),
+                    const SizedBox(height: 12),
+                    _buildStrengthBar(),
                     const SizedBox(height: 32),
                     ElevatedButton(
                       onPressed: _isLoading ? null : _handleSignUp,
@@ -235,28 +321,227 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     );
   }
 
-  Widget _buildErrorBanner() {
+  Widget _buildSuccessBanner() {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8E8E8),
+        color: const Color(0xFFFFF3E0),
         borderRadius: BorderRadius.circular(16),
         border:
-            const Border(left: BorderSide(color: Color(0xFFB00020), width: 4)),
+            const Border(left: BorderSide(color: Color(0xFFE65100), width: 4)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.error, color: Color(0xFFB00020)),
+          const Icon(Icons.mark_email_read_outlined, color: Color(0xFFE65100)),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              _errorMessage!,
-              style: const TextStyle(color: Color(0xFFB00020), fontSize: 13),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Check Your Email',
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold, color: Color(0xFFE65100)),
+                ),
+                Text(
+                  _successMessage!,
+                  style: TextStyle(
+                      color: const Color(0xFFE65100).withValues(alpha: 0.8)),
+                ),
+              ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildErrorBanner() {
+    final bool isSecurityInfo = _errorMessage == null;
+    final String message = isSecurityInfo
+        ? 'Password must meet all security requirements'
+        : _errorMessage!;
+    final IconData icon = isSecurityInfo ? Icons.security : Icons.error;
+
+    // Colors for Security (Orange) vs Error (Red)
+    final Color bgColor = isSecurityInfo ? const Color(0xFFFFF3E0) : const Color(0xFFF8E8E8);
+    final Color accentColor = isSecurityInfo ? const Color(0xFFE65100) : const Color(0xFFB00020);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border(left: BorderSide(color: accentColor, width: 4)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: accentColor),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                color: accentColor,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPasswordField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'PASSWORD',
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: TripiColors.onSurfaceVariant,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1,
+              ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _passwordController,
+          obscureText: !_showPassword,
+          decoration: InputDecoration(
+            hintText: '••••••••',
+            filled: true,
+            fillColor: TripiColors.surfaceContainerHigh,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(28),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+            suffixIcon: Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: IconButton(
+                icon: Icon(
+                  _showPassword ? Icons.visibility_off : Icons.visibility,
+                  color: TripiColors.onSurfaceVariant,
+                  size: 20,
+                ),
+                onPressed: () => setState(() => _showPassword = !_showPassword),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStrengthGrid() {
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisSpacing: 10,
+      mainAxisSpacing: 10,
+      childAspectRatio: 4.2,
+      children: [
+        _buildCriteriaChip('8+ Characters', _has8Chars),
+        _buildCriteriaChip('1 Symbol', _hasSymbol),
+        _buildCriteriaChip('1 Number', _hasNumber),
+        _buildCriteriaChip('Uppercase', _hasUppercase),
+      ],
+    );
+  }
+
+  Widget _buildCriteriaChip(String label, bool met) {
+    return Container(
+      decoration: BoxDecoration(
+        color: TripiColors.surfaceContainerHigh.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Row(
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: met ? TripiColors.primary : const Color(0xFFADB3B5),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: met ? TripiColors.primary : const Color(0xFF5A6062),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStrengthBar() {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'STRENGTH',
+              style: GoogleFonts.inter(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.0,
+                color: _strengthColor,
+              ),
+            ),
+            Text(
+              _passwordController.text.isEmpty ? '' : _strengthLabel,
+              style: GoogleFonts.inter(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.0,
+                color: _strengthColor,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(9999),
+          child: Container(
+            height: 6,
+            width: double.infinity,
+            color: TripiColors.surfaceContainerHigh,
+            child: Stack(
+              children: [
+                AnimatedFractionallySizedBox(
+                  duration: const Duration(milliseconds: 400),
+                  alignment: Alignment.centerLeft,
+                  widthFactor: _passwordController.text.isEmpty
+                      ? 0
+                      : _strengthScore / 4.0,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: _strengthColor,
+                      borderRadius: BorderRadius.circular(9999),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 

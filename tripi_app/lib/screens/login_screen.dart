@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/tripi_colors.dart';
 import '../services/supabase_service.dart';
 import '../providers/booking_provider.dart';
@@ -15,23 +16,30 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  bool _isLoading = false;
+  bool _isSignInLoading = false;
+  bool _isForgotInProgress = false;
   String? _errorMessage;
   String? _successMessage;
 
   Future<void> _handleSignIn() async {
+    if (_isForgotInProgress) return;
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
-      setState(() => _errorMessage = 'Please enter email and password');
+      setState(() {
+        _errorMessage = 'Please enter email and password';
+        _successMessage = null;
+      });
       return;
     }
 
     setState(() {
-      _isLoading = true;
+      _isSignInLoading = true;
       _errorMessage = null;
+      _successMessage = null;
     });
+    debugPrint('STATE: _isSignInLoading set to true');
 
     try {
       debugPrint('Attempting login for: $email');
@@ -62,12 +70,19 @@ class _LoginScreenState extends State<LoginScreen> {
       
       setState(() {
         _errorMessage = errorMsg;
-        _isLoading = false;
+        _successMessage = null;
+        _isSignInLoading = false;
       });
+      debugPrint('STATE: _isSignInLoading set to false');
     }
   }
 
   Future<void> _handleForgotPassword() async {
+    if (_isSignInLoading) return;
+    
+    // Unfocus to prevent focus shifts from looking like a button click
+    FocusScope.of(context).unfocus();
+
     final email = _emailController.text.trim();
 
     if (email.isEmpty) {
@@ -78,11 +93,35 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
+    setState(() {
+      _isForgotInProgress = true;
+      _errorMessage = null;
+      _successMessage = null;
+    });
+    debugPrint('STATE: _isForgotInProgress set to true');
+
     try {
+      /* 
+      // 1. Check if user exists first (requested security/UX requirement)
+      // Note: This is temporarily disabled because the profiles table is out of sync.
+      final exists = await SupabaseService.isUserRegistered(email);
+      
+      if (!exists) {
+        if (mounted) {
+          setState(() {
+            _errorMessage = 'Invalid email or password. Please try again.';
+            _successMessage = null;
+          });
+        }
+        return;
+      }
+      */
+
       await SupabaseService.resetPassword(
         email: email,
-        redirectTo: 'https://tripi-app-af1ad.web.app',
+        redirectTo: 'https://tripi-app-af1ad.web.app/#/set-new-password',
       );
+      
       if (mounted) {
         setState(() {
           _successMessage = 'Password reset email sent! Check your inbox.';
@@ -90,11 +129,24 @@ class _LoginScreenState extends State<LoginScreen> {
         });
       }
     } catch (e) {
+      debugPrint('Forgot password error: $e');
       if (mounted) {
         setState(() {
-          _errorMessage = e.toString();
-          _successMessage = null;
+          if (e is AuthApiException && (e.code == 'over_email_send_rate_limit' || e.statusCode == '429')) {
+            _successMessage = 'Password reset email sent! Check your inbox.';
+            _errorMessage = null;
+          } else {
+            _errorMessage = e.toString();
+            _successMessage = null;
+          }
         });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isForgotInProgress = false;
+        });
+        debugPrint('STATE: _isForgotInProgress set to false');
       }
     }
   }
@@ -168,37 +220,50 @@ class _LoginScreenState extends State<LoginScreen> {
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                child: Text(
-                  'Forgot?',
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: TripiColors.primary,
-                        fontWeight: FontWeight.bold,
+                child: _isForgotInProgress
+                    ? const SizedBox(
+                        height: 12,
+                        width: 12,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: TripiColors.primary,
+                        ),
+                      )
+                    : Text(
+                        'Forgot?',
+                        style:
+                            Theme.of(context).textTheme.labelMedium?.copyWith(
+                                  color: TripiColors.primary,
+                                  fontWeight: FontWeight.bold,
+                                ),
                       ),
-                ),
               ),
             ),
             const SizedBox(height: 40),
-            ElevatedButton(
-              onPressed: _isLoading ? null : _handleSignIn,
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 56),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (_isLoading)
-                    const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
-                    )
-                  else ...[
-                    const Text('Sign In'),
-                    const SizedBox(width: 8),
-                    const Icon(Icons.chevron_right, size: 20),
+            IgnorePointer(
+              ignoring: _isForgotInProgress,
+              child: ElevatedButton(
+                onPressed: _isSignInLoading ? null : _handleSignIn,
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 56),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (_isSignInLoading)
+                      const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
+                      )
+                    else ...[
+                      const Text('Sign In'),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.chevron_right, size: 20),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
             const SizedBox(height: 48),
@@ -227,27 +292,29 @@ class _LoginScreenState extends State<LoginScreen> {
               ],
             ),
             const SizedBox(height: 64),
-            Wrap(
-              alignment: WrapAlignment.center,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                Text(
-                  'Don\'t have an account? ',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: TripiColors.onSurfaceVariant,
-                      ),
-                ),
-                GestureDetector(
-                  onTap: () => Navigator.pushNamed(context, '/register'),
-                  child: Text(
-                    'Create Account',
+            Center(
+              child: Wrap(
+                alignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Text(
+                    'Don\'t have an account? ',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: TripiColors.primary,
-                          fontWeight: FontWeight.bold,
+                          color: TripiColors.onSurfaceVariant,
                         ),
                   ),
-                ),
-              ],
+                  GestureDetector(
+                    onTap: () => Navigator.pushNamed(context, '/register'),
+                    child: Text(
+                      'Create Account',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: TripiColors.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 40),
           ],
@@ -282,7 +349,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Text(
                   _errorMessage!,
                   style: TextStyle(
-                      color: const Color(0xFFB00020).withOpacity(0.8)),
+                      color: const Color(0xFFB00020).withValues(alpha: 0.8)),
                 ),
               ],
             ),
@@ -318,7 +385,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Text(
                   _successMessage!,
                   style: TextStyle(
-                      color: const Color(0xFFE65100).withOpacity(0.8)),
+                      color: const Color(0xFFE65100).withValues(alpha: 0.8)),
                 ),
               ],
             ),
@@ -372,7 +439,7 @@ class _LoginScreenState extends State<LoginScreen> {
               borderSide: BorderSide(
                 color: hasError
                     ? const Color(0xFFB00020)
-                    : TripiColors.outlineVariant.withOpacity(0.2),
+                    : TripiColors.outlineVariant.withValues(alpha: 0.2),
                 width: 1.5,
               ),
             ),
@@ -397,7 +464,7 @@ class _LoginScreenState extends State<LoginScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: TripiColors.outlineVariant.withOpacity(0.1)),
+        border: Border.all(color: TripiColors.outlineVariant.withValues(alpha: 0.1)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,

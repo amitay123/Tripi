@@ -1,6 +1,6 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:convert';
 
 class PlacesService {
   // Singleton pattern
@@ -8,26 +8,37 @@ class PlacesService {
   factory PlacesService() => _instance;
   PlacesService._internal();
 
-  static const String _apiKey = 'AIzaSyDNxKWoy8qIDOMyO8FTf1DED_wByeKzm2M';
-  static const String _baseUrl = 'https://maps.googleapis.com/maps/api/place';
+  final _supabase = Supabase.instance.client;
+
+  List<Map<String, dynamic>> _parseAutocompleteResponse(dynamic data) {
+    try {
+      final Map<String, dynamic> json = data is String ? jsonDecode(data) : data;
+      return List<Map<String, dynamic>>.from(json['predictions'] ?? []);
+    } catch (e) {
+      debugPrint('Error parsing autocomplete response: $e');
+      return [];
+    }
+  }
 
   Future<List<Map<String, dynamic>>> autocompletePlaces(String input,
       {String? countryCode, double? lat, double? lng}) async {
     try {
-      String url =
-          'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$input&key=$_apiKey';
-      if (countryCode != null && countryCode.isNotEmpty)
-        url += '&components=country:$countryCode';
-      if (lat != null && lng != null) url += '&location=$lat,$lng&radius=50000';
+      final Map<String, String> params = {'input': input};
+      if (countryCode != null && countryCode.isNotEmpty) {
+        params['components'] = 'country:$countryCode';
+      }
+      if (lat != null && lng != null) {
+        params['location'] = '$lat,$lng';
+        params['radius'] = '50000';
+      }
 
-      final Uri uri = kIsWeb
-          ? Uri.parse('https://corsproxy.io/?${Uri.encodeComponent(url)}')
-          : Uri.parse(url);
+      final response = await _supabase.functions.invoke(
+        'places-proxy',
+        body: {'endpoint': 'autocomplete', 'params': params},
+      );
 
-      final response = await http.get(uri);
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return List<Map<String, dynamic>>.from(data['predictions'] ?? []);
+      if (response.status == 200) {
+        return _parseAutocompleteResponse(response.data);
       }
       return [];
     } catch (e) {
@@ -38,19 +49,20 @@ class PlacesService {
 
   Future<List<Map<String, dynamic>>> autocompleteCountries(String input) async {
     try {
-      final String url =
-          'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$input&types=country&key=$_apiKey';
-      final Uri uri = kIsWeb
-          ? Uri.parse('https://corsproxy.io/?${Uri.encodeComponent(url)}')
-          : Uri.parse(url);
+      final response = await _supabase.functions.invoke(
+        'places-proxy',
+        body: {
+          'endpoint': 'autocomplete',
+          'params': {'input': input, 'types': 'country'}
+        },
+      );
 
-      final response = await http.get(uri);
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return List<Map<String, dynamic>>.from(data['predictions'] ?? []);
+      if (response.status == 200) {
+        return _parseAutocompleteResponse(response.data);
       }
       return [];
     } catch (e) {
+      debugPrint('Autocomplete countries error: $e');
       return [];
     }
   }
@@ -58,38 +70,46 @@ class PlacesService {
   Future<List<Map<String, dynamic>>> autocompleteCities(
       String input, String? countryCode) async {
     try {
-      String url =
-          'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$input&types=(cities)&key=$_apiKey';
-      if (countryCode != null && countryCode.isNotEmpty)
-        url += '&components=country:$countryCode';
+      final Map<String, String> params = {
+        'input': input,
+      };
+      if (countryCode != null && countryCode.isNotEmpty) {
+        params['components'] = 'country:$countryCode';
+      }
 
-      final Uri uri = kIsWeb
-          ? Uri.parse('https://corsproxy.io/?${Uri.encodeComponent(url)}')
-          : Uri.parse(url);
+      final response = await _supabase.functions.invoke(
+        'places-proxy',
+        body: {'endpoint': 'autocomplete', 'params': params},
+      );
 
-      final response = await http.get(uri);
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return List<Map<String, dynamic>>.from(data['predictions'] ?? []);
+      if (response.status == 200) {
+        return _parseAutocompleteResponse(response.data);
       }
       return [];
     } catch (e) {
+      debugPrint('Autocomplete cities error: $e');
       return [];
     }
   }
 
   Future<Map<String, dynamic>?> getPlaceDetails(String placeId) async {
     try {
-      final String url =
-          'https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&fields=name,formatted_address,geometry,photos,types,address_components&key=$_apiKey';
+      final response = await _supabase.functions.invoke(
+        'places-proxy',
+        body: {
+          'endpoint': 'details',
+          'params': {
+            'place_id': placeId,
+            'fields':
+                'name,formatted_address,geometry,photos,types,address_components,rating,opening_hours,website,price_level,editorial_summary'
+          }
+        },
+      );
 
-      final Uri uri = kIsWeb
-          ? Uri.parse('https://corsproxy.io/?${Uri.encodeComponent(url)}')
-          : Uri.parse(url);
-
-      final response = await http.get(uri);
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+      if (response.status == 200) {
+        final Map<String, dynamic> data = response.data is String 
+            ? jsonDecode(response.data) 
+            : response.data;
         final result = data['result'];
         if (result != null) {
           return {
@@ -97,10 +117,16 @@ class PlacesService {
             'formatted_address': result['formatted_address'],
             'lat': result['geometry']['location']['lat'],
             'lng': result['geometry']['location']['lng'],
-            'photo_reference':
-                (result['photos'] != null && result['photos'].isNotEmpty)
-                    ? result['photos'][0]['photo_reference']
-                    : null,
+            'photo_references': (result['photos'] != null)
+                ? List<String>.from(result['photos']
+                    .map((p) => p['photo_reference']?.toString())
+                    .where((p) => p != null))
+                : [],
+            'rating': result['rating'],
+            'opening_hours': result['opening_hours'],
+            'website': result['website'],
+            'price_level': result['price_level'],
+            'description': result['editorial_summary']?['overview'],
             'types': result['types'] != null
                 ? List<String>.from(result['types'])
                 : [],
@@ -117,8 +143,9 @@ class PlacesService {
 
   String? getPhotoUrl(String? photoReference) {
     if (photoReference == null) return null;
+    const String apiKey = 'AIzaSyDNxKWoy8qIDOMyO8FTf1DED_wByeKzm2M';
     final String url =
-        'https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=$photoReference&key=$_apiKey';
+        'https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=$photoReference&key=$apiKey';
     return 'https://images.weserv.nl/?url=${Uri.encodeComponent(url)}';
   }
 
@@ -126,16 +153,22 @@ class PlacesService {
       double lat1, double lng1, double lat2, double lng2, String mode) async {
     try {
       final String gMode = mode == 'flight' ? 'driving' : mode.toLowerCase();
-      final String url =
-          'https://maps.googleapis.com/maps/api/distancematrix/json?origins=$lat1,$lng1&destinations=$lat2,$lng2&mode=$gMode&key=$_apiKey';
+      final response = await _supabase.functions.invoke(
+        'places-proxy',
+        body: {
+          'endpoint': 'distancematrix',
+          'params': {
+            'origins': '$lat1,$lng1',
+            'destinations': '$lat2,$lng2',
+            'mode': gMode
+          }
+        },
+      );
 
-      final Uri uri = kIsWeb
-          ? Uri.parse('https://corsproxy.io/?${Uri.encodeComponent(url)}')
-          : Uri.parse(url);
-
-      final response = await http.get(uri);
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+      if (response.status == 200) {
+        final Map<String, dynamic> data = response.data is String 
+            ? jsonDecode(response.data) 
+            : response.data;
         if (data['status'] == 'OK' &&
             data['rows'] != null &&
             data['rows'].isNotEmpty &&

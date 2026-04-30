@@ -33,7 +33,7 @@ class _AdminScaffoldState extends State<AdminScaffold> {
           color: Colors.white,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 20,
               offset: const Offset(0, -5),
             ),
@@ -60,7 +60,7 @@ class _AdminScaffoldState extends State<AdminScaffold> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected
-              ? TripiColors.primary.withOpacity(0.1)
+              ? TripiColors.primary.withValues(alpha: 0.1)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
         ),
@@ -71,7 +71,7 @@ class _AdminScaffoldState extends State<AdminScaffold> {
               icon,
               color: isSelected
                   ? TripiColors.primary
-                  : TripiColors.onSurfaceVariant.withOpacity(0.5),
+                  : TripiColors.onSurfaceVariant.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 4),
             Text(
@@ -81,7 +81,7 @@ class _AdminScaffoldState extends State<AdminScaffold> {
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 color: isSelected
                     ? TripiColors.primary
-                    : TripiColors.onSurfaceVariant.withOpacity(0.5),
+                    : TripiColors.onSurfaceVariant.withValues(alpha: 0.5),
               ),
             ),
           ],

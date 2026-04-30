@@ -39,8 +39,9 @@ class PreferencesStep extends StatelessWidget {
                 label: Text(_formatEnum(type.name)),
                 selected: isSelected,
                 onSelected: (selected) {
-                  if (selected)
+                  if (selected) {
                     tripProvider.updateDraft(draft.copyWith(tripType: type));
+                  }
                 },
                 selectedColor: const Color(0xFFDBEAFE),
                 labelStyle: TextStyle(
@@ -152,7 +153,7 @@ class PreferencesStep extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 10,
                               color: isSelected
-                                  ? const Color(0xFF2563EB).withOpacity(0.8)
+                                  ? const Color(0xFF2563EB).withValues(alpha: 0.8)
                                   : const Color(0xFF9CA3AF),
                             ),
                           ),

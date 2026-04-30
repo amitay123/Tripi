@@ -16,13 +16,13 @@ import 'screens/ticket_screen.dart';
 
 import 'screens/registration_screen.dart';
 import 'screens/admin/admin_scaffold.dart';
+import 'screens/set_new_password_screen.dart';
 
 Future<void> main() async {
   debugPrint('App initialization started');
   WidgetsFlutterBinding.ensureInitialized();
 
   // Enable Google Fonts runtime fetching to avoid white screen crash when fonts are missing from assets.
-  // If CORS issues occur, we should bundle the fonts instead.
   GoogleFonts.config.allowRuntimeFetching = true;
 
   // Initialize Supabase
@@ -49,50 +49,44 @@ Future<void> main() async {
   );
 }
 
-class TripiApp extends StatelessWidget {
+class TripiApp extends StatefulWidget {
   const TripiApp({super.key});
 
   @override
+  State<TripiApp> createState() => _TripiAppState();
+}
+
+class _TripiAppState extends State<TripiApp> {
+  final _navigatorKey = GlobalKey<NavigatorState>();
+
+  @override
+  void initState() {
+    super.initState();
+    _setupAuthListener();
+  }
+
+  void _setupAuthListener() {
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      final AuthChangeEvent event = data.event;
+      debugPrint('AUTH EVENT RECEIVED: $event');
+
+      if (event == AuthChangeEvent.passwordRecovery) {
+        debugPrint('PASSWORD RECOVERY DETECTED - Navigating to reset screen');
+        _navigatorKey.currentState?.pushNamedAndRemoveUntil(
+          '/set-new-password',
+          (route) => false,
+        );
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    debugPrint('TripiApp building...');
     return MaterialApp(
+      navigatorKey: _navigatorKey,
       title: 'Tripi',
       debugShowCheckedModeBanner: false,
       theme: TripiTheme.lightTheme,
-      // Global error widget
-      builder: (context, child) {
-        ErrorWidget.builder = (FlutterErrorDetails details) {
-          return Scaffold(
-            body: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.error_outline,
-                        color: Colors.red, size: 48),
-                    const SizedBox(height: 16),
-                    const Text('Something went wrong',
-                        style: TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    Text(details.exception.toString(),
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.grey)),
-                    const SizedBox(height: 24),
-                    ElevatedButton(
-                      onPressed: () =>
-                          Navigator.of(context).pushReplacementNamed('/'),
-                      child: const Text('Return to Login'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        };
-        return child!;
-      },
       initialRoute: '/',
       routes: {
         '/': (context) => const LoginScreen(),
@@ -105,6 +99,7 @@ class TripiApp extends StatelessWidget {
         '/confirmation': (context) => const ConfirmationScreen(),
         '/ticket': (context) => const TicketScreen(),
         '/admin': (context) => const AdminScaffold(),
+        '/set-new-password': (context) => const SetNewPasswordScreen(),
       },
     );
   }
