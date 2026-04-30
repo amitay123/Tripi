@@ -1,110 +1,70 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'theme/tripi_theme.dart';
-import 'providers/booking_provider.dart';
-import 'providers/trip_provider.dart';
+import 'package:provider/provider.dart';
 import 'screens/login_screen.dart';
-import 'screens/explore_screen.dart';
-import 'screens/place_details_screen.dart';
-import 'screens/flight_search_screen.dart';
-import 'screens/seat_selection_screen.dart';
-import 'screens/baggage_screen.dart';
-import 'screens/confirmation_screen.dart';
-import 'screens/ticket_screen.dart';
-
 import 'screens/registration_screen.dart';
-import 'screens/admin/admin_scaffold.dart';
+import 'screens/explore_screen.dart';
+import 'screens/itinerary_screen.dart';
+import 'screens/set_new_password_screen.dart';
+import 'providers/booking_provider.dart';
+import 'theme/tripi_theme.dart';
+import 'services/supabase_service.dart';
 
-Future<void> main() async {
-  debugPrint('App initialization started');
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  await SupabaseService.initialize();
 
-  // Enable Google Fonts runtime fetching to avoid white screen crash when fonts are missing from assets.
-  // If CORS issues occur, we should bundle the fonts instead.
-  GoogleFonts.config.allowRuntimeFetching = true;
-
-  // Initialize Supabase
-  await Supabase.initialize(
-    url: 'https://fbtoyhnjwyhssozetfhw.supabase.co',
-    anonKey: 'sb_publishable_DWgDyHuCNZLMHIbIkVuCkA_eTe_Z4Vw',
-  );
-
-  // Catch Flutter errors
-  FlutterError.onError = (FlutterErrorDetails details) {
-    FlutterError.presentError(details);
-    debugPrint('GLOBAL ERROR: ${details.exception}');
-  };
-
-  debugPrint('Supabase initialized, starting app');
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => BookingProvider()),
-        ChangeNotifierProvider(create: (_) => TripProvider()),
       ],
       child: const TripiApp(),
     ),
   );
 }
 
-class TripiApp extends StatelessWidget {
+class TripiApp extends StatefulWidget {
   const TripiApp({super.key});
 
   @override
+  State<TripiApp> createState() => _TripiAppState();
+}
+
+class _TripiAppState extends State<TripiApp> {
+  final _navigatorKey = GlobalKey<NavigatorState>();
+
+  @override
+  void initState() {
+    super.initState();
+    _setupAuthListener();
+  }
+
+  void _setupAuthListener() {
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      final AuthChangeEvent event = data.event;
+      if (event == AuthChangeEvent.passwordRecovery) {
+        debugPrint('--- Password Recovery Event Detected ---');
+        _navigatorKey.currentState?.pushNamed('/set-new-password');
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    debugPrint('TripiApp building...');
     return MaterialApp(
+      navigatorKey: _navigatorKey,
       title: 'Tripi',
       debugShowCheckedModeBanner: false,
       theme: TripiTheme.lightTheme,
-      // Global error widget
-      builder: (context, child) {
-        ErrorWidget.builder = (FlutterErrorDetails details) {
-          return Scaffold(
-            body: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.error_outline,
-                        color: Colors.red, size: 48),
-                    const SizedBox(height: 16),
-                    const Text('Something went wrong',
-                        style: TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    Text(details.exception.toString(),
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.grey)),
-                    const SizedBox(height: 24),
-                    ElevatedButton(
-                      onPressed: () =>
-                          Navigator.of(context).pushReplacementNamed('/'),
-                      child: const Text('Return to Login'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        };
-        return child!;
-      },
       initialRoute: '/',
       routes: {
         '/': (context) => const LoginScreen(),
         '/register': (context) => const RegistrationScreen(),
-        '/explore': (context) => const MainScaffold(),
-        '/place-details': (context) => const PlaceDetailsScreen(),
-        '/flight-search': (context) => const FlightSearchScreen(),
-        '/seat-selection': (context) => const SeatSelectionScreen(),
-        '/baggage': (context) => const BaggageScreen(),
-        '/confirmation': (context) => const ConfirmationScreen(),
-        '/ticket': (context) => const TicketScreen(),
-        '/admin': (context) => const AdminScaffold(),
+        '/explore': (context) => const ExploreScreen(),
+        '/itinerary': (context) => const ItineraryScreen(),
+        '/set-new-password': (context) => const SetNewPasswordScreen(),
       },
     );
   }
