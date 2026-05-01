@@ -32,7 +32,7 @@ class ActivityLog {
 
 class MockDataService {
   static final List<User> users = [
-    User(id: 'u1', email: 'traveler@voyage.com', name: 'Amitay'),
+    User(id: 'u1', email: 'traveler@example.com', name: 'Amitay'),
     User(id: 'u2', email: 'user2@tripi.com', name: 'John Doe'),
     User(id: 'u3', email: 'alex@example.com', name: 'Alex Johnson'),
     User(id: 'u4', email: 'marcus.c@example.com', name: 'Marcus Chen'),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../theme/tripi_colors.dart';
+import '../../providers/booking_provider.dart';
 import '../../widgets/tripi_card.dart';
 
 class UsersScreen extends StatelessWidget {
@@ -73,9 +75,16 @@ class UsersScreen extends StatelessWidget {
                   color: TripiColors.primary,
                 ),
           ),
-          const CircleAvatar(
-            radius: 16,
-            backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=admin'),
+          Consumer<BookingProvider>(
+            builder: (context, bookingProvider, _) {
+              final user = bookingProvider.currentUser;
+              return CircleAvatar(
+                radius: 16,
+                backgroundImage: user?.profileImage != null
+                    ? NetworkImage(user!.profileImage!)
+                    : const NetworkImage('https://i.pravatar.cc/150?u=admin'),
+              );
+            },
           ),
         ],
       ),
@@ -106,7 +115,7 @@ class UsersScreen extends StatelessWidget {
           Text(
             'You have 24 active team members this month with a 98% security compliance rate.',
             style:
-                TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13),
+                TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 13),
           ),
           const SizedBox(height: 24),
           Row(
@@ -133,7 +142,7 @@ class UsersScreen extends StatelessWidget {
                 fontWeight: FontWeight.bold)),
         Text(label,
             style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.6),
+                color: Colors.white.withOpacity(0.6),
                 fontSize: 9,
                 letterSpacing: 0.5)),
       ],
@@ -147,7 +156,7 @@ class UsersScreen extends StatelessWidget {
         prefixIcon:
             const Icon(Icons.search, color: TripiColors.onSurfaceVariant),
         filled: true,
-        fillColor: TripiColors.surfaceContainerHigh.withValues(alpha: 0.5),
+        fillColor: TripiColors.surfaceContainerHigh.withOpacity(0.5),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
@@ -163,7 +172,7 @@ class UsersScreen extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10)
+          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)
         ],
       ),
       child: Row(
@@ -236,7 +245,7 @@ class UsersScreen extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
-                    color: TripiColors.primary.withValues(alpha: 0.1),
+                    color: TripiColors.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(

@@ -153,7 +153,7 @@ class PreferencesStep extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 10,
                               color: isSelected
-                                  ? const Color(0xFF2563EB).withValues(alpha: 0.8)
+                                  ? const Color(0xFF2563EB).withOpacity(0.8)
                                   : const Color(0xFF9CA3AF),
                             ),
                           ),

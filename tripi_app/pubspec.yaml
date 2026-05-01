@@ -17,6 +17,7 @@ dependencies:
   rxdart: ^0.28.0
   pointer_interceptor: ^0.10.1+1
   supabase_flutter: 2.5.0
+  shared_preferences: ^2.5.2
 
 dev_dependencies:
   flutter_test:

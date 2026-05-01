@@ -165,7 +165,7 @@ class _CreateTripWizardState extends State<CreateTripWizard> {
           decoration: BoxDecoration(
             color: Colors.white,
             border:
-                Border(top: BorderSide(color: Colors.black.withValues(alpha: 0.05))),
+                Border(top: BorderSide(color: Colors.black.withOpacity(0.05))),
           ),
           child: Row(
             children: [

@@ -1,19 +1,43 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/models.dart';
 import '../services/mock_data_service.dart';
 
 class BookingProvider extends ChangeNotifier {
   User? _currentUser;
+  String? _authIntent; // 'login' or 'register'
   Destination? _selectedDestination;
   Flight? _selectedFlight;
   String? _selectedSeat;
   int _extraBaggageCount = 0;
 
   User? get currentUser => _currentUser;
+  String? get authIntent => _authIntent;
   Destination? get selectedDestination => _selectedDestination;
   Flight? get selectedFlight => _selectedFlight;
   String? get selectedSeat => _selectedSeat;
   int get extraBaggageCount => _extraBaggageCount;
+
+  BookingProvider() {
+    _loadAuthIntent();
+  }
+
+  Future<void> _loadAuthIntent() async {
+    final prefs = await SharedPreferences.getInstance();
+    _authIntent = prefs.getString('auth_intent');
+    notifyListeners();
+  }
+
+  Future<void> setAuthIntent(String? intent) async {
+    _authIntent = intent;
+    final prefs = await SharedPreferences.getInstance();
+    if (intent == null) {
+      await prefs.remove('auth_intent');
+    } else {
+      await prefs.setString('auth_intent', intent);
+    }
+    notifyListeners();
+  }
 
   String? login(String email, String password) {
     // Check for hardcoded admin

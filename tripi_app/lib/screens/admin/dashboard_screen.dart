@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../theme/tripi_colors.dart';
 import '../../services/mock_data_service.dart';
+import '../../services/supabase_service.dart';
+import '../../providers/booking_provider.dart';
 import '../../widgets/tripi_card.dart';
 
 class DashboardScreen extends StatelessWidget {
@@ -17,60 +20,69 @@ class DashboardScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    const CircleAvatar(
-                      radius: 20,
-                      backgroundImage:
-                          NetworkImage('https://i.pravatar.cc/150?u=admin'),
-                    ),
-                    const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                Consumer<BookingProvider>(
+                  builder: (context, bookingProvider, _) {
+                    final user = bookingProvider.currentUser;
+                    return Row(
                       children: [
-                        Text(
-                          'Admin Console',
-                          style:
-                              Theme.of(context).textTheme.labelLarge?.copyWith(
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundImage: user?.profileImage != null
+                              ? NetworkImage(user!.profileImage!)
+                              : const NetworkImage(
+                                  'https://i.pravatar.cc/150?u=admin'),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Admin Console',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelLarge
+                                  ?.copyWith(
                                     fontWeight: FontWeight.bold,
                                     color: TripiColors.primary,
                                   ),
-                        ),
-                        Text(
-                          'GLOBAL TRAVEL OPS',
-                          style:
-                              Theme.of(context).textTheme.labelSmall?.copyWith(
+                            ),
+                            Text(
+                              'GLOBAL TRAVEL OPS',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(
                                     color: TripiColors.onSurfaceVariant
-                                        .withValues(alpha: 0.5),
+                                        .withOpacity(0.5),
                                     letterSpacing: 1,
                                   ),
+                            ),
+                          ],
                         ),
                       ],
-                    ),
-                  ],
+                    );
+                  },
                 ),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 10),
-                    ],
-                  ),
-                  child: const Icon(Icons.notifications_none,
-                      color: TripiColors.primary),
+                IconButton(
+                  onPressed: () async {
+                    await SupabaseService.signOut();
+                  },
+                  icon: const Icon(Icons.logout, color: TripiColors.primary),
+                  tooltip: 'Logout',
                 ),
               ],
             ),
             const SizedBox(height: 32),
-            Text(
-              'Good evening, Amitay',
-              style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+            Consumer<BookingProvider>(
+              builder: (context, bookingProvider, _) {
+                final user = bookingProvider.currentUser;
+                return Text(
+                  'Good evening, ${user?.name.split(' ').first ?? 'Admin'}',
+                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                );
+              },
             ),
             const SizedBox(height: 8),
             Text(
@@ -103,7 +115,7 @@ class DashboardScreen extends StatelessWidget {
           Row(
             children: [
               Icon(Icons.auto_graph_rounded,
-                  color: TripiColors.primary.withValues(alpha: 0.5)),
+                  color: TripiColors.primary.withOpacity(0.5)),
               const SizedBox(width: 12),
               Text(
                 'Trip Network Overview',
@@ -263,7 +275,7 @@ class DashboardScreen extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: isHighlight
                         ? TripiColors.primary
-                        : TripiColors.primary.withValues(alpha: 0.1),
+                        : TripiColors.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                 );
@@ -306,7 +318,7 @@ class DashboardScreen extends StatelessWidget {
               const Text('Recent Activity',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               Icon(Icons.history,
-                  color: TripiColors.onSurfaceVariant.withValues(alpha: 0.5)),
+                  color: TripiColors.onSurfaceVariant.withOpacity(0.5)),
             ],
           ),
           const SizedBox(height: 24),
@@ -317,7 +329,7 @@ class DashboardScreen extends StatelessWidget {
             onPressed: () {},
             style: OutlinedButton.styleFrom(
               minimumSize: const Size(double.infinity, 48),
-              side: BorderSide(color: TripiColors.primary.withValues(alpha: 0.1)),
+              side: BorderSide(color: TripiColors.primary.withOpacity(0.1)),
             ),
             child: const Text('View All Activity'),
           ),

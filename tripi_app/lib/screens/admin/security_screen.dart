@@ -118,7 +118,7 @@ class SecurityScreen extends StatelessWidget {
       child: Row(
         children: [
           Icon(Icons.devices,
-              size: 20, color: TripiColors.onSurfaceVariant.withValues(alpha: 0.5)),
+              size: 20, color: TripiColors.onSurfaceVariant.withOpacity(0.5)),
           const SizedBox(width: 12),
           Expanded(child: Text(label, style: const TextStyle(fontSize: 14))),
           Icon(value ? Icons.check_circle : Icons.circle_outlined,
@@ -160,7 +160,7 @@ class SecurityScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-                color: TripiColors.primary.withValues(alpha: 0.1),
+                color: TripiColors.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8)),
             child: const Text('ACTIVE NOW',
                 style: TextStyle(
@@ -189,7 +189,7 @@ class SecurityScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: TripiColors.surfaceContainerHigh.withValues(alpha: 0.5),
+        color: TripiColors.surfaceContainerHigh.withOpacity(0.5),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(

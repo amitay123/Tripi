@@ -164,6 +164,44 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     }
   }
 
+  Future<void> _handleGoogleSignUp() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      await SupabaseService.signInWithGoogle(intent: 'register');
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleSocialSignUp(String provider) async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      switch (provider) {
+        case 'facebook':
+          await SupabaseService.signInWithFacebook(intent: 'register');
+          break;
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -194,7 +232,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: TripiColors.primary.withValues(alpha: 0.1),
+                  color: TripiColors.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -235,7 +273,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                         'Enter your full name', _nameController),
                     const SizedBox(height: 20),
                     _buildInputField(context, 'EMAIL ADDRESS',
-                        'hello@example.com', _emailController),
+                        'traveler@example.com', _emailController),
                     _buildPasswordField(),
                     const SizedBox(height: 16),
                     _buildStrengthGrid(),
@@ -280,12 +318,22 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     Row(
                       children: [
                         Expanded(
-                            child: _buildSocialButton(
-                                context, Icons.g_mobiledata, 'Google')),
+                          child: _buildSocialButton(
+                            context,
+                            Icons.g_mobiledata,
+                            'Google',
+                            onTap: _isLoading ? null : _handleGoogleSignUp,
+                          ),
+                        ),
                         const SizedBox(width: 16),
                         Expanded(
-                            child: _buildSocialButton(
-                                context, Icons.apple, 'Apple')),
+                          child: _buildSocialButton(
+                            context,
+                            Icons.facebook,
+                            'Facebook',
+                            onTap: () => _handleSocialSignUp('facebook'),
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -347,7 +395,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 Text(
                   _successMessage!,
                   style: TextStyle(
-                      color: const Color(0xFFE65100).withValues(alpha: 0.8)),
+                      color: const Color(0xFFE65100).withOpacity(0.8)),
                 ),
               ],
             ),
@@ -458,7 +506,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   Widget _buildCriteriaChip(String label, bool met) {
     return Container(
       decoration: BoxDecoration(
-        color: TripiColors.surfaceContainerHigh.withValues(alpha: 0.5),
+        color: TripiColors.surfaceContainerHigh.withOpacity(0.5),
         borderRadius: BorderRadius.circular(12),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -579,26 +627,55 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     );
   }
 
-  Widget _buildSocialButton(BuildContext context, IconData icon, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        color: TripiColors.surfaceContainerHigh,
+  Widget _buildSocialButton(BuildContext context, IconData icon, String label,
+      {VoidCallback? onTap}) {
+    final bool isGoogle = label.toLowerCase().contains('google');
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(28),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: TripiColors.onSurface),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: TripiColors.onSurface,
-                  fontWeight: FontWeight.bold,
-                ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(28),
+            border:
+                Border.all(color: TripiColors.outlineVariant.withOpacity(0.1)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ],
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (isGoogle)
+                Image.network(
+                  'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
+                  height: 20,
+                  width: 20,
+                  errorBuilder: (context, error, stackTrace) =>
+                      const Icon(Icons.g_mobiledata, size: 24, color: Color(0xFF4285F4)),
+                )
+              else if (label.toLowerCase().contains('facebook'))
+                const Icon(Icons.facebook, color: Color(0xFF1877F2), size: 24)
+              else
+                const Icon(Icons.apple, color: Colors.black, size: 24),
+              const SizedBox(width: 12),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: TripiColors.onSurface,
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

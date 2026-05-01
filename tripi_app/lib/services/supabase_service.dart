@@ -31,6 +31,49 @@ class SupabaseService {
     );
   }
 
+  /// Sign in with Google OAuth
+  /// [intent] should be 'login' or 'register'
+  static Future<void> signInWithGoogle({required String intent}) async {
+    final String baseRedirect = kIsWeb
+        ? (Uri.base.origin.contains('localhost')
+            ? 'http://localhost:8080/'
+            : 'https://tripi-app-af1ad.web.app/')
+        : 'io.supabase.tripi://login-callback';
+
+    // Embed intent in the redirect URL so it survives the OAuth page redirect
+    final String redirectTo = kIsWeb
+        ? Uri.parse(baseRedirect).replace(queryParameters: {'intent': intent}).toString()
+        : baseRedirect;
+
+    debugPrint('Social Auth Google: Redirecting to $redirectTo (intent=$intent)');
+
+    await _client.auth.signInWithOAuth(
+      OAuthProvider.google,
+      redirectTo: redirectTo,
+    );
+  }
+
+  /// Sign in with Facebook OAuth
+  /// [intent] should be 'login' or 'register'
+  static Future<void> signInWithFacebook({required String intent}) async {
+    final String baseRedirect = kIsWeb
+        ? (Uri.base.origin.contains('localhost')
+            ? 'http://localhost:8080/'
+            : 'https://tripi-app-af1ad.web.app/')
+        : 'io.supabase.tripi://login-callback';
+
+    final String redirectTo = kIsWeb
+        ? Uri.parse(baseRedirect).replace(queryParameters: {'intent': intent}).toString()
+        : baseRedirect;
+
+    debugPrint('Social Auth Facebook: Redirecting to $redirectTo (intent=$intent)');
+
+    await _client.auth.signInWithOAuth(
+      OAuthProvider.facebook,
+      redirectTo: redirectTo,
+    );
+  }
+
   /// Sign out
   static Future<void> signOut() async {
     await _client.auth.signOut();
@@ -51,7 +94,17 @@ class SupabaseService {
   static Session? get currentSession => _client.auth.currentSession;
 
   /// Get current user
-  static User? get currentUser => _client.auth.currentUser;
+  static models.User? get currentUser {
+    final user = _client.auth.currentUser;
+    if (user == null) return null;
+    return models.User(
+      id: user.id,
+      email: user.email ?? '',
+      name: user.userMetadata?['full_name']?.toString() ?? 'Traveler',
+      profileImage: user.userMetadata?['avatar_url']?.toString(),
+      providerType: user.appMetadata['provider']?.toString(),
+    );
+  }
 
   /// Check if a user with the given email is registered
   static Future<bool> isUserRegistered(String email) async {
@@ -61,6 +114,19 @@ class SupabaseService {
         .eq('email', email)
         .maybeSingle();
     return response != null;
+  }
+
+  /// Create a profile in the public.profiles table
+  static Future<void> createProfile({
+    required String id,
+    required String email,
+    required String name,
+  }) async {
+    await _client.from('profiles').upsert({
+      'id': id,
+      'email': email,
+      'full_name': name,
+    });
   }
 
   // --- TRIP METHODS ---

@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import '../theme/tripi_colors.dart';
 import '../widgets/tripi_card.dart';
 import '../models/models.dart';
-
+import '../providers/booking_provider.dart';
 import '../providers/trip_provider.dart';
 import 'create_trip/create_trip_wizard.dart';
 import 'itinerary_screen.dart';
@@ -308,10 +308,17 @@ class _TripsScreenState extends State<TripsScreen> {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
-            child: CircleAvatar(
-              radius: 18,
-              backgroundImage: NetworkImage(
-                  'https://images.weserv.nl/?url=${Uri.encodeComponent('https://i.pravatar.cc/150?u=admin_user')}'),
+            child: Consumer<BookingProvider>(
+              builder: (context, bookingProvider, _) {
+                final user = bookingProvider.currentUser;
+                return CircleAvatar(
+                  radius: 18,
+                  backgroundImage: user?.profileImage != null
+                      ? NetworkImage(user!.profileImage!)
+                      : const NetworkImage(
+                          'https://i.pravatar.cc/150?u=tripi_guest'),
+                );
+              },
             ),
           ),
         ],
@@ -456,7 +463,7 @@ class _TripsScreenState extends State<TripsScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.9),
+                    color: Colors.white.withOpacity(0.9),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: const Text(
@@ -481,11 +488,11 @@ class _TripsScreenState extends State<TripsScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.blue.withValues(alpha: 0.9),
+                            color: Colors.blue.withOpacity(0.9),
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.2),
+                                color: Colors.black.withOpacity(0.2),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
@@ -506,11 +513,11 @@ class _TripsScreenState extends State<TripsScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.red.withValues(alpha: 0.9),
+                            color: Colors.red.withOpacity(0.9),
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.2),
+                                color: Colors.black.withOpacity(0.2),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
@@ -711,7 +718,7 @@ class EmptyTripsView extends StatelessWidget {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.03),
+                          color: Colors.black.withOpacity(0.03),
                           blurRadius: 40,
                           spreadRadius: 10),
                     ],
@@ -725,7 +732,7 @@ class EmptyTripsView extends StatelessWidget {
                     borderRadius: BorderRadius.circular(40),
                     boxShadow: [
                       BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.02),
+                          color: Colors.black.withOpacity(0.02),
                           blurRadius: 20),
                     ],
                   ),
@@ -752,7 +759,7 @@ class EmptyTripsView extends StatelessWidget {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
+                            color: Colors.black.withOpacity(0.05),
                             blurRadius: 10),
                       ],
                     ),
@@ -770,7 +777,7 @@ class EmptyTripsView extends StatelessWidget {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
+                            color: Colors.black.withOpacity(0.05),
                             blurRadius: 10),
                       ],
                     ),

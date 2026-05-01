@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../theme/tripi_colors.dart';
 import '../services/mock_data_service.dart';
+import '../services/supabase_service.dart';
 import '../widgets/tripi_card.dart';
 import '../providers/booking_provider.dart';
 import 'trips_screen.dart';
@@ -118,12 +119,28 @@ class ExploreContent extends StatelessWidget {
                     ),
                   ],
                 ),
-                const CircleAvatar(
+                CircleAvatar(
                   radius: 24,
-                  backgroundImage:
-                      NetworkImage('https://i.pravatar.cc/150?u=tripi'),
+                  backgroundImage: user?.profileImage != null
+                      ? NetworkImage(user!.profileImage!)
+                      : const NetworkImage('https://i.pravatar.cc/150?u=tripi'),
                 ),
               ],
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () async {
+                  await SupabaseService.signOut();
+                },
+                icon: const Icon(Icons.logout, size: 16),
+                label: const Text('Logout', style: TextStyle(fontSize: 12)),
+                style: TextButton.styleFrom(
+                  foregroundColor: TripiColors.onSurfaceVariant,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
+              ),
             ),
             const SizedBox(height: 32),
             TextField(

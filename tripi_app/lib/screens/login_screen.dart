@@ -50,12 +50,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         final supabaseUser = SupabaseService.currentUser;
         if (supabaseUser != null) {
-          final userModel = models.User(
-            id: supabaseUser.id,
-            email: supabaseUser.email ?? '',
-            name: supabaseUser.userMetadata?['full_name']?.toString() ?? 'Traveler',
-          );
-          context.read<BookingProvider>().updateUser(userModel);
+          context.read<BookingProvider>().updateUser(supabaseUser);
         }
         Navigator.pushReplacementNamed(context, '/explore');
       }
@@ -151,6 +146,49 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _handleGoogleSignIn() async {
+    if (_isSignInLoading) return;
+    setState(() {
+      _isSignInLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      await SupabaseService.signInWithGoogle(intent: 'login');
+      // In Web OAuth, the page redirects, so we don't reach here
+    } catch (e) {
+      debugPrint('Google Sign In Error: $e');
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Google Sign In failed. Please try again.';
+          _isSignInLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleSocialSignIn(String provider) async {
+    if (_isSignInLoading) return;
+    setState(() {
+      _isSignInLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      switch (provider) {
+        case 'facebook':
+          await SupabaseService.signInWithFacebook(intent: 'login');
+          break;
+      }
+    } catch (e) {
+      debugPrint('Social Sign In Error: $e');
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Sign In failed. Please try again.';
+          _isSignInLoading = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -199,7 +237,7 @@ class _LoginScreenState extends State<LoginScreen> {
             _buildInputField(
               context,
               'EMAIL ADDRESS',
-              'traveler@voyage.com',
+              'traveler@example.com',
               _emailController,
               Icons.email_outlined,
               hasError: _errorMessage != null,
@@ -286,9 +324,20 @@ class _LoginScreenState extends State<LoginScreen> {
             Row(
               children: [
                 Expanded(
-                    child: _buildSocialButton(Icons.g_mobiledata, 'Google')),
+                  child: _buildSocialButton(
+                    Icons.g_mobiledata,
+                    'Google',
+                    onTap: _isSignInLoading ? null : _handleGoogleSignIn,
+                  ),
+                ),
                 const SizedBox(width: 16),
-                Expanded(child: _buildSocialButton(Icons.apple, 'Apple')),
+                Expanded(
+                  child: _buildSocialButton(
+                    Icons.facebook,
+                    'Facebook',
+                    onTap: () => _handleSocialSignIn('facebook'),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 64),
@@ -349,7 +398,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Text(
                   _errorMessage!,
                   style: TextStyle(
-                      color: const Color(0xFFB00020).withValues(alpha: 0.8)),
+                      color: const Color(0xFFB00020).withOpacity(0.8)),
                 ),
               ],
             ),
@@ -385,7 +434,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Text(
                   _successMessage!,
                   style: TextStyle(
-                      color: const Color(0xFFE65100).withValues(alpha: 0.8)),
+                      color: const Color(0xFFE65100).withOpacity(0.8)),
                 ),
               ],
             ),
@@ -439,7 +488,7 @@ class _LoginScreenState extends State<LoginScreen> {
               borderSide: BorderSide(
                 color: hasError
                     ? const Color(0xFFB00020)
-                    : TripiColors.outlineVariant.withValues(alpha: 0.2),
+                    : TripiColors.outlineVariant.withOpacity(0.2),
                 width: 1.5,
               ),
             ),
@@ -458,24 +507,54 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildSocialButton(IconData icon, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
+  Widget _buildSocialButton(IconData icon, String label, {VoidCallback? onTap}) {
+    final bool isGoogle = label.toLowerCase().contains('google');
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: TripiColors.outlineVariant.withValues(alpha: 0.1)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: TripiColors.onSurface),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: const TextStyle(fontWeight: FontWeight.bold),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(28),
+            border:
+                Border.all(color: TripiColors.outlineVariant.withOpacity(0.1)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ],
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (isGoogle)
+                Image.network(
+                  'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
+                  height: 20,
+                  width: 20,
+                  errorBuilder: (context, error, stackTrace) =>
+                      const Icon(Icons.g_mobiledata, size: 24, color: Color(0xFF4285F4)),
+                )
+              else if (label.toLowerCase().contains('facebook'))
+                const Icon(Icons.facebook, color: Color(0xFF1877F2), size: 24)
+              else
+                const Icon(Icons.apple, color: Colors.black, size: 24),
+              const SizedBox(width: 12),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: TripiColors.onSurface,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
