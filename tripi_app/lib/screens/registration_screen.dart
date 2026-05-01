@@ -232,7 +232,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: TripiColors.primary.withOpacity(0.1),
+                  color: TripiColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
