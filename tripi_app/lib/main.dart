@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'theme/tripi_theme.dart';
+import 'providers/booking_provider.dart';
+import 'providers/trip_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/explore_screen.dart';
 import 'screens/place_details_screen.dart';
@@ -19,10 +22,9 @@ import 'screens/admin/admin_scaffold.dart';
 import 'screens/set_new_password_screen.dart';
 import 'services/supabase_service.dart';
 
-void main() async {
+Future<void> main() async {
+  debugPrint('App initialization started');
   WidgetsFlutterBinding.ensureInitialized();
-  
-  await SupabaseService.initialize();
 
   // Enable Google Fonts runtime fetching to avoid white screen crash when fonts are missing from assets.
   GoogleFonts.config.allowRuntimeFetching = true;
@@ -45,6 +47,7 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => BookingProvider()),
+        ChangeNotifierProvider(create: (_) => TripProvider()),
       ],
       child: const TripiApp(),
     ),
