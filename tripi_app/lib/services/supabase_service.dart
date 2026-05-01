@@ -35,9 +35,7 @@ class SupabaseService {
   /// [intent] should be 'login' or 'register'
   static Future<void> signInWithGoogle({required String intent}) async {
     final String baseRedirect = kIsWeb
-        ? (Uri.base.origin.contains('localhost')
-            ? 'http://localhost:8080/'
-            : 'https://tripi-app-af1ad.web.app/')
+        ? (Uri.base.origin.endsWith('/') ? Uri.base.origin : '${Uri.base.origin}/')
         : 'io.supabase.tripi://login-callback';
 
     // Embed intent in the redirect URL so it survives the OAuth page redirect
@@ -57,9 +55,7 @@ class SupabaseService {
   /// [intent] should be 'login' or 'register'
   static Future<void> signInWithFacebook({required String intent}) async {
     final String baseRedirect = kIsWeb
-        ? (Uri.base.origin.contains('localhost')
-            ? 'http://localhost:8080/'
-            : 'https://tripi-app-af1ad.web.app/')
+        ? (Uri.base.origin.endsWith('/') ? Uri.base.origin : '${Uri.base.origin}/')
         : 'io.supabase.tripi://login-callback';
 
     final String redirectTo = kIsWeb
