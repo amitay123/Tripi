@@ -365,18 +365,115 @@ class _TripsScreenState extends State<TripsScreen> {
           ),
           const SizedBox(height: 24),
           // Search Bar
-          TextField(
-            decoration: InputDecoration(
-              hintText: 'Search trips, destinations...',
-              prefixIcon: const Icon(Icons.search, color: Color(0xFF9CA3AF)),
-              filled: true,
-              fillColor: const Color(0xFFF3F4F6),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(30),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: const EdgeInsets.symmetric(vertical: 16),
-            ),
+          Autocomplete<dynamic>(
+            displayStringForOption: (trip) => trip.name,
+            optionsBuilder: (TextEditingValue textEditingValue) {
+              if (textEditingValue.text == '') {
+                return const Iterable<dynamic>.empty();
+              }
+              return trips.where((trip) {
+                final query = textEditingValue.text.toLowerCase();
+                final nameMatch = trip.name.toLowerCase().contains(query);
+                final cityMatch = trip.city?.toLowerCase().contains(query) ?? false;
+                final countryMatch = trip.country.toLowerCase().contains(query);
+                return nameMatch || cityMatch || countryMatch;
+              });
+            },
+            onSelected: (trip) {
+              if (!trip.isCompleted) {
+                context.read<TripProvider>().resumeTrip(trip);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CreateTripWizard()),
+                );
+              } else {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => ItineraryScreen(tripId: trip.id)),
+                );
+              }
+            },
+            fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+              return TextField(
+                controller: controller,
+                focusNode: focusNode,
+                decoration: InputDecoration(
+                  hintText: 'Search trips, destinations...',
+                  prefixIcon: const Icon(Icons.search, color: Color(0xFF9CA3AF)),
+                  filled: true,
+                  fillColor: const Color(0xFFF3F4F6),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                onSubmitted: (value) => onFieldSubmitted(),
+              );
+            },
+            optionsViewBuilder: (context, onSelected, options) {
+              return Align(
+                alignment: Alignment.topLeft,
+                child: Material(
+                  elevation: 8.0,
+                  borderRadius: BorderRadius.circular(20),
+                  color: Colors.transparent,
+                  child: Container(
+                    width: MediaQuery.of(context).size.width - 48,
+                    margin: const EdgeInsets.only(top: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: ListView.separated(
+                        padding: EdgeInsets.zero,
+                        shrinkWrap: true,
+                        itemCount: options.length,
+                        separatorBuilder: (context, index) => const Divider(height: 1),
+                        itemBuilder: (BuildContext context, int index) {
+                          final dynamic trip = options.elementAt(index);
+                          return ListTile(
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            leading: Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                image: DecorationImage(
+                                  image: NetworkImage(
+                                    MockDataService.getDestinationImage(trip.city, trip.country),
+                                  ),
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            ),
+                            title: Text(
+                              trip.name,
+                              style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+                            ),
+                            subtitle: Text(
+                              trip.city != null ? '${trip.city}, ${trip.country}' : trip.country,
+                              style: const TextStyle(color: Color(0xFF6B7280), fontSize: 12),
+                            ),
+                            onTap: () => onSelected(trip),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
           const SizedBox(height: 32),
           
