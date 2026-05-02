@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/tripi_colors.dart';
 import '../widgets/tripi_card.dart';
 import '../services/supabase_service.dart';

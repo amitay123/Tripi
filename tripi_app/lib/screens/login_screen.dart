@@ -129,7 +129,7 @@ class _LoginScreenState extends State<LoginScreen> {
       debugPrint('Forgot password error: $e');
       if (mounted) {
         setState(() {
-          if (e is AuthApiException && (e.code == 'over_email_send_rate_limit' || e.statusCode == '429')) {
+          if (e is AuthException && (e.code == 'over_email_send_rate_limit' || e.statusCode == '429')) {
             _successMessage = 'Password reset email sent! Check your inbox.';
             _errorMessage = null;
           } else {
