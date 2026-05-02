@@ -5,6 +5,7 @@ import '../theme/tripi_colors.dart';
 import '../services/supabase_service.dart';
 import '../providers/booking_provider.dart';
 import '../models/models.dart' as models;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -20,6 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isForgotInProgress = false;
   String? _errorMessage;
   String? _successMessage;
+  bool _rememberMe = false;
 
   Future<void> _handleSignIn() async {
     if (_isForgotInProgress) return;
@@ -48,6 +50,10 @@ class _LoginScreenState extends State<LoginScreen> {
       
       // Sync with BookingProvider
       if (mounted) {
+        // Save "Remember Me" preference
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('remember_me', _rememberMe);
+
         final supabaseUser = SupabaseService.currentUser;
         if (supabaseUser != null) {
           context.read<BookingProvider>().updateUser(supabaseUser);
@@ -278,6 +284,41 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                       ),
               ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                SizedBox(
+                  height: 24,
+                  width: 24,
+                  child: Checkbox(
+                    value: _rememberMe,
+                    onChanged: (value) {
+                      setState(() {
+                        _rememberMe = value ?? false;
+                      });
+                    },
+                    activeColor: TripiColors.primary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _rememberMe = !_rememberMe;
+                    });
+                  },
+                  child: Text(
+                    'Remember me',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: TripiColors.onSurfaceVariant,
+                        ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 40),
             IgnorePointer(

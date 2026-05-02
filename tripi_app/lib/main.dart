@@ -34,10 +34,18 @@ Future<void> main() async {
     url: 'https://fbtoyhnjwyhssozetfhw.supabase.co',
     anonKey: 'sb_publishable_DWgDyHuCNZLMHIbIkVuCkA_eTe_Z4Vw',
     authOptions: const AuthOptions(
-      persistSession: false,
+      persistSession: true,
     ),
   );
   debugPrint('Supabase initialized successfully');
+
+  // Check if we should clear the session based on "Remember Me" preference
+  final prefs = await SharedPreferences.getInstance();
+  final rememberMe = prefs.getBool('remember_me') ?? false;
+  if (!rememberMe) {
+    debugPrint('Remember Me is false, signing out to prevent auto-login');
+    await Supabase.instance.client.auth.signOut();
+  }
 
   // Catch Flutter errors
   FlutterError.onError = (FlutterErrorDetails details) {
