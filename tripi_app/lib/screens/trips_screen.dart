@@ -719,14 +719,17 @@ class _TripsScreenState extends State<TripsScreen> {
                       color: Color(0xFF1F2937)),
                 ),
                 const SizedBox(height: 16),
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.airplanemode_active,
+                    const Icon(Icons.location_on,
                         size: 18, color: Color(0xFF6B7280)),
-                    SizedBox(width: 8),
-                    Text('CDG • Air France',
-                        style:
-                            TextStyle(color: Color(0xFF6B7280), fontSize: 14)),
+                    const SizedBox(width: 8),
+                    Text(
+                        trip.city != null
+                            ? '${trip.city}, ${trip.country}'
+                            : trip.country,
+                        style: const TextStyle(
+                            color: Color(0xFF6B7280), fontSize: 14)),
                   ],
                 ),
               ],
@@ -795,8 +798,12 @@ class _TripsScreenState extends State<TripsScreen> {
                         color: Color(0xFF1F2937)),
                   ),
                   const SizedBox(height: 4),
-                  const Text('Planning stage',
-                      style: TextStyle(color: Color(0xFF6B7280), fontSize: 12)),
+                  Text(
+                      trip.city != null
+                          ? '${trip.city}, ${trip.country}'
+                          : trip.country,
+                      style: const TextStyle(
+                          color: Color(0xFF6B7280), fontSize: 12)),
                   if (_getCountdownText(trip.startDate) != null) ...[
                     const SizedBox(height: 4),
                     Container(
