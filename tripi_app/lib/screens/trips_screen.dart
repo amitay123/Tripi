@@ -335,15 +335,19 @@ class _TripsScreenState extends State<TripsScreen> {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
+    // Filter and sort upcoming trips (soonest first)
     final upcomingTrips = trips.where((t) {
       final end = DateTime(t.endDate.year, t.endDate.month, t.endDate.day);
       return !end.isBefore(today);
     }).toList();
+    upcomingTrips.sort((a, b) => a.startDate.compareTo(b.startDate));
 
+    // Filter and sort past trips (most recent first)
     final pastTrips = trips.where((t) {
       final end = DateTime(t.endDate.year, t.endDate.month, t.endDate.day);
       return end.isBefore(today);
     }).toList();
+    pastTrips.sort((a, b) => b.startDate.compareTo(a.startDate));
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -395,17 +399,22 @@ class _TripsScreenState extends State<TripsScreen> {
               ],
             ),
             const SizedBox(height: 16),
+            // 1. Topmost trip (Soonest)
             _buildFeaturedTrip(context, upcomingTrips[0]),
-            const SizedBox(height: 16),
-            ...upcomingTrips.skip(1).map((trip) => _buildTripListItem(context, trip)),
             const SizedBox(height: 16),
           ],
 
-          // Plan New Trip Card
+          // 2. Plan New Trip Card (Always second)
           Padding(
             padding: const EdgeInsets.only(bottom: 24.0),
             child: _buildPlanNewTripCard(context),
           ),
+
+          // 3. Rest of the upcoming trips
+          if (upcomingTrips.length > 1) ...[
+            ...upcomingTrips.skip(1).map((trip) => _buildTripListItem(context, trip)),
+            const SizedBox(height: 24),
+          ],
 
           if (pastTrips.isNotEmpty) ...[
             const Text(
