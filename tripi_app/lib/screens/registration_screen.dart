@@ -159,7 +159,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     } on AuthException catch (e) {
       setState(() {
         if (e.code == 'user_already_exists' || e.message.contains('already registered')) {
-          _errorMessage = 'האימייל הזה כבר רשום במערכת. אולי כדאי לנסות להתחבר?';
+          _errorMessage = 'This email is already registered.';
         } else {
           _errorMessage = e.message;
         }

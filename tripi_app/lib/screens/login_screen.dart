@@ -58,11 +58,11 @@ class _LoginScreenState extends State<LoginScreen> {
       debugPrint('Login failed: $e');
       String errorMsg = e.toString();
       if (errorMsg.contains('Email not confirmed')) {
-        errorMsg = 'האימייל שלך טרם אושר. אנא בדוק את תיבת הדואר הנכנס ולחץ על קישור האישור.';
+        errorMsg = 'Your email has not been confirmed yet. Please check your inbox for the confirmation link and try again.';
       } else if (errorMsg.contains('Invalid login credentials')) {
-        errorMsg = 'אימייל או סיסמה לא נכונים. נסה שוב.';
+        errorMsg = 'Invalid email or password. Please try again.';
       } else if (errorMsg.contains('Network error')) {
-        errorMsg = 'שגיאת רשת. בדוק את החיבור שלך ונסה שוב.';
+        errorMsg = 'Network error. Please check your connection and try again.';
       }
       
       setState(() {
