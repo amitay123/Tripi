@@ -337,20 +337,157 @@ class _TripsScreenState extends State<TripsScreen> {
           ? const Center(child: CircularProgressIndicator())
           : trips.isEmpty
               ? EmptyTripsView(onPlanTrip: () => _startWizard(context))
-              : Stack(
-                  children: [
-                    _buildTripsList(context, trips),
-                    // Floating search dropdown overlay
-                    if (_isSearching && _searchResults.isNotEmpty)
-                      Positioned(
-                        top: 100, // below AppBar + title + search bar
-                        left: 24,
-                        right: 24,
-                        child: Material(
-                          elevation: 12,
-                          borderRadius: BorderRadius.circular(20),
-                          color: Colors.white,
-                          child: ConstrainedBox(
+              : _buildTripsBody(context, trips),
+    );
+  }
+
+  Widget _buildDropdownItem(BuildContext context, dynamic trip) {
+    return ListTile(
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          image: DecorationImage(
+            image: NetworkImage(
+              MockDataService.getDestinationImage(trip.city, trip.country),
+            ),
+            fit: BoxFit.cover,
+          ),
+        ),
+      ),
+      title: Text(
+        trip.name,
+        style: const TextStyle(
+            fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+      ),
+      subtitle: Text(
+        trip.city != null ? '${trip.city}, ${trip.country}' : trip.country,
+        style: const TextStyle(color: Color(0xFF6B7280), fontSize: 12),
+      ),
+      onTap: () {
+        _searchController.clear();
+        setState(() {
+          _isSearching = false;
+          _searchResults = [];
+        });
+        if (!trip.isCompleted) {
+          context.read<TripProvider>().resumeTrip(trip);
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const CreateTripWizard()),
+          );
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => ItineraryScreen(tripId: trip.id)),
+          );
+        }
+      },
+    );
+  }
+
+  Widget _buildTripsBody(BuildContext context, List<dynamic> trips) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Fixed header: title + search bar
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Your Trips',
+                style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF1F2937),
+                    ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _searchController,
+                onChanged: (value) {
+                  setState(() {
+                    _isSearching = value.isNotEmpty;
+                    if (_isSearching) {
+                      final query = value.toLowerCase();
+                      _searchResults = trips.where((trip) {
+                        final nameMatch =
+                            trip.name.toLowerCase().contains(query);
+                        final cityMatch =
+                            trip.city?.toLowerCase().contains(query) ?? false;
+                        final countryMatch =
+                            trip.country.toLowerCase().contains(query);
+                        return nameMatch || cityMatch || countryMatch;
+                      }).toList();
+                    } else {
+                      _searchResults = [];
+                    }
+                  });
+                },
+                decoration: InputDecoration(
+                  hintText: 'Search trips, destinations...',
+                  prefixIcon:
+                      const Icon(Icons.search, color: Color(0xFF9CA3AF)),
+                  suffixIcon: _isSearching
+                      ? IconButton(
+                          icon: const Icon(Icons.clear,
+                              color: Color(0xFF9CA3AF)),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() {
+                              _isSearching = false;
+                              _searchResults = [];
+                            });
+                          },
+                        )
+                      : null,
+                  filled: true,
+                  fillColor: const Color(0xFFF3F4F6),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Expandable area: trips list + floating dropdown
+        Expanded(
+          child: Stack(
+            children: [
+              _buildTripsList(context, trips),
+              // Floating dropdown - appears right below search bar
+              if (_isSearching)
+                Positioned(
+                  top: 8,
+                  left: 24,
+                  right: 24,
+                  child: Material(
+                    elevation: 12,
+                    borderRadius: BorderRadius.circular(20),
+                    color: Colors.white,
+                    child: _searchResults.isEmpty
+                        ? const Padding(
+                            padding: EdgeInsets.all(20),
+                            child: Row(
+                              children: [
+                                Icon(Icons.search_off,
+                                    color: Color(0xFF9CA3AF)),
+                                SizedBox(width: 12),
+                                Text(
+                                  'No trips found',
+                                  style: TextStyle(
+                                      color: Color(0xFF6B7280), fontSize: 14),
+                                ),
+                              ],
+                            ),
+                          )
+                        : ConstrainedBox(
                             constraints: const BoxConstraints(maxHeight: 300),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(20),
@@ -360,78 +497,18 @@ class _TripsScreenState extends State<TripsScreen> {
                                 itemCount: _searchResults.length,
                                 separatorBuilder: (context, index) =>
                                     const Divider(height: 1),
-                                itemBuilder: (context, index) {
-                                  final dynamic trip =
-                                      _searchResults[index];
-                                  return ListTile(
-                                    leading: Container(
-                                      width: 40,
-                                      height: 40,
-                                      decoration: BoxDecoration(
-                                        borderRadius:
-                                            BorderRadius.circular(8),
-                                        image: DecorationImage(
-                                          image: NetworkImage(
-                                            MockDataService
-                                                .getDestinationImage(
-                                              trip.city,
-                                              trip.country,
-                                            ),
-                                          ),
-                                          fit: BoxFit.cover,
-                                        ),
-                                      ),
-                                    ),
-                                    title: Text(
-                                      trip.name,
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xFF1F2937)),
-                                    ),
-                                    subtitle: Text(
-                                      trip.city != null
-                                          ? '${trip.city}, ${trip.country}'
-                                          : trip.country,
-                                      style: const TextStyle(
-                                          color: Color(0xFF6B7280),
-                                          fontSize: 12),
-                                    ),
-                                    onTap: () {
-                                      // Clear search immediately
-                                      _searchController.clear();
-                                      setState(() {
-                                        _isSearching = false;
-                                        _searchResults = [];
-                                      });
-                                      if (!trip.isCompleted) {
-                                        context
-                                            .read<TripProvider>()
-                                            .resumeTrip(trip);
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                              builder: (context) =>
-                                                  const CreateTripWizard()),
-                                        );
-                                      } else {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                              builder: (context) =>
-                                                  ItineraryScreen(
-                                                      tripId: trip.id)),
-                                        );
-                                      }
-                                    },
-                                  );
-                                },
+                                itemBuilder: (context, index) =>
+                                    _buildDropdownItem(
+                                        context, _searchResults[index]),
                               ),
                             ),
                           ),
-                        ),
-                      ),
-                  ],
+                  ),
                 ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -459,60 +536,6 @@ class _TripsScreenState extends State<TripsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 16),
-          Text(
-            'Your Trips',
-            style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF1F2937),
-                ),
-          ),
-          const SizedBox(height: 24),
-          // Search Bar
-          TextField(
-            controller: _searchController,
-            onChanged: (value) {
-              setState(() {
-                _isSearching = value.isNotEmpty;
-                if (_isSearching) {
-                  final query = value.toLowerCase();
-                  _searchResults = trips.where((trip) {
-                    final nameMatch = trip.name.toLowerCase().contains(query);
-                    final cityMatch =
-                        trip.city?.toLowerCase().contains(query) ?? false;
-                    final countryMatch =
-                        trip.country.toLowerCase().contains(query);
-                    return nameMatch || cityMatch || countryMatch;
-                  }).toList();
-                } else {
-                  _searchResults = [];
-                }
-              });
-            },
-            decoration: InputDecoration(
-              hintText: 'Search trips, destinations...',
-              prefixIcon: const Icon(Icons.search, color: Color(0xFF9CA3AF)),
-              suffixIcon: _isSearching
-                  ? IconButton(
-                      icon: const Icon(Icons.clear, color: Color(0xFF9CA3AF)),
-                      onPressed: () {
-                        _searchController.clear();
-                        setState(() {
-                          _isSearching = false;
-                          _searchResults = [];
-                        });
-                      },
-                    )
-                  : null,
-              filled: true,
-              fillColor: const Color(0xFFF3F4F6),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(30),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: const EdgeInsets.symmetric(vertical: 16),
-            ),
-          ),
-
           const SizedBox(height: 32),
           
           if (upcomingTrips.isNotEmpty) ...[
