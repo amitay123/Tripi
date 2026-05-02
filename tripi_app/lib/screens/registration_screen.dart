@@ -155,9 +155,19 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           Navigator.pushReplacementNamed(context, '/explore');
         }
       }
+    } on AuthException catch (e) {
+      setState(() {
+        if (e.code == 'user_already_exists' || e.message.contains('already registered')) {
+          _errorMessage = 'האימייל הזה כבר רשום במערכת. אולי כדאי לנסות להתחבר?';
+        } else {
+          _errorMessage = e.message;
+        }
+        _successMessage = null;
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() {
-        _errorMessage = e.toString();
+        _errorMessage = 'אירעה שגיאה בלתי צפויה. נסה שוב מאוחר יותר.';
         _successMessage = null;
         _isLoading = false;
       });
