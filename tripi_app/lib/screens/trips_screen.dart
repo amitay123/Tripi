@@ -337,7 +337,101 @@ class _TripsScreenState extends State<TripsScreen> {
           ? const Center(child: CircularProgressIndicator())
           : trips.isEmpty
               ? EmptyTripsView(onPlanTrip: () => _startWizard(context))
-              : _buildTripsList(context, trips),
+              : Stack(
+                  children: [
+                    _buildTripsList(context, trips),
+                    // Floating search dropdown overlay
+                    if (_isSearching && _searchResults.isNotEmpty)
+                      Positioned(
+                        top: 100, // below AppBar + title + search bar
+                        left: 24,
+                        right: 24,
+                        child: Material(
+                          elevation: 12,
+                          borderRadius: BorderRadius.circular(20),
+                          color: Colors.white,
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxHeight: 300),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(20),
+                              child: ListView.separated(
+                                padding: EdgeInsets.zero,
+                                shrinkWrap: true,
+                                itemCount: _searchResults.length,
+                                separatorBuilder: (context, index) =>
+                                    const Divider(height: 1),
+                                itemBuilder: (context, index) {
+                                  final dynamic trip =
+                                      _searchResults[index];
+                                  return ListTile(
+                                    leading: Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        borderRadius:
+                                            BorderRadius.circular(8),
+                                        image: DecorationImage(
+                                          image: NetworkImage(
+                                            MockDataService
+                                                .getDestinationImage(
+                                              trip.city,
+                                              trip.country,
+                                            ),
+                                          ),
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                    ),
+                                    title: Text(
+                                      trip.name,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF1F2937)),
+                                    ),
+                                    subtitle: Text(
+                                      trip.city != null
+                                          ? '${trip.city}, ${trip.country}'
+                                          : trip.country,
+                                      style: const TextStyle(
+                                          color: Color(0xFF6B7280),
+                                          fontSize: 12),
+                                    ),
+                                    onTap: () {
+                                      // Clear search immediately
+                                      _searchController.clear();
+                                      setState(() {
+                                        _isSearching = false;
+                                        _searchResults = [];
+                                      });
+                                      if (!trip.isCompleted) {
+                                        context
+                                            .read<TripProvider>()
+                                            .resumeTrip(trip);
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (context) =>
+                                                  const CreateTripWizard()),
+                                        );
+                                      } else {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (context) =>
+                                                  ItineraryScreen(
+                                                      tripId: trip.id)),
+                                        );
+                                      }
+                                    },
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
     );
   }
 
@@ -418,77 +512,7 @@ class _TripsScreenState extends State<TripsScreen> {
               contentPadding: const EdgeInsets.symmetric(vertical: 16),
             ),
           ),
-          if (_isSearching && _searchResults.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: ListView.separated(
-                padding: EdgeInsets.zero,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _searchResults.length,
-                separatorBuilder: (context, index) => const Divider(height: 1),
-                itemBuilder: (context, index) {
-                  final dynamic trip = _searchResults[index];
-                  return ListTile(
-                    leading: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        image: DecorationImage(
-                          image: NetworkImage(
-                            MockDataService.getDestinationImage(
-                                trip.city, trip.country),
-                          ),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                    title: Text(
-                      trip.name,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
-                    ),
-                    subtitle: Text(
-                      trip.city != null
-                          ? '${trip.city}, ${trip.country}'
-                          : trip.country,
-                      style: const TextStyle(
-                          color: Color(0xFF6B7280), fontSize: 12),
-                    ),
-                    onTap: () {
-                      if (!trip.isCompleted) {
-                        context.read<TripProvider>().resumeTrip(trip);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const CreateTripWizard()),
-                        );
-                      } else {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) =>
-                                  ItineraryScreen(tripId: trip.id)),
-                        );
-                      }
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
+
           const SizedBox(height: 32),
           
           if (upcomingTrips.isNotEmpty) ...[
