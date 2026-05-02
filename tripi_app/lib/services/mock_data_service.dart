@@ -175,16 +175,15 @@ class MockDataService {
   ];
 
   static String getDestinationImage(String? city, String country) {
-    // Priority 1: City + Country travel image
-    // Priority 2: Country travel image
-    // Using loremflickr which is very reliable for tag-based images
-    final String cleanCountry = country.replaceAll(' ', '');
-    final String? cleanCity = city?.replaceAll(' ', '');
-
-    if (cleanCity != null && cleanCity.isNotEmpty) {
-      return 'https://loremflickr.com/800/600/$cleanCity,$cleanCountry,travel/all';
-    }
-    return 'https://loremflickr.com/800/600/$cleanCountry,travel/all';
+    final String cleanCountry = country.trim();
+    final String cleanCity = city?.trim() ?? '';
+    final String name = cleanCity.isNotEmpty ? '$cleanCity, $cleanCountry' : cleanCountry;
+    
+    // Create a deterministic seed based on the name hash
+    final int seed = name.toLowerCase().hashCode.abs() % 1000;
+    
+    final String tags = name.replaceAll(' ', '');
+    return 'https://loremflickr.com/800/600/$tags,travel/all?lock=$seed';
   }
 
   static List<Trip> getTripsForUser(String userId) {

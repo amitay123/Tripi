@@ -8,6 +8,7 @@ import '../providers/booking_provider.dart';
 import '../providers/trip_provider.dart';
 import 'create_trip/create_trip_wizard.dart';
 import 'itinerary_screen.dart';
+import '../services/mock_data_service.dart';
 
 class TripsScreen extends StatefulWidget {
   const TripsScreen({super.key});
@@ -477,9 +478,7 @@ class _TripsScreenState extends State<TripsScreen> {
                 borderRadius:
                     const BorderRadius.vertical(top: Radius.circular(32)),
                 child: Image.network(
-                  trip.coverImageUrl ??
-                      trip.destination?.imageUrl ??
-                      'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?q=80&w=800',
+                  MockDataService.getDestinationImage(trip.city, trip.country),
                   height: 200,
                   width: double.infinity,
                   fit: BoxFit.cover,
@@ -652,9 +651,7 @@ class _TripsScreenState extends State<TripsScreen> {
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
               child: Image.network(
-                trip.coverImageUrl ??
-                    trip.destination?.imageUrl ??
-                    'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?q=80&w=800',
+                MockDataService.getDestinationImage(trip.city, trip.country),
                 width: 70,
                 height: 70,
                 fit: BoxFit.cover,
