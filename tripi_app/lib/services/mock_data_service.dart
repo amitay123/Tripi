@@ -181,15 +181,15 @@ class MockDataService {
     // If city is available, focus on city + landmark
     // If only country, focus on country + landscape
     final String primary = cleanCity.isNotEmpty ? cleanCity : cleanCountry;
-    final String category = cleanCity.isNotEmpty ? 'landmark' : 'landscape';
+    final String category = cleanCity.isNotEmpty ? 'city,landmark' : 'country,landscape';
     
     // Create a deterministic seed based on the primary name hash
     final int seed = primary.toLowerCase().hashCode.abs() % 1000;
     
-    // Using 'travel' as a third tag to ensure travel-style photos
-    final String tags = '${primary.replaceAll(' ', '')},$category,travel';
+    // Using a more flexible search (without /all) to get more accurate results
+    final String tags = '${primary.replaceAll(' ', '')},$category';
     
-    return 'https://loremflickr.com/800/600/$tags/all?lock=$seed';
+    return 'https://loremflickr.com/800/600/$tags?lock=$seed';
   }
 
   static List<Trip> getTripsForUser(String userId) {

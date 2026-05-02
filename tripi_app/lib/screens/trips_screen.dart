@@ -19,6 +19,9 @@ class TripsScreen extends StatefulWidget {
 
 class _TripsScreenState extends State<TripsScreen> {
   bool _isLoading = true;
+  final TextEditingController _searchController = TextEditingController();
+  List<dynamic> _searchResults = [];
+  bool _isSearching = false;
 
   @override
   void initState() {
@@ -32,6 +35,12 @@ class _TripsScreenState extends State<TripsScreen> {
     if (mounted) {
       setState(() => _isLoading = false);
     }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _startWizard(BuildContext context) {
@@ -365,116 +374,121 @@ class _TripsScreenState extends State<TripsScreen> {
           ),
           const SizedBox(height: 24),
           // Search Bar
-          Autocomplete<dynamic>(
-            displayStringForOption: (trip) => trip.name,
-            optionsBuilder: (TextEditingValue textEditingValue) {
-              if (textEditingValue.text == '') {
-                return const Iterable<dynamic>.empty();
-              }
-              return trips.where((trip) {
-                final query = textEditingValue.text.toLowerCase();
-                final nameMatch = trip.name.toLowerCase().contains(query);
-                final cityMatch = trip.city?.toLowerCase().contains(query) ?? false;
-                final countryMatch = trip.country.toLowerCase().contains(query);
-                return nameMatch || cityMatch || countryMatch;
+          TextField(
+            controller: _searchController,
+            onChanged: (value) {
+              setState(() {
+                _isSearching = value.isNotEmpty;
+                if (_isSearching) {
+                  final query = value.toLowerCase();
+                  _searchResults = trips.where((trip) {
+                    final nameMatch = trip.name.toLowerCase().contains(query);
+                    final cityMatch =
+                        trip.city?.toLowerCase().contains(query) ?? false;
+                    final countryMatch =
+                        trip.country.toLowerCase().contains(query);
+                    return nameMatch || cityMatch || countryMatch;
+                  }).toList();
+                } else {
+                  _searchResults = [];
+                }
               });
             },
-            onSelected: (trip) {
-              if (!trip.isCompleted) {
-                context.read<TripProvider>().resumeTrip(trip);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const CreateTripWizard()),
-                );
-              } else {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => ItineraryScreen(tripId: trip.id)),
-                );
-              }
-            },
-            fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-              return TextField(
-                controller: controller,
-                focusNode: focusNode,
-                decoration: InputDecoration(
-                  hintText: 'Search trips, destinations...',
-                  prefixIcon: const Icon(Icons.search, color: Color(0xFF9CA3AF)),
-                  filled: true,
-                  fillColor: const Color(0xFFF3F4F6),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30),
-                    borderSide: BorderSide.none,
+            decoration: InputDecoration(
+              hintText: 'Search trips, destinations...',
+              prefixIcon: const Icon(Icons.search, color: Color(0xFF9CA3AF)),
+              suffixIcon: _isSearching
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, color: Color(0xFF9CA3AF)),
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() {
+                          _isSearching = false;
+                          _searchResults = [];
+                        });
+                      },
+                    )
+                  : null,
+              filled: true,
+              fillColor: const Color(0xFFF3F4F6),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+          ),
+          if (_isSearching && _searchResults.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                onSubmitted: (value) => onFieldSubmitted(),
-              );
-            },
-            optionsViewBuilder: (context, onSelected, options) {
-              return Align(
-                alignment: Alignment.topLeft,
-                child: Material(
-                  elevation: 8.0,
-                  borderRadius: BorderRadius.circular(20),
-                  color: Colors.transparent,
-                  child: Container(
-                    width: MediaQuery.of(context).size.width - 48,
-                    margin: const EdgeInsets.only(top: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 15,
-                          offset: const Offset(0, 5),
+                ],
+              ),
+              child: ListView.separated(
+                padding: EdgeInsets.zero,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _searchResults.length,
+                separatorBuilder: (context, index) => const Divider(height: 1),
+                itemBuilder: (context, index) {
+                  final dynamic trip = _searchResults[index];
+                  return ListTile(
+                    leading: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        image: DecorationImage(
+                          image: NetworkImage(
+                            MockDataService.getDestinationImage(
+                                trip.city, trip.country),
+                          ),
+                          fit: BoxFit.cover,
                         ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: ListView.separated(
-                        padding: EdgeInsets.zero,
-                        shrinkWrap: true,
-                        itemCount: options.length,
-                        separatorBuilder: (context, index) => const Divider(height: 1),
-                        itemBuilder: (BuildContext context, int index) {
-                          final dynamic trip = options.elementAt(index);
-                          return ListTile(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            leading: Container(
-                              width: 48,
-                              height: 48,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                image: DecorationImage(
-                                  image: NetworkImage(
-                                    MockDataService.getDestinationImage(trip.city, trip.country),
-                                  ),
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                            ),
-                            title: Text(
-                              trip.name,
-                              style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
-                            ),
-                            subtitle: Text(
-                              trip.city != null ? '${trip.city}, ${trip.country}' : trip.country,
-                              style: const TextStyle(color: Color(0xFF6B7280), fontSize: 12),
-                            ),
-                            onTap: () => onSelected(trip),
-                          );
-                        },
                       ),
                     ),
-                  ),
-                ),
-              );
-            },
-          ),
+                    title: Text(
+                      trip.name,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+                    ),
+                    subtitle: Text(
+                      trip.city != null
+                          ? '${trip.city}, ${trip.country}'
+                          : trip.country,
+                      style: const TextStyle(
+                          color: Color(0xFF6B7280), fontSize: 12),
+                    ),
+                    onTap: () {
+                      if (!trip.isCompleted) {
+                        context.read<TripProvider>().resumeTrip(trip);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const CreateTripWizard()),
+                        );
+                      } else {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) =>
+                                  ItineraryScreen(tripId: trip.id)),
+                        );
+                      }
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
           const SizedBox(height: 32),
           
           if (upcomingTrips.isNotEmpty) ...[
