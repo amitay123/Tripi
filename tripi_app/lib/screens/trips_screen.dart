@@ -299,7 +299,7 @@ class _TripsScreenState extends State<TripsScreen> {
         leading: const Icon(Icons.menu, color: TripiColors.primary),
         centerTitle: true,
         title: Text(
-          'Serene Navigator',
+          'Tripi',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: const Color(0xFF1E40AF),
@@ -332,6 +332,19 @@ class _TripsScreenState extends State<TripsScreen> {
   }
 
   Widget _buildTripsList(BuildContext context, List<dynamic> trips) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    final upcomingTrips = trips.where((t) {
+      final end = DateTime(t.endDate.year, t.endDate.month, t.endDate.day);
+      return !end.isBefore(today);
+    }).toList();
+
+    final pastTrips = trips.where((t) {
+      final end = DateTime(t.endDate.year, t.endDate.month, t.endDate.day);
+      return end.isBefore(today);
+    }).toList();
+
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Column(
@@ -361,39 +374,71 @@ class _TripsScreenState extends State<TripsScreen> {
             ),
           ),
           const SizedBox(height: 32),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Upcoming',
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1F2937)),
-              ),
-              TextButton(
-                onPressed: () {},
-                child: const Text('See All',
-                    style: TextStyle(
-                        color: Color(0xFF2563EB), fontWeight: FontWeight.bold)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          // Featured Trip Card (First Trip)
-          if (trips.isNotEmpty) _buildFeaturedTrip(context, trips[0]),
-          const SizedBox(height: 16),
-          // Plan New Trip Card (Now second)
+          
+          if (upcomingTrips.isNotEmpty) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Upcoming',
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1F2937)),
+                ),
+                TextButton(
+                  onPressed: () {},
+                  child: const Text('See All',
+                      style: TextStyle(
+                          color: Color(0xFF2563EB), fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildFeaturedTrip(context, upcomingTrips[0]),
+            const SizedBox(height: 16),
+            ...upcomingTrips.skip(1).map((trip) => _buildTripListItem(context, trip)),
+            const SizedBox(height: 16),
+          ],
+
+          // Plan New Trip Card
           Padding(
-            padding: const EdgeInsets.only(bottom: 16.0),
+            padding: const EdgeInsets.only(bottom: 24.0),
             child: _buildPlanNewTripCard(context),
           ),
-          // Other Trips List
-          ...trips.skip(1).map((trip) => _buildTripListItem(context, trip)),
-          const SizedBox(height: 24),
+
+          if (pastTrips.isNotEmpty) ...[
+            const Text(
+              'טיולים שחלפו',
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1F2937)),
+            ),
+            const SizedBox(height: 16),
+            ...pastTrips.map((trip) => _buildTripListItem(context, trip)),
+            const SizedBox(height: 24),
+          ],
         ],
       ),
     );
+  }
+
+  String? _getCountdownText(DateTime startDate) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final start = DateTime(startDate.year, startDate.month, startDate.day);
+    
+    if (start.isAtSameMomentAs(today)) {
+      return 'today';
+    }
+    
+    if (start.isAfter(today)) {
+      final difference = start.difference(today).inDays;
+      return 'IN $difference DAYS';
+    }
+    
+    return null;
   }
 
   Widget _buildFeaturedTrip(BuildContext context, dynamic trip) {
@@ -456,25 +501,26 @@ class _TripsScreenState extends State<TripsScreen> {
                   },
                 ),
               ),
-              Positioned(
-                top: 20,
-                left: 20,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text(
-                    'IN 12 DAYS',
-                    style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5),
+              if (_getCountdownText(trip.startDate) != null)
+                Positioned(
+                  top: 20,
+                  left: 20,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      _getCountdownText(trip.startDate)!,
+                      style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5),
+                    ),
                   ),
                 ),
-              ),
               Positioned(
                 top: 20,
                 right: 20,
@@ -634,6 +680,24 @@ class _TripsScreenState extends State<TripsScreen> {
                   const SizedBox(height: 4),
                   const Text('Planning stage',
                       style: TextStyle(color: Color(0xFF6B7280), fontSize: 12)),
+                  if (_getCountdownText(trip.startDate) != null) ...[
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        _getCountdownText(trip.startDate)!,
+                        style: const TextStyle(
+                          color: Color(0xFF2563EB),
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
