@@ -177,13 +177,19 @@ class MockDataService {
   static String getDestinationImage(String? city, String country) {
     final String cleanCountry = country.trim();
     final String cleanCity = city?.trim() ?? '';
-    final String name = cleanCity.isNotEmpty ? '$cleanCity, $cleanCountry' : cleanCountry;
     
-    // Create a deterministic seed based on the name hash
-    final int seed = name.toLowerCase().hashCode.abs() % 1000;
+    // If city is available, focus on city + landmark
+    // If only country, focus on country + landscape
+    final String primary = cleanCity.isNotEmpty ? cleanCity : cleanCountry;
+    final String category = cleanCity.isNotEmpty ? 'landmark' : 'landscape';
     
-    final String tags = name.replaceAll(' ', '');
-    return 'https://loremflickr.com/800/600/$tags,travel/all?lock=$seed';
+    // Create a deterministic seed based on the primary name hash
+    final int seed = primary.toLowerCase().hashCode.abs() % 1000;
+    
+    // Using 'travel' as a third tag to ensure travel-style photos
+    final String tags = '${primary.replaceAll(' ', '')},$category,travel';
+    
+    return 'https://loremflickr.com/800/600/$tags/all?lock=$seed';
   }
 
   static List<Trip> getTripsForUser(String userId) {
