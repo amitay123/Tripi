@@ -33,6 +33,9 @@ Future<void> main() async {
   await Supabase.initialize(
     url: 'https://fbtoyhnjwyhssozetfhw.supabase.co',
     anonKey: 'sb_publishable_DWgDyHuCNZLMHIbIkVuCkA_eTe_Z4Vw',
+    authOptions: const AuthOptions(
+      persistSession: false,
+    ),
   );
   debugPrint('Supabase initialized successfully');
 
