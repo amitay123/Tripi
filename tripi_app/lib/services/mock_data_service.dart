@@ -282,7 +282,6 @@ class MockDataService {
     'lebanon':              'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=800&q=80',
     'canada':               'https://images.unsplash.com/photo-1559511260-0bafa6fc8b4c?w=800&q=80',
     'mexico':               'https://images.unsplash.com/photo-1585464231875-d9ef1f5ad396?w=800&q=80',
-    'maldives':             'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?w=800&q=80',
     'czech republic':       'https://images.unsplash.com/photo-1541849546-216549ae216d?w=800&q=80',
     'czechia':              'https://images.unsplash.com/photo-1541849546-216549ae216d?w=800&q=80',
   };
