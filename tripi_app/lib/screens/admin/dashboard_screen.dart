@@ -53,7 +53,7 @@ class DashboardScreen extends StatelessWidget {
                                   .labelSmall
                                   ?.copyWith(
                                     color: TripiColors.onSurfaceVariant
-                                        .withOpacity(0.5),
+                                        .withValues(alpha: 0.5),
                                     letterSpacing: 1,
                                   ),
                             ),
@@ -115,7 +115,7 @@ class DashboardScreen extends StatelessWidget {
           Row(
             children: [
               Icon(Icons.auto_graph_rounded,
-                  color: TripiColors.primary.withOpacity(0.5)),
+                  color: TripiColors.primary.withValues(alpha: 0.5)),
               const SizedBox(width: 12),
               Text(
                 'Trip Network Overview',
@@ -275,7 +275,7 @@ class DashboardScreen extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: isHighlight
                         ? TripiColors.primary
-                        : TripiColors.primary.withOpacity(0.1),
+                        : TripiColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                 );
@@ -318,7 +318,7 @@ class DashboardScreen extends StatelessWidget {
               const Text('Recent Activity',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               Icon(Icons.history,
-                  color: TripiColors.onSurfaceVariant.withOpacity(0.5)),
+                  color: TripiColors.onSurfaceVariant.withValues(alpha: 0.5)),
             ],
           ),
           const SizedBox(height: 24),
@@ -329,7 +329,7 @@ class DashboardScreen extends StatelessWidget {
             onPressed: () {},
             style: OutlinedButton.styleFrom(
               minimumSize: const Size(double.infinity, 48),
-              side: BorderSide(color: TripiColors.primary.withOpacity(0.1)),
+              side: BorderSide(color: TripiColors.primary.withValues(alpha: 0.1)),
             ),
             child: const Text('View All Activity'),
           ),

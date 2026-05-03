@@ -27,7 +27,7 @@ class TripiCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: TripiColors.onSurface.withOpacity(0.04),
+              color: TripiColors.onSurface.withValues(alpha: 0.04),
               blurRadius: 32,
               offset: const Offset(0, 12),
               spreadRadius: -4,

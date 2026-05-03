@@ -129,11 +129,12 @@ class _CreateTripWizardState extends State<CreateTripWizard> {
               onPressed: _isSaving ? null : () async {
                 setState(() => _isSaving = true);
                 final success = await tripProvider.saveTrip();
+                if (!mounted) return;
                 setState(() => _isSaving = false);
 
-                if (success && mounted) {
+                if (success && context.mounted) {
                   Navigator.pop(context);
-                } else if (mounted) {
+                } else if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(
@@ -165,7 +166,7 @@ class _CreateTripWizardState extends State<CreateTripWizard> {
           decoration: BoxDecoration(
             color: Colors.white,
             border:
-                Border(top: BorderSide(color: Colors.black.withOpacity(0.05))),
+                Border(top: BorderSide(color: Colors.black.withValues(alpha: 0.05))),
           ),
           child: Row(
             children: [
@@ -198,11 +199,11 @@ class _CreateTripWizardState extends State<CreateTripWizard> {
                           if (currentStep == 3) {
                             setState(() => _isSaving = true);
                             final success = await tripProvider.saveTrip(isCompleted: true);
+                            if (!mounted) return;
                             setState(() => _isSaving = false);
 
-                            if (success && mounted) {
+                            if (success && context.mounted) {
                               tripProvider.clearDraft();
-                              Navigator.pop(context);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text(
@@ -210,7 +211,8 @@ class _CreateTripWizardState extends State<CreateTripWizard> {
                                   backgroundColor: Color(0xFF16A34A),
                                 ),
                               );
-                            } else if (mounted) {
+                              Navigator.pop(context);
+                            } else if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(tripProvider.lastError ??

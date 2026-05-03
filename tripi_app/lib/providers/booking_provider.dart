@@ -140,4 +140,34 @@ class BookingProvider extends ChangeNotifier {
         .where((trip) => trip.userId == _currentUser!.id)
         .toList();
   }
+
+  void addActivityToTrip(String tripId, int dayIndex, Activity activity, {int? positionIndex}) {
+    final tripIndex = MockDataService.allTrips.indexWhere((t) => t.id == tripId);
+    if (tripIndex == -1) return;
+    
+    final trip = MockDataService.allTrips[tripIndex];
+    final days = List<TripDay>.from(trip.days);
+    
+    final dayListIndex = days.indexWhere((d) => d.dayIndex == dayIndex);
+    if (dayListIndex != -1) {
+      final tripDay = days[dayListIndex];
+      final newActivities = List<Activity>.from(tripDay.activities);
+      if (positionIndex != null && positionIndex >= 0 && positionIndex <= newActivities.length) {
+        newActivities.insert(positionIndex, activity);
+      } else {
+        newActivities.add(activity);
+      }
+      days[dayListIndex] = tripDay.copyWith(activities: newActivities);
+    } else {
+      // Create new day if it doesn't exist
+      days.add(TripDay(
+        dayIndex: dayIndex,
+        date: trip.startDate.add(Duration(days: dayIndex - 1)),
+        activities: [activity],
+      ));
+    }
+    
+    MockDataService.allTrips[tripIndex] = trip.copyWith(days: days);
+    notifyListeners();
+  }
 }

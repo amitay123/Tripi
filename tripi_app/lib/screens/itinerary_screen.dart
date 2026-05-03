@@ -483,7 +483,7 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                           border: Border.all(color: Colors.white, width: 3),
                           boxShadow: [
                             BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
+                                color: Colors.black.withValues(alpha: 0.05),
                                 blurRadius: 4,
                                 offset: const Offset(0, 2)),
                           ],
@@ -625,11 +625,17 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
     if (activity.types!.contains('lodging')) return Icons.hotel;
     if (activity.types!.contains('restaurant') ||
         activity.types!.contains('food') ||
-        activity.types!.contains('cafe')) return Icons.restaurant;
+        activity.types!.contains('cafe')) {
+      return Icons.restaurant;
+    }
     if (activity.types!.contains('airport') ||
-        activity.types!.contains('transit_station')) return Icons.flight;
+        activity.types!.contains('transit_station')) {
+      return Icons.flight;
+    }
     if (activity.types!.contains('museum') ||
-        activity.types!.contains('tourist_attraction')) return Icons.local_see;
+        activity.types!.contains('tourist_attraction')) {
+      return Icons.local_see;
+    }
     if (activity.types!.contains('park')) return Icons.park;
     return Icons.place;
   }
@@ -637,13 +643,16 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
   // Item 1: Helper for Category Color
   Color _getCategoryColor(Activity activity) {
     if (activity.types == null) return Colors.white;
-    if (activity.types!.contains('lodging'))
+    if (activity.types!.contains('lodging')) {
       return Colors.white; // White circle, blue icon
+    }
     if (activity.types!.contains('restaurant') ||
-        activity.types!.contains('food'))
+        activity.types!.contains('food')) {
       return const Color(0xFFDDD6FE); // Purple
-    if (activity.types!.contains('airport'))
+    }
+    if (activity.types!.contains('airport')) {
       return const Color(0xFF0284C7); // Blue
+    }
     return Colors.white;
   }
 
@@ -652,7 +661,9 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
     if (activity.types!.contains('lodging')) return const Color(0xFF0284C7);
     if (activity.types!.contains('airport')) return Colors.white;
     if (activity.types!.contains('restaurant') ||
-        activity.types!.contains('food')) return const Color(0xFF7C3AED);
+        activity.types!.contains('food')) {
+      return const Color(0xFF7C3AED);
+    }
     return const Color(0xFF64748B);
   }
 
@@ -680,7 +691,7 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                     border: Border.all(color: const Color(0xFFE2E8F0)),
                     boxShadow: [
                       BoxShadow(
-                          color: Colors.black.withOpacity(0.05), blurRadius: 4),
+                          color: Colors.black.withValues(alpha: 0.05), blurRadius: 4),
                     ],
                   ),
                   child: Icon(_getTransportIcon(mode),
@@ -751,7 +762,7 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: activity.transportModeFromPrevious == mode
-                              ? TripiColors.primary.withOpacity(0.1)
+                              ? TripiColors.primary.withValues(alpha: 0.1)
                               : const Color(0xFFF1F5F9),
                           shape: BoxShape.circle,
                         ),

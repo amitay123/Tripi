@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Explore Map - Serene Navigator</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed-dim": "#cabded",
+                        "background": "#f8f9fa",
+                        "on-tertiary": "#fdf7ff",
+                        "surface-container-highest": "#dee3e6",
+                        "on-error": "#fff7f6",
+                        "on-secondary-fixed": "#354050",
+                        "surface-tint": "#0060ad",
+                        "on-surface": "#2d3335",
+                        "error-dim": "#67040d",
+                        "surface-container-lowest": "#ffffff",
+                        "inverse-on-surface": "#9b9d9e",
+                        "on-secondary-fixed-variant": "#515c6e",
+                        "on-primary-container": "#002b52",
+                        "primary-fixed": "#68abff",
+                        "secondary-dim": "#495465",
+                        "inverse-surface": "#0c0f10",
+                        "surface-container-low": "#f1f4f5",
+                        "on-tertiary-fixed": "#382e55",
+                        "secondary-fixed": "#d8e3f8",
+                        "secondary-fixed-dim": "#cad5ea",
+                        "error": "#a83836",
+                        "inverse-primary": "#68abff",
+                        "primary-dim": "#005498",
+                        "tertiary": "#635983",
+                        "on-primary": "#f8f8ff",
+                        "on-primary-fixed-variant": "#003461",
+                        "surface": "#f8f9fa",
+                        "on-error-container": "#6e0a12",
+                        "outline": "#767c7e",
+                        "surface-dim": "#d5dbdd",
+                        "on-secondary-container": "#475263",
+                        "secondary": "#556071",
+                        "on-background": "#2d3335",
+                        "on-secondary": "#f8f8ff",
+                        "secondary-container": "#d8e3f8",
+                        "on-tertiary-fixed-variant": "#554a74",
+                        "on-primary-fixed": "#000c1e",
+                        "tertiary-container": "#d8cafc",
+                        "primary-fixed-dim": "#599ef1",
+                        "surface-container": "#ebeef0",
+                        "error-container": "#fa746f",
+                        "surface-container-high": "#e5e9eb",
+                        "outline-variant": "#adb3b5",
+                        "tertiary-fixed": "#d8cafc",
+                        "primary": "#0060ad",
+                        "primary-container": "#68abff",
+                        "on-surface-variant": "#5a6062",
+                        "tertiary-dim": "#574d76",
+                        "surface-bright": "#f8f9fa",
+                        "surface-variant": "#dee3e6",
+                        "on-tertiary-container": "#4b416a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Plus Jakarta Sans", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Inter", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background h-screen w-screen overflow-hidden relative">
+<!-- Map Background -->
+<div class="absolute inset-0 z-0 bg-surface-container-low" data-alt="stylized light map view of a coastal city with subtle roads and terrain features, soft daylight" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA-ZQK3sHy7r2kfN1kmx-397X25lxNr6pa53QdT612ykF6ObBwwxeWqeqrHiSDLXfcT4jJGbDnDmwu7FpmL78Jekc2YcAUvi8NiaYe1fNs6YZ8RIRTHbZSH9O4mEFGpE9Jl0OeANknNfZmxhrYBxGxtg4Ashbs15sP25CAnscgGIhlOsZWDR0LRr9vMznEiryKJVbW_ZTg7cKIFUqovZ3mRCfQSmNtjJM5eq1jvPCpyJuJ5xlbsNJcxX3S-jDZ3XN46p-G76U3D2ReY'); background-size: cover; background-position: center; filter: grayscale(20%) opacity(0.8);">
+</div>
+<!-- TopAppBar (Visible on larger screens) -->
+<header class="hidden md:flex justify-between items-center px-6 h-16 w-full fixed top-0 z-50 bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-xl">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-blue-600 dark:text-blue-400 cursor-pointer active:scale-95 duration-200" data-icon="menu">menu</span>
+<span class="font-['Plus_Jakarta_Sans'] font-bold tracking-tight text-xl text-slate-900 dark:text-slate-50">Serene Navigator</span>
+</div>
+<div class="w-10 h-10 rounded-full bg-surface-container-high overflow-hidden cursor-pointer active:scale-95 duration-200">
+<img alt="User profile photo" class="w-full h-full object-cover" data-alt="portrait of a young woman smiling" src="https://lh3.googleusercontent.com/aida-public/AB6AXuATifbjUT0a8YNMOx-K1Cx73ByPkBiTfM9n4XlwPu8oYPin0OL0Wc2zwDF6l41ZTJI-UvUwTLIUrAkyA6cGFUIrVKnFdD5oIj0hDy-eXU2ThDgvKFwpoLjJtwIz4HWmeN4z88FBbAUhvxsbqBEJuwDo4lw5IBjKg_K1UHmQ2bqNFYs8XvMPmaEFiozIcao3r8nKfVku94bRe49nAreeA2vg195nCgW40MrFJ_GSOr4qcviqv4JvPUjEW4G50fGJfiX2QcacJicLGu8J"/>
+</div>
+</header>
+<!-- Main Content Canvas for Map -->
+<main class="relative z-10 h-full w-full flex flex-col pt-4 md:pt-24 pb-24 md:pb-0 px-4 md:px-6">
+<!-- Search & Filter Area (Floating over map) -->
+<div class="w-full max-w-2xl mx-auto flex flex-col gap-4">
+<!-- Floating Search Bar -->
+<div class="flex items-center bg-surface-container-lowest rounded-full shadow-[0_-12px_32px_-4px_rgba(45,51,53,0.06)] px-4 py-3 border border-outline-variant/15">
+<span class="material-symbols-outlined text-on-surface-variant mr-3" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-on-surface font-body w-full placeholder:text-on-surface-variant outline-none" placeholder="Search destinations, hotels..." type="text"/>
+<div class="w-8 h-8 rounded-full bg-surface-container-low flex items-center justify-center cursor-pointer ml-2">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="tune">tune</span>
+</div>
+</div>
+<!-- Horizontal Category Chips -->
+<div class="flex overflow-x-auto no-scrollbar gap-3 py-1">
+<button class="whitespace-nowrap px-5 py-2.5 rounded-full bg-primary text-on-primary font-label text-sm font-medium shadow-[0_-12px_32px_-4px_rgba(45,51,53,0.06)] flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]" data-icon="hotel">hotel</span> Hotels
+                </button>
+<button class="whitespace-nowrap px-5 py-2.5 rounded-full bg-surface-container-lowest text-on-surface font-label text-sm font-medium shadow-[0_-12px_32px_-4px_rgba(45,51,53,0.06)] border border-outline-variant/15 flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]" data-icon="restaurant">restaurant</span> Dining
+                </button>
+<button class="whitespace-nowrap px-5 py-2.5 rounded-full bg-surface-container-lowest text-on-surface font-label text-sm font-medium shadow-[0_-12px_32px_-4px_rgba(45,51,53,0.06)] border border-outline-variant/15 flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]" data-icon="museum">museum</span> Museums
+                </button>
+<button class="whitespace-nowrap px-5 py-2.5 rounded-full bg-surface-container-lowest text-on-surface font-label text-sm font-medium shadow-[0_-12px_32px_-4px_rgba(45,51,53,0.06)] border border-outline-variant/15 flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]" data-icon="park">park</span> Parks
+                </button>
+</div>
+</div>
+<!-- Map Markers (Simulated) -->
+<div class="absolute top-1/3 left-1/4 transform -translate-x-1/2 -translate-y-1/2 cursor-pointer group">
+<div class="bg-primary text-on-primary px-3 py-1.5 rounded-full text-xs font-bold font-body shadow-[0_-12px_32px_-4px_rgba(45,51,53,0.06)] relative z-10 flex items-center gap-1 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[14px]" data-icon="hotel">hotel</span> $240
+            </div>
+<div class="w-3 h-3 bg-primary transform rotate-45 absolute -bottom-1 left-1/2 -ml-1.5 z-0"></div>
+</div>
+<div class="absolute top-1/2 right-1/4 transform -translate-x-1/2 -translate-y-1/2 cursor-pointer group">
+<div class="bg-surface-container-lowest text-on-surface px-3 py-1.5 rounded-full text-xs font-bold font-body shadow-[0_-12px_32px_-4px_rgba(45,51,53,0.06)] border border-outline-variant/15 relative z-10 flex items-center gap-1 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-primary text-[14px]" data-icon="hotel">hotel</span> $185
+            </div>
+</div>
+<!-- Floating Info Card (Bottom area, above nav) -->
+<div class="absolute bottom-24 md:bottom-8 left-0 w-full px-4 md:px-6 flex justify-center pointer-events-none">
+<div class="bg-surface-container-lowest rounded-xl shadow-[0_-12px_32px_-4px_rgba(45,51,53,0.06)] p-4 flex gap-4 w-full max-w-md border border-outline-variant/15 pointer-events-auto">
+<div class="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0">
+<img alt="Luxury hotel pool" class="w-full h-full object-cover" data-alt="modern luxury resort swimming pool with lounge chairs at sunset" src="https://lh3.googleusercontent.com/aida-public/AB6AXuClwj9sDuH-1cGhxipf_fDDC6P2lBPVZrDqxAgMZn7x5xOYnj6Y435QhwYw1F_j44txUjLqQ04JdDIahkPJ2zTzXu8Khz_e6q1lKPx47jYNG1yJ7LJ_TZK745P05MoH4adT9Nr1X64lLHQgJVgMgSVq6WaAEznPxvGYj4lwA1q4F58ICKaUHNCUC8-_sCOe0MR251dl68tQ-lYDz8CyTt14bSHgGAizatIKZG9nXhMo7yn9Jnv4J_sgVotz35a84iRxVmmJSpijKRzT"/>
+</div>
+<div class="flex flex-col justify-center flex-grow">
+<div class="flex justify-between items-start">
+<h3 class="font-headline font-bold text-on-surface text-lg leading-tight">Azure Resort</h3>
+<span class="material-symbols-outlined text-on-surface-variant text-sm cursor-pointer" data-icon="favorite_border">favorite_border</span>
+</div>
+<div class="flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-primary text-[14px]" data-icon="star" data-weight="fill" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-body text-sm text-on-surface-variant font-medium">4.9 (128)</span>
+</div>
+<div class="font-body text-sm font-semibold text-primary mt-2">$240 <span class="text-xs text-on-surface-variant font-normal">/ night</span></div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) - Using Shared Component Pattern -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-6 pt-3 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl rounded-t-[2rem] z-50 shadow-[0_-12px_32px_-4px_rgba(45,51,53,0.06)]">
+<!-- Trips -->
+<div class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 px-5 py-2 hover:text-blue-500 dark:hover:text-blue-300 active:scale-90 transition-transform duration-200 cursor-pointer">
+<span class="material-symbols-outlined mb-1" data-icon="luggage">luggage</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-semibold tracking-wide uppercase">Trips</span>
+</div>
+<!-- Timeline -->
+<div class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 px-5 py-2 hover:text-blue-500 dark:hover:text-blue-300 active:scale-90 transition-transform duration-200 cursor-pointer">
+<span class="material-symbols-outlined mb-1" data-icon="event_note">event_note</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-semibold tracking-wide uppercase">Timeline</span>
+</div>
+<!-- Explore (Active) -->
+<div class="flex flex-col items-center justify-center bg-blue-100/50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-200 rounded-full px-5 py-2 active:scale-90 transition-transform duration-200 cursor-pointer">
+<span class="material-symbols-outlined mb-1" data-icon="map">map</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-semibold tracking-wide uppercase">Explore</span>
+</div>
+<!-- Saved -->
+<div class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 px-5 py-2 hover:text-blue-500 dark:hover:text-blue-300 active:scale-90 transition-transform duration-200 cursor-pointer">
+<span class="material-symbols-outlined mb-1" data-icon="bookmark">bookmark</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-semibold tracking-wide uppercase">Saved</span>
+</div>
+</nav>
+</body></html>

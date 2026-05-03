@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../theme/tripi_colors.dart';
-import '../services/mock_data_service.dart';
-import '../services/supabase_service.dart';
-import '../widgets/tripi_card.dart';
-import '../providers/booking_provider.dart';
 import 'trips_screen.dart';
+import 'explore_map_content.dart';
 
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
@@ -32,7 +28,7 @@ class _MainScaffoldState extends State<MainScaffold> {
       bottomNavigationBar: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.9),
+          color: Colors.white.withValues(alpha: 0.9),
           border: const Border(
               top: BorderSide(color: TripiColors.surfaceContainerLow)),
         ),
@@ -61,7 +57,7 @@ class _MainScaffoldState extends State<MainScaffold> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             decoration: BoxDecoration(
               color: isSelected
-                  ? TripiColors.primary.withOpacity(0.1)
+                  ? TripiColors.primary.withValues(alpha: 0.1)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(24),
             ),
@@ -82,179 +78,6 @@ class _MainScaffoldState extends State<MainScaffold> {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class ExploreContent extends StatelessWidget {
-  const ExploreContent({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final user = context.watch<BookingProvider>().currentUser;
-
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Hello, ${user?.name ?? 'Guest'}',
-                      style: Theme.of(context).textTheme.headlineLarge,
-                    ),
-                    Text(
-                      'Where to next?',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: TripiColors.onSurfaceVariant,
-                          ),
-                    ),
-                  ],
-                ),
-                CircleAvatar(
-                  radius: 24,
-                  backgroundImage: user?.profileImage != null
-                      ? NetworkImage(user!.profileImage!)
-                      : const NetworkImage('https://i.pravatar.cc/150?u=tripi'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: () async {
-                  await SupabaseService.signOut();
-                },
-                icon: const Icon(Icons.logout, size: 16),
-                label: const Text('Logout', style: TextStyle(fontSize: 12)),
-                style: TextButton.styleFrom(
-                  foregroundColor: TripiColors.onSurfaceVariant,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                ),
-              ),
-            ),
-            const SizedBox(height: 32),
-            TextField(
-              decoration: InputDecoration(
-                hintText: 'Search destinations...',
-                prefixIcon: const Icon(Icons.search,
-                    color: TripiColors.onSurfaceVariant),
-                filled: true,
-                fillColor: TripiColors.surfaceContainerHigh,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(28),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-            ),
-            const SizedBox(height: 40),
-            Text(
-              'POPULAR DESTINATIONS',
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: TripiColors.onSurfaceVariant,
-                    letterSpacing: 1.5,
-                  ),
-            ),
-            const SizedBox(height: 16),
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: MockDataService.destinations.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 20),
-              itemBuilder: (context, index) {
-                final destination = MockDataService.destinations[index];
-                return TripiCard(
-                  onTap: () {
-                    context
-                        .read<BookingProvider>()
-                        .selectDestination(destination);
-                    Navigator.pushNamed(context, '/place-details');
-                  },
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        height: 200,
-                        width: double.infinity,
-                        color: TripiColors.surfaceContainerLow,
-                        child: const Center(
-                          child: Icon(Icons.image,
-                              color: TripiColors.outlineVariant, size: 48),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(20.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  destination.name,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .headlineSmall
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                ),
-                                Text(
-                                  destination.country,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium
-                                      ?.copyWith(
-                                        color: TripiColors.onSurfaceVariant,
-                                      ),
-                                ),
-                              ],
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: TripiColors.primary.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.star,
-                                      size: 16, color: TripiColors.primary),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    destination.rating.toString(),
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelLarge
-                                        ?.copyWith(
-                                          color: TripiColors.primary,
-                                        ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 40),
-          ],
-        ),
       ),
     );
   }

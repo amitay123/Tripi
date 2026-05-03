@@ -189,6 +189,44 @@ class PlacesService {
     }
   }
 
+  Future<List<Map<String, dynamic>>> searchPlaces({
+    required double lat,
+    required double lng,
+    String? type,
+    String? keyword,
+    int radius = 5000,
+  }) async {
+    try {
+      final Map<String, String> params = {
+        'location': '$lat,$lng',
+        'radius': radius.toString(),
+      };
+      if (type != null && type.isNotEmpty) params['type'] = type;
+      if (keyword != null && keyword.isNotEmpty) params['keyword'] = keyword;
+
+      final response = await _supabase.functions.invoke(
+        'places-proxy',
+        body: {
+          'endpoint': 'nearbysearch',
+          'params': params,
+        },
+      );
+
+      if (response.status == 200) {
+        final Map<String, dynamic> data = response.data is String 
+            ? jsonDecode(response.data) 
+            : response.data;
+        if (data['results'] != null) {
+          return List<Map<String, dynamic>>.from(data['results']);
+        }
+      }
+      return [];
+    } catch (e) {
+      debugPrint('Search places error: $e');
+      return [];
+    }
+  }
+
   String? _extractCountryCode(dynamic addressComponents) {
     if (addressComponents == null || addressComponents is! List) return null;
     for (var component in addressComponents) {

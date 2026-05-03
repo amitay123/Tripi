@@ -12,7 +12,6 @@ class TripiTheme {
         onPrimary: Colors.white,
         surface: TripiColors.surface,
         onSurface: TripiColors.onSurface,
-        background: TripiColors.background,
       ),
       textTheme: TextTheme(
         displayLarge: GoogleFonts.plusJakartaSans(

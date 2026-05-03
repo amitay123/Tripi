@@ -165,10 +165,10 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.black.withOpacity(0.4),
+                  Colors.black.withValues(alpha: 0.4),
                   Colors.transparent,
                   Colors.transparent,
-                  Colors.black.withOpacity(0.2),
+                  Colors.black.withValues(alpha: 0.2),
                 ],
                 stops: const [0.0, 0.2, 0.8, 1.0],
               ),
@@ -190,7 +190,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
                   width: _currentImageIndex == index ? 12 : 6,
                   height: 6,
                   decoration: BoxDecoration(
-                    color: _currentImageIndex == index ? Colors.white : Colors.white.withOpacity(0.5),
+                    color: _currentImageIndex == index ? Colors.white : Colors.white.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(3),
                   ),
                 ),
@@ -222,7 +222,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: TripiColors.primary.withOpacity(0.1),
+                  color: TripiColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -339,7 +339,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -412,7 +412,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
               borderRadius: BorderRadius.circular(28),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF3B82F6).withOpacity(0.3),
+                  color: const Color(0xFF3B82F6).withValues(alpha: 0.3),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -446,7 +446,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
       padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.grey.withOpacity(0.2))),
+        border: Border(top: BorderSide(color: Colors.grey.withValues(alpha: 0.2))),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,

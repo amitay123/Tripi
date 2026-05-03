@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/tripi_colors.dart';
 import '../services/supabase_service.dart';
 import '../providers/booking_provider.dart';
+import 'package:logging/logging.dart';
 import '../models/models.dart' as models;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -15,6 +16,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final _log = Logger('LoginScreen');
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isSignInLoading = false;
@@ -41,18 +43,20 @@ class _LoginScreenState extends State<LoginScreen> {
       _errorMessage = null;
       _successMessage = null;
     });
-    debugPrint('STATE: _isSignInLoading set to true');
+    _log.info('STATE: _isSignInLoading set to true');
 
     try {
-      debugPrint('Attempting login for: $email');
+      _log.info('Attempting login for: $email');
       await SupabaseService.signIn(email: email, password: password);
-      debugPrint('Login successful');
+      _log.info('Login successful');
       
       // Sync with BookingProvider
       if (mounted) {
         // Save "Remember Me" preference
         final prefs = await SharedPreferences.getInstance();
+        if (!mounted) return;
         await prefs.setBool('remember_me', _rememberMe);
+        if (!mounted) return;
 
         final supabaseUser = SupabaseService.currentUser;
         if (supabaseUser != null) {
@@ -61,7 +65,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Navigator.pushReplacementNamed(context, '/explore');
       }
     } catch (e) {
-      debugPrint('Login failed: $e');
+      _log.info('Login failed: $e');
       String errorMsg = e.toString();
       if (errorMsg.contains('Email not confirmed')) {
         errorMsg = 'Your email has not been confirmed yet. Please check your inbox for the confirmation link and try again.';
@@ -76,7 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
         _successMessage = null;
         _isSignInLoading = false;
       });
-      debugPrint('STATE: _isSignInLoading set to false');
+      _log.info('STATE: _isSignInLoading set to false');
     }
   }
 
@@ -101,7 +105,7 @@ class _LoginScreenState extends State<LoginScreen> {
       _errorMessage = null;
       _successMessage = null;
     });
-    debugPrint('STATE: _isForgotInProgress set to true');
+    _log.info('STATE: _isForgotInProgress set to true');
 
     try {
       /* 
@@ -132,7 +136,7 @@ class _LoginScreenState extends State<LoginScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Forgot password error: $e');
+      _log.info('Forgot password error: $e');
       if (mounted) {
         setState(() {
           if (e is AuthException && (e.code == 'over_email_send_rate_limit' || e.statusCode == '429')) {
@@ -149,7 +153,7 @@ class _LoginScreenState extends State<LoginScreen> {
         setState(() {
           _isForgotInProgress = false;
         });
-        debugPrint('STATE: _isForgotInProgress set to false');
+        _log.info('STATE: _isForgotInProgress set to false');
       }
     }
   }
@@ -164,7 +168,7 @@ class _LoginScreenState extends State<LoginScreen> {
       await SupabaseService.signInWithGoogle(intent: 'login');
       // In Web OAuth, the page redirects, so we don't reach here
     } catch (e) {
-      debugPrint('Google Sign In Error: $e');
+      _log.info('Google Sign In Error: $e');
       if (mounted) {
         setState(() {
           _errorMessage = 'Google Sign In failed. Please try again.';
@@ -187,7 +191,7 @@ class _LoginScreenState extends State<LoginScreen> {
           break;
       }
     } catch (e) {
-      debugPrint('Social Sign In Error: $e');
+      _log.info('Social Sign In Error: $e');
       if (mounted) {
         setState(() {
           _errorMessage = 'Sign In failed. Please try again.';
@@ -441,7 +445,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Text(
                   _errorMessage!,
                   style: TextStyle(
-                      color: const Color(0xFFB00020).withOpacity(0.8)),
+                      color: const Color(0xFFB00020).withValues(alpha: 0.8)),
                 ),
               ],
             ),
@@ -477,7 +481,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Text(
                   _successMessage!,
                   style: TextStyle(
-                      color: const Color(0xFFE65100).withOpacity(0.8)),
+                      color: const Color(0xFFE65100).withValues(alpha: 0.8)),
                 ),
               ],
             ),
@@ -531,7 +535,7 @@ class _LoginScreenState extends State<LoginScreen> {
               borderSide: BorderSide(
                 color: hasError
                     ? const Color(0xFFB00020)
-                    : TripiColors.outlineVariant.withOpacity(0.2),
+                    : TripiColors.outlineVariant.withValues(alpha: 0.2),
                 width: 1.5,
               ),
             ),
@@ -563,10 +567,10 @@ class _LoginScreenState extends State<LoginScreen> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(28),
             border:
-                Border.all(color: TripiColors.outlineVariant.withOpacity(0.1)),
+                Border.all(color: TripiColors.outlineVariant.withValues(alpha: 0.1)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.03),
+                color: Colors.black.withValues(alpha: 0.03),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),

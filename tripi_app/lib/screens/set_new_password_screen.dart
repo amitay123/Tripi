@@ -165,7 +165,7 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen>
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: TripiColors.primary.withOpacity(0.05),
+                color: TripiColors.primary.withValues(alpha: 0.05),
               ),
             ),
           ),
@@ -279,7 +279,7 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen>
   Widget _buildCriteriaChip(String label, bool met) {
     return Container(
       decoration: BoxDecoration(
-        color: TripiColors.surfaceContainerHigh.withOpacity(0.5),
+        color: TripiColors.surfaceContainerHigh.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(12),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

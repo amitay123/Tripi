@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:logging/logging.dart';
 import 'theme/tripi_theme.dart';
 import 'providers/booking_provider.dart';
 import 'providers/trip_provider.dart';
@@ -23,34 +24,43 @@ import 'screens/set_new_password_screen.dart';
 import 'services/supabase_service.dart';
 
 Future<void> main() async {
-  debugPrint('App initialization started');
+  // Initialize logging
+  Logger.root.level = Level.ALL;
+  Logger.root.onRecord.listen((record) {
+    debugPrint('${record.level.name}: ${record.time}: ${record.loggerName}: ${record.message}');
+    if (record.error != null) debugPrint('Error: ${record.error}');
+    if (record.stackTrace != null) debugPrint('StackTrace: ${record.stackTrace}');
+  });
+
+  final log = Logger('TripiApp');
+  log.info('App initialization started');
   WidgetsFlutterBinding.ensureInitialized();
 
   // Enable Google Fonts runtime fetching to avoid white screen crash when fonts are missing from assets.
   GoogleFonts.config.allowRuntimeFetching = true;
 
-  debugPrint('Initializing Supabase...');
+  log.info('Initializing Supabase...');
   await Supabase.initialize(
     url: 'https://fbtoyhnjwyhssozetfhw.supabase.co',
     anonKey: 'sb_publishable_DWgDyHuCNZLMHIbIkVuCkA_eTe_Z4Vw',
   );
-  debugPrint('Supabase initialized successfully');
+  log.info('Supabase initialized successfully');
 
   // Check if we should clear the session based on "Remember Me" preference
   final prefs = await SharedPreferences.getInstance();
   final rememberMe = prefs.getBool('remember_me') ?? false;
   if (!rememberMe) {
-    debugPrint('Remember Me is false, signing out to prevent auto-login');
+    log.info('Remember Me is false, signing out to prevent auto-login');
     await Supabase.instance.client.auth.signOut();
   }
 
   // Catch Flutter errors
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.presentError(details);
-    debugPrint('GLOBAL ERROR: ${details.exception}');
+    log.severe('GLOBAL ERROR: ${details.exception}', details.exception, details.stack);
   };
 
-  debugPrint('Starting runApp...');
+  log.info('Starting runApp...');
   runApp(
     MultiProvider(
       providers: [
@@ -79,9 +89,10 @@ class _TripiAppState extends State<TripiApp> {
   }
 
   void _setupAuthListener() {
+    final log = Logger('TripiApp.Auth');
     Supabase.instance.client.auth.onAuthStateChange.listen((data) {
       final AuthChangeEvent event = data.event;
-      debugPrint('***** AUTH EVENT: $event | URL: ${Uri.base}');
+      log.info('***** AUTH EVENT: $event | URL: ${Uri.base}');
 
       if (event == AuthChangeEvent.passwordRecovery) {
         _navigatorKey.currentState?.pushNamedAndRemoveUntil(
@@ -95,7 +106,7 @@ class _TripiAppState extends State<TripiApp> {
         final session = data.session;
         if (session != null) {
           final hasIntent = Uri.base.queryParameters.containsKey('intent');
-          debugPrint('***** INITIAL SESSION: hasIntent=$hasIntent, user=${session.user.email}');
+          log.info('***** INITIAL SESSION: hasIntent=$hasIntent, user=${session.user.email}');
           if (hasIntent) {
             // OAuth redirect just completed
             _handleSocialAuthLogic(session.user);
@@ -108,12 +119,12 @@ class _TripiAppState extends State<TripiApp> {
       } else if (event == AuthChangeEvent.signedIn || event == AuthChangeEvent.tokenRefreshed) {
         final session = data.session;
         if (session != null) {
-          debugPrint('***** SIGNED IN: ${session.user.email}');
+          log.info('***** SIGNED IN: ${session.user.email}');
           _handleSocialAuthLogic(session.user);
         }
       } else if (event == AuthChangeEvent.signedOut) {
         final navContext = _navigatorKey.currentContext;
-        if (navContext != null) {
+        if (navContext != null && navContext.mounted) {
           Provider.of<BookingProvider>(navContext, listen: false).updateUser(null);
         }
         _navigatorKey.currentState?.pushNamedAndRemoveUntil('/', (route) => false);
@@ -127,13 +138,17 @@ class _TripiAppState extends State<TripiApp> {
     if (navContext == null) return;
 
     final email = user.email ?? '';
+    final log = Logger('TripiApp.Auth');
     try {
       final isRegistered = await SupabaseService.isUserRegistered(email);
+      if (!mounted) return;
+      
       if (!isRegistered) {
-        debugPrint('***** EXISTING SESSION but user not in profiles. Signing out.');
+        log.warning('***** EXISTING SESSION but user not in profiles. Signing out.');
         await SupabaseService.signOut();
         return;
       }
+      if (!mounted || !navContext.mounted) return;
       final bookingProvider = Provider.of<BookingProvider>(navContext, listen: false);
       bookingProvider.updateUser(models.User(
         id: user.id,
@@ -144,10 +159,10 @@ class _TripiAppState extends State<TripiApp> {
                       user.userMetadata?['picture']?.toString(),
         providerType: user.appMetadata['provider']?.toString(),
       ));
-      debugPrint('***** EXISTING SESSION valid – navigating to explore');
+      log.info('***** EXISTING SESSION valid – navigating to explore');
       _navigatorKey.currentState?.pushNamedAndRemoveUntil('/explore', (route) => false);
     } catch (e) {
-      debugPrint('***** EXISTING SESSION ERROR: $e');
+      log.severe('***** EXISTING SESSION ERROR: $e');
     }
   }
 
@@ -155,6 +170,7 @@ class _TripiAppState extends State<TripiApp> {
     final navContext = _navigatorKey.currentContext;
     if (navContext == null) return;
 
+    final log = Logger('TripiApp.Auth');
     final bookingProvider = Provider.of<BookingProvider>(navContext, listen: false);
 
     // Read intent from the current URL – this survives the OAuth redirect
@@ -166,17 +182,20 @@ class _TripiAppState extends State<TripiApp> {
                  user.userMetadata?['name']?.toString() ??
                  'Traveler';
 
-    debugPrint('***** SOCIAL AUTH LOGIC: Intent=$intent, Email=$email, URL=${uri.toString()}');
+    log.info('***** SOCIAL AUTH LOGIC: Intent=$intent, Email=$email, URL=${uri.toString()}');
 
     try {
       final isRegistered = await SupabaseService.isUserRegistered(email);
-      debugPrint('***** IS REGISTERED: $isRegistered');
+      if (!mounted) return;
+      
+      log.info('***** IS REGISTERED: $isRegistered');
 
       if (intent == 'login') {
         if (!isRegistered) {
           // User tried to login but is not registered
-          debugPrint('***** LOGIN FAILED: User not registered');
+          log.warning('***** LOGIN FAILED: User not registered');
           await SupabaseService.signOut();
+          if (!mounted || !navContext.mounted) return;
           ScaffoldMessenger.of(navContext).showSnackBar(
             const SnackBar(
               content: Text('המייל לא נמצא במערכת, עליך להירשם תחילה'),
@@ -190,8 +209,9 @@ class _TripiAppState extends State<TripiApp> {
       } else if (intent == 'register') {
         if (isRegistered) {
           // User tried to register but already exists
-          debugPrint('***** REGISTER FAILED: User already exists');
+          log.warning('***** REGISTER FAILED: User already exists');
           await SupabaseService.signOut();
+          if (!mounted || !navContext.mounted) return;
           ScaffoldMessenger.of(navContext).showSnackBar(
             const SnackBar(
               content: Text('המייל כבר קיים במערכת, אנא התחבר'),
@@ -202,17 +222,18 @@ class _TripiAppState extends State<TripiApp> {
           return;
         }
         // New user → create profile in DB
-        debugPrint('***** REGISTER SUCCESS: Creating profile');
+        log.info('***** REGISTER SUCCESS: Creating profile');
         await SupabaseService.createProfile(
           id: user.id,
           email: email,
           name: name,
         );
+        if (!mounted) return;
         // Fall through to navigate
       } else {
         // intent == null → existing session (page refresh)
         if (!isRegistered) {
-          debugPrint('***** SESSION INVALID: User not in profiles. Signing out.');
+          log.warning('***** SESSION INVALID: User not in profiles. Signing out.');
           await SupabaseService.signOut();
           return;
         }
@@ -231,10 +252,10 @@ class _TripiAppState extends State<TripiApp> {
 
       bookingProvider.updateUser(userModel);
 
-      debugPrint('***** NAVIGATING TO EXPLORE');
+      log.info('***** NAVIGATING TO EXPLORE');
       _navigatorKey.currentState?.pushNamedAndRemoveUntil('/explore', (route) => false);
     } catch (e, st) {
-      debugPrint('***** SOCIAL AUTH ERROR: $e\n$st');
+      log.severe('***** SOCIAL AUTH ERROR: $e', e, st);
     }
   }
 

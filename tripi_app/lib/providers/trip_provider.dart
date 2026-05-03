@@ -4,9 +4,11 @@ import '../models/models.dart';
 import '../services/supabase_service.dart';
 import '../services/mock_data_service.dart';
 import '../services/places_service.dart';
+import 'package:logging/logging.dart';
 
 class TripProvider extends ChangeNotifier {
   final _placesService = PlacesService();
+  final _log = Logger('TripProvider');
 
   // --- Trips List ---
   List<Trip> _trips = [];
@@ -25,8 +27,8 @@ class TripProvider extends ChangeNotifier {
       await SupabaseService.deleteTrip(tripId);
       _trips.removeWhere((t) => t.id == tripId);
       notifyListeners();
-    } catch (e) {
-      debugPrint('Error deleting trip: $e');
+    } catch (e, st) {
+      _log.severe('Error deleting trip: $tripId', e, st);
       _lastError = e.toString();
       notifyListeners();
     }
@@ -119,20 +121,20 @@ class TripProvider extends ChangeNotifier {
   }
 
   Future<bool> saveTrip({bool isCompleted = false}) async {
-    print('***** TripProvider: saveTrip(isCompleted: $isCompleted) called');
+    _log.info('saveTrip(isCompleted: $isCompleted) called');
     final draft = _draftTrip;
     final userId = SupabaseService.currentUser?.id;
     
     if (draft == null) {
-      print('***** saveTrip FAILED: draftTrip is null');
+      _log.warning('saveTrip FAILED: draftTrip is null');
       return false;
     }
     if (userId == null) {
-      print('***** saveTrip FAILED: No authenticated user found. Current user: ${SupabaseService.currentUser}');
+      _log.warning('saveTrip FAILED: No authenticated user found');
       return false;
     }
 
-    print('***** saveTrip: Proceeding with userId=$userId, draftName=${draft.name}');
+    _log.info('saveTrip: Proceeding with userId=$userId, draftName=${draft.name}');
 
     // Use city name for trip name if empty
     final finalName = draft.name.trim().isEmpty
@@ -175,14 +177,13 @@ class TripProvider extends ChangeNotifier {
       // Update draft with the saved version from our refreshed list
       _draftTrip = _trips.firstWhere((t) => t.id == savedTrip.id, orElse: () => savedTrip);
       
-      print('***** saveTrip SUCCEEDED. Trips count: ${_trips.length}');
+      _log.info('saveTrip SUCCEEDED. Trips count: ${_trips.length}');
       notifyListeners();
       return true;
-    } catch (e) {
-      print('***** saveTrip ERROR: $e');
+    } catch (e, st) {
+      _log.severe('saveTrip ERROR', e, st);
       _lastError = e.toString();
       if (e is PostgrestException) {
-        debugPrint('Postgrest Error Details: ${e.message}, Code: ${e.code}');
         _lastError = 'Database Error: ${e.message}';
       }
       notifyListeners();
@@ -230,6 +231,7 @@ class TripProvider extends ChangeNotifier {
     _trips[tripIndex] =
         trip.copyWith(days: updatedDays, updatedAt: DateTime.now());
     notifyListeners();
+    _persistTrip(tripId);
 
     // Trigger real-time calculation immediately
     updateActivityTransportAuto(
@@ -255,6 +257,7 @@ class TripProvider extends ChangeNotifier {
     _trips[tripIndex] =
         trip.copyWith(days: updatedDays, updatedAt: DateTime.now());
     notifyListeners();
+    _persistTrip(tripId);
   }
 
   void reorderActivities(
@@ -282,6 +285,7 @@ class TripProvider extends ChangeNotifier {
     _trips[tripIndex] =
         trip.copyWith(days: updatedDays, updatedAt: DateTime.now());
     notifyListeners();
+    _persistTrip(tripId);
   }
 
   void updateDayStartTime(String tripId, int dayIndex, String startTime) {
@@ -297,6 +301,7 @@ class TripProvider extends ChangeNotifier {
     _trips[tripIndex] =
         trip.copyWith(days: updatedDays, updatedAt: DateTime.now());
     notifyListeners();
+    _persistTrip(tripId);
   }
 
   void updateActivityTransport(String tripId, int dayIndex, String activityId,
@@ -324,6 +329,7 @@ class TripProvider extends ChangeNotifier {
     _trips[tripIndex] =
         trip.copyWith(days: updatedDays, updatedAt: DateTime.now());
     notifyListeners();
+    _persistTrip(tripId);
   }
 
   Future<void> updateActivityTransportAuto(
@@ -368,8 +374,8 @@ class TripProvider extends ChangeNotifier {
 
           finalDuration = _estimateDuration(distanceKm, mode);
         }
-      } catch (e) {
-        print('Error in auto transport calculation: $e');
+      } catch (e, st) {
+        _log.warning('Error in auto transport calculation', e, st);
         finalDuration = 20; // Another fallback
       }
     }
@@ -430,5 +436,18 @@ class TripProvider extends ChangeNotifier {
     _trips[tripIndex] =
         trip.copyWith(days: updatedDays, updatedAt: DateTime.now());
     notifyListeners();
+    _persistTrip(tripId);
+  }
+
+  // --- Persistence Helper ---
+
+  Future<void> _persistTrip(String tripId) async {
+    final trip = _trips.firstWhere((t) => t.id == tripId, orElse: () => throw Exception('Trip not found'));
+    try {
+      await SupabaseService.updateTrip(trip);
+      _log.info('Trip $tripId persisted successfully');
+    } catch (e, st) {
+      _log.severe('Error persisting trip $tripId', e, st);
+    }
   }
 }

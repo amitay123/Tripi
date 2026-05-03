@@ -243,7 +243,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: TripiColors.primary.withOpacity(0.1),
+                  color: TripiColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -406,7 +406,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 Text(
                   _successMessage!,
                   style: TextStyle(
-                      color: const Color(0xFFE65100).withOpacity(0.8)),
+                      color: const Color(0xFFE65100).withValues(alpha: 0.8)),
                 ),
               ],
             ),
@@ -517,7 +517,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   Widget _buildCriteriaChip(String label, bool met) {
     return Container(
       decoration: BoxDecoration(
-        color: TripiColors.surfaceContainerHigh.withOpacity(0.5),
+        color: TripiColors.surfaceContainerHigh.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(12),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -652,10 +652,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(28),
             border:
-                Border.all(color: TripiColors.outlineVariant.withOpacity(0.1)),
+                Border.all(color: TripiColors.outlineVariant.withValues(alpha: 0.1)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.03),
+                color: Colors.black.withValues(alpha: 0.03),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
