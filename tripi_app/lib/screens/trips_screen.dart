@@ -6,6 +6,7 @@ import '../widgets/tripi_card.dart';
 import '../models/models.dart';
 import '../providers/booking_provider.dart';
 import '../providers/trip_provider.dart';
+import '../widgets/modals/trip_edit_modals.dart';
 import 'create_trip/create_trip_wizard.dart';
 import 'itinerary_screen.dart';
 import '../services/mock_data_service.dart';
@@ -95,24 +96,14 @@ class _TripsScreenState extends State<TripsScreen> {
     );
   }
 
-  void _editTripField(BuildContext context, Trip trip, int targetStep) {
-    Navigator.pop(context); // Close modal first
-    
-    // Use microtask to ensure state updates and navigation happen after modal dismissal
-    Future.microtask(() {
-      if (!context.mounted) return;
-      
-      final tripProvider = context.read<TripProvider>();
-      tripProvider.resumeTrip(trip);
-      tripProvider.goToStep(targetStep);
-      
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const CreateTripWizard(),
-        ),
-      );
-    });
+  void _editTripField(BuildContext context, Trip trip, int fieldIndex) {
+    if (fieldIndex == 0) {
+      EditDetailsModal.show(context, trip);
+    } else if (fieldIndex == 1) {
+      EditTravelersModal.show(context, trip);
+    } else if (fieldIndex == 2) {
+      EditPreferencesModal.show(context, trip);
+    }
   }
 
   void _showTripInfo(BuildContext context, Trip trip) {
@@ -120,132 +111,141 @@ class _TripsScreenState extends State<TripsScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.7,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 20,
-              offset: Offset(0, -5),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.fromLTRB(32, 12, 32, 32),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
+      builder: (context) => Consumer<TripProvider>(
+        builder: (context, provider, _) {
+          final latestTrip = provider.trips.firstWhere(
+            (t) => t.id == trip.id,
+            orElse: () => trip,
+          );
+
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.7,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 20,
+                  offset: Offset(0, -5),
                 ),
-              ),
+              ],
             ),
-            const SizedBox(height: 32),
-            Row(
+            padding: const EdgeInsets.fromLTRB(32, 12, 32, 32),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        trip.name,
-                        style: const TextStyle(
-                            fontSize: 26, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${trip.city ?? ''}, ${trip.country}'.replaceAll(RegExp(r'^,\s*'), ''),
-                        style: const TextStyle(
-                            color: Color(0xFF6B7280), fontSize: 16),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  onPressed: () => _editTripField(context, trip, 0),
-                  icon: Container(
-                    padding: const EdgeInsets.all(8),
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF),
-                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
                     ),
-                    child: const Icon(Icons.edit_outlined, color: Color(0xFF2563EB), size: 20),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            latestTrip.name,
+                            style: const TextStyle(
+                                fontSize: 26, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${latestTrip.city ?? ''}, ${latestTrip.country}'.replaceAll(RegExp(r'^,\s*'), ''),
+                            style: const TextStyle(
+                                color: Color(0xFF6B7280), fontSize: 16),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => _editTripField(context, latestTrip, 0),
+                      icon: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEFF6FF),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.edit_outlined, color: Color(0xFF2563EB), size: 20),
+                      ),
+                    ),
+                  ],
+                ),
+                const Divider(height: 40),
+                const Text(
+                  'TRAVELERS',
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF9CA3AF),
+                      letterSpacing: 1),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    _buildInfoBadge(Icons.person,
+                        '${latestTrip.travelersBreakdown['adults'] ?? 1} Adults',
+                        () => _editTripField(context, latestTrip, 1)),
+                    const SizedBox(width: 12),
+                    _buildInfoBadge(Icons.child_care,
+                        '${latestTrip.travelersBreakdown['children'] ?? 0} Children',
+                        () => _editTripField(context, latestTrip, 1)),
+                  ],
+                ),
+                const SizedBox(height: 32),
+                const Text(
+                  'TRIP STYLE & PREFERENCES',
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF9CA3AF),
+                      letterSpacing: 1),
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    _buildInfoTag(Icons.category,
+                        'Type: ${latestTrip.tripType.name[0].toUpperCase()}${latestTrip.tripType.name.substring(1)}',
+                        () => _editTripField(context, latestTrip, 2)),
+                    _buildInfoTag(Icons.speed,
+                        'Pace: ${latestTrip.pace.name[0].toUpperCase()}${latestTrip.pace.name.substring(1)}',
+                        () => _editTripField(context, latestTrip, 2)),
+                    if (latestTrip.preferences.isNotEmpty)
+                      ...latestTrip.preferences.map((p) => _buildInfoTag(Icons.star, p,
+                          () => _editTripField(context, latestTrip, 2))),
+                  ],
+                ),
+                const Spacer(),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF3F4F6),
+                      foregroundColor: const Color(0xFF4B5563),
+                      minimumSize: const Size(0, 56),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                      elevation: 0,
+                    ),
+                    child: const Text('Close',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
             ),
-            const Divider(height: 40),
-            const Text(
-              'TRAVELERS',
-              style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF9CA3AF),
-                  letterSpacing: 1),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                _buildInfoBadge(Icons.person,
-                    '${trip.travelersBreakdown['adults'] ?? 1} Adults',
-                    () => _editTripField(context, trip, 1)),
-                const SizedBox(width: 12),
-                _buildInfoBadge(Icons.child_care,
-                    '${trip.travelersBreakdown['children'] ?? 0} Children',
-                    () => _editTripField(context, trip, 1)),
-              ],
-            ),
-            const SizedBox(height: 32),
-            const Text(
-              'TRIP STYLE & PREFERENCES',
-              style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF9CA3AF),
-                  letterSpacing: 1),
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                _buildInfoTag(Icons.category,
-                    'Type: ${trip.tripType.name[0].toUpperCase()}${trip.tripType.name.substring(1)}',
-                    () => _editTripField(context, trip, 2)),
-                _buildInfoTag(Icons.speed,
-                    'Pace: ${trip.pace.name[0].toUpperCase()}${trip.pace.name.substring(1)}',
-                    () => _editTripField(context, trip, 2)),
-                if (trip.preferences.isNotEmpty)
-                  ...trip.preferences.map((p) => _buildInfoTag(Icons.star, p,
-                      () => _editTripField(context, trip, 2))),
-              ],
-            ),
-            const Spacer(),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFF3F4F6),
-                  foregroundColor: const Color(0xFF4B5563),
-                  minimumSize: const Size(0, 56),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16)),
-                  elevation: 0,
-                ),
-                child: const Text('Close',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

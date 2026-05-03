@@ -80,3 +80,5 @@ app.*.map.json
 # Exceptions to above rules
 !**/ios/Runner/ServiceDefinitions.json
 
+# Firebase
+.firebase/

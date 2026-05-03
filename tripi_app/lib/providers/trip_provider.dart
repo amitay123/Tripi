@@ -143,14 +143,23 @@ class TripProvider extends ChangeNotifier {
     final imageUrl = draft.coverImageUrl ??
         MockDataService.getDestinationImage(draft.city, draft.country);
 
-    // Generate days automatically
-    final generatedDays = _generateDays(draft.startDate, draft.endDate);
+    // Preserve days if duration and start date haven't changed, otherwise regenerate
+    List<TripDay> finalDays = draft.days;
+    final int newDuration = draft.endDate.difference(draft.startDate).inDays + 1;
+    
+    if (finalDays.isEmpty || 
+        finalDays.length != newDuration || 
+        (finalDays.isNotEmpty && finalDays.first.date.year != draft.startDate.year) ||
+        (finalDays.isNotEmpty && finalDays.first.date.month != draft.startDate.month) ||
+        (finalDays.isNotEmpty && finalDays.first.date.day != draft.startDate.day)) {
+      finalDays = _generateDays(draft.startDate, draft.endDate);
+    }
 
     final newTrip = draft.copyWith(
       userId: userId,
       name: finalName,
       coverImageUrl: imageUrl,
-      days: generatedDays,
+      days: finalDays,
       updatedAt: DateTime.now(),
       currentStep: _currentStep,
       isCompleted: isCompleted,
