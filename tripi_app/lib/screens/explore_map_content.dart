@@ -118,7 +118,6 @@ class _ExploreContentState extends State<ExploreContent> {
         // Optionally add the searched place to the map as selected
         _selectedPlace = details;
       });
-      _showPlaceDetailsSheet(details);
       _searchNearbyPlaces();
     }
   }
