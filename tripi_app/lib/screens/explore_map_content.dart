@@ -113,10 +113,25 @@ class _ExploreContentState extends State<ExploreContent> {
     if (details != null && details['lat'] != null) {
       final latlng = LatLng(details['lat'], details['lng']);
       _mapController?.animateCamera(CameraUpdate.newLatLngZoom(latlng, 16));
+      // Ensure the selected place has the expected structure for the map markers loop
+      final Map<String, dynamic> structuredPlace = Map.from(details);
+      structuredPlace['geometry'] = {
+        'location': {
+          'lat': details['lat'],
+          'lng': details['lng'],
+        }
+      };
+      
+      // Also map photo_references back to 'photos' for compatibility with _showPlaceDetailsSheet
+      if (details['photo_references'] != null) {
+        structuredPlace['photos'] = (details['photo_references'] as List).map((ref) => {
+          'photo_reference': ref
+        }).toList();
+      }
+
       setState(() {
         _currentCenter = latlng;
-        // Optionally add the searched place to the map as selected
-        _selectedPlace = details;
+        _selectedPlace = structuredPlace;
       });
       _searchNearbyPlaces();
     }
@@ -623,7 +638,17 @@ class _ExploreContentState extends State<ExploreContent> {
     }
     
     // Create markers from places
-    Set<Marker> markers = _places.map((place) {
+    final allMapPlaces = List<Map<String, dynamic>>.from(_places);
+    if (_selectedPlace != null && !allMapPlaces.any((p) => p['place_id'] == _selectedPlace!['place_id'])) {
+      allMapPlaces.add(_selectedPlace!);
+    }
+
+    Set<Marker> markers = allMapPlaces.where((p) => 
+      p['geometry'] != null && 
+      p['geometry']['location'] != null &&
+      p['geometry']['location']['lat'] != null &&
+      p['geometry']['location']['lng'] != null
+    ).map((place) {
       final lat = place['geometry']['location']['lat'];
       final lng = place['geometry']['location']['lng'];
       final isSelected = _selectedPlace != null && _selectedPlace!['place_id'] == place['place_id'];
