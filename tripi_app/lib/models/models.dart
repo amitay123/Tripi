@@ -261,6 +261,7 @@ class Trip {
   final String? countryCode; // ISO2/3
   final String? city;
   final String? cityPlaceId;
+  final String? countryPlaceId;
   final DateTime startDate;
   final DateTime endDate;
   final int travelersCount;
@@ -289,6 +290,7 @@ class Trip {
     this.countryCode,
     this.city,
     this.cityPlaceId,
+    this.countryPlaceId,
     required this.startDate,
     required this.endDate,
     this.travelersCount = 1,
@@ -328,6 +330,7 @@ class Trip {
       countryCode: json['country_code']?.toString(),
       city: json['city']?.toString(),
       cityPlaceId: json['city_place_id']?.toString(),
+      countryPlaceId: json['country_place_id']?.toString(),
       startDate: parseDate(json['start_date']),
       endDate: parseDate(
           json['end_date'], DateTime.now().add(const Duration(days: 1))),
@@ -375,6 +378,7 @@ class Trip {
       'country_code': countryCode,
       'city': city,
       'city_place_id': cityPlaceId,
+      'country_place_id': countryPlaceId,
       'start_date': startDate.toIso8601String(),
       'end_date': endDate.toIso8601String(),
       'travelers_count': travelersCount,
@@ -435,6 +439,7 @@ class Trip {
       countryCode: countryCode ?? this.countryCode,
       city: city ?? this.city,
       cityPlaceId: cityPlaceId ?? this.cityPlaceId,
+      countryPlaceId: countryPlaceId ?? this.countryPlaceId,
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
       travelersCount: travelersCount ?? this.travelersCount,
