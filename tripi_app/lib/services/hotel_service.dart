@@ -10,8 +10,9 @@ class HotelService {
   /// Generates a deep link to Booking.com for a specific hotel.
   Future<void> launchBooking(String hotelName, String city) async {
     final query = Uri.encodeComponent('$hotelName $city');
-    final url = Uri.parse('https://www.booking.com/searchresults.html?ss=$query');
-    
+    final url =
+        Uri.parse('https://www.booking.com/searchresults.html?ss=$query');
+
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       debugPrint('Could not launch Booking.com: $url');
     }
@@ -21,7 +22,7 @@ class HotelService {
   Future<void> launchAgoda(String hotelName, String city) async {
     final query = Uri.encodeComponent('$hotelName $city');
     final url = Uri.parse('https://www.agoda.com/search?text=$query');
-    
+
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       debugPrint('Could not launch Agoda: $url');
     }
@@ -32,7 +33,7 @@ class HotelService {
   Map<String, dynamic> getSimulatedPricing(String hotelName) {
     final int seed = hotelName.hashCode.abs();
     final double basePrice = (seed % 200) + 100.0; // $100 - $300
-    
+
     return {
       'booking': {
         'price': basePrice + (seed % 20),

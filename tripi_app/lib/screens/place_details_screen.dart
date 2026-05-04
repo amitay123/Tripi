@@ -28,10 +28,11 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
     // We get the placeId from the arguments
     // For now, if no arguments, we try to use the selected destination from BookingProvider as a fallback
     // But better to pass it directly.
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final String? placeId = ModalRoute.of(context)?.settings.arguments as String?;
-      
+      final String? placeId =
+          ModalRoute.of(context)?.settings.arguments as String?;
+
       if (placeId == null) {
         setState(() => _isLoading = false);
         return;
@@ -76,7 +77,8 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
               children: [
                 _buildHeroImage(),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 24.0, vertical: 24),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -132,15 +134,18 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
         AspectRatio(
           aspectRatio: 4 / 5,
           child: ClipRRect(
-            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
+            borderRadius:
+                const BorderRadius.vertical(bottom: Radius.circular(24)),
             child: photos.isEmpty
                 ? Container(
                     color: TripiColors.surfaceContainerLow,
-                    child: const Icon(Icons.image, size: 64, color: TripiColors.outlineVariant),
+                    child: const Icon(Icons.image,
+                        size: 64, color: TripiColors.outlineVariant),
                   )
                 : PageView.builder(
                     controller: _pageController,
-                    onPageChanged: (index) => setState(() => _currentImageIndex = index),
+                    onPageChanged: (index) =>
+                        setState(() => _currentImageIndex = index),
                     itemCount: photos.length,
                     itemBuilder: (context, index) {
                       final url = PlacesService().getPhotoUrl(photos[index]);
@@ -160,7 +165,8 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
         Positioned.fill(
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
+              borderRadius:
+                  const BorderRadius.vertical(bottom: Radius.circular(24)),
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
@@ -184,13 +190,17 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(
-                photos.length > 5 ? 5 : photos.length, // Limit to 5 dots for clean look
+                photos.length > 5
+                    ? 5
+                    : photos.length, // Limit to 5 dots for clean look
                 (index) => Container(
                   margin: const EdgeInsets.symmetric(horizontal: 4),
                   width: _currentImageIndex == index ? 12 : 6,
                   height: 6,
                   decoration: BoxDecoration(
-                    color: _currentImageIndex == index ? Colors.white : Colors.white.withValues(alpha: 0.5),
+                    color: _currentImageIndex == index
+                        ? Colors.white
+                        : Colors.white.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(3),
                   ),
                 ),
@@ -220,7 +230,8 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
             ),
             if (_placeDetail!.rating != null)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: TripiColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
@@ -267,7 +278,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
 
   Widget _buildAboutSection() {
     if (_placeDetail!.description == null) return const SizedBox.shrink();
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -291,7 +302,8 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
           overflow: _isDescriptionExpanded ? null : TextOverflow.ellipsis,
         ),
         GestureDetector(
-          onTap: () => setState(() => _isDescriptionExpanded = !_isDescriptionExpanded),
+          onTap: () =>
+              setState(() => _isDescriptionExpanded = !_isDescriptionExpanded),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 8.0),
             child: Text(
@@ -322,8 +334,8 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
           child: _buildInfoCard(
             icon: Icons.confirmation_number,
             title: 'PRICING',
-            value: _placeDetail!.priceLevelString.isNotEmpty 
-                ? _placeDetail!.priceLevelString 
+            value: _placeDetail!.priceLevelString.isNotEmpty
+                ? _placeDetail!.priceLevelString
                 : 'Check availability',
           ),
         ),
@@ -331,7 +343,8 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
     );
   }
 
-  Widget _buildInfoCard({required IconData icon, required String title, required String value}) {
+  Widget _buildInfoCard(
+      {required IconData icon, required String title, required String value}) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -392,11 +405,13 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 56),
                   side: const BorderSide(color: TripiColors.primary),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(28)),
                 ),
                 child: Text(
                   'Book Tickets',
-                  style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: TripiColors.primary),
+                  style: GoogleFonts.inter(
+                      fontWeight: FontWeight.bold, color: TripiColors.primary),
                 ),
               ),
             ),
@@ -425,7 +440,8 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.transparent,
                 shadowColor: Colors.transparent,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(28)),
               ),
               child: Text(
                 '+ Add to Itinerary',
@@ -446,7 +462,8 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
       padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.grey.withValues(alpha: 0.2))),
+        border:
+            Border(top: BorderSide(color: Colors.grey.withValues(alpha: 0.2))),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,

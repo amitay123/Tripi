@@ -124,7 +124,7 @@ class TripProvider extends ChangeNotifier {
     _log.info('saveTrip(isCompleted: $isCompleted) called');
     final draft = _draftTrip;
     final userId = SupabaseService.currentUser?.id;
-    
+
     if (draft == null) {
       _log.warning('saveTrip FAILED: draftTrip is null');
       return false;
@@ -134,7 +134,8 @@ class TripProvider extends ChangeNotifier {
       return false;
     }
 
-    _log.info('saveTrip: Proceeding with userId=$userId, draftName=${draft.name}');
+    _log.info(
+        'saveTrip: Proceeding with userId=$userId, draftName=${draft.name}');
 
     // Use city name for trip name if empty
     final finalName = draft.name.trim().isEmpty
@@ -147,13 +148,17 @@ class TripProvider extends ChangeNotifier {
 
     // Preserve days if duration and start date haven't changed, otherwise regenerate
     List<TripDay> finalDays = draft.days;
-    final int newDuration = draft.endDate.difference(draft.startDate).inDays + 1;
-    
-    if (finalDays.isEmpty || 
-        finalDays.length != newDuration || 
-        (finalDays.isNotEmpty && finalDays.first.date.year != draft.startDate.year) ||
-        (finalDays.isNotEmpty && finalDays.first.date.month != draft.startDate.month) ||
-        (finalDays.isNotEmpty && finalDays.first.date.day != draft.startDate.day)) {
+    final int newDuration =
+        draft.endDate.difference(draft.startDate).inDays + 1;
+
+    if (finalDays.isEmpty ||
+        finalDays.length != newDuration ||
+        (finalDays.isNotEmpty &&
+            finalDays.first.date.year != draft.startDate.year) ||
+        (finalDays.isNotEmpty &&
+            finalDays.first.date.month != draft.startDate.month) ||
+        (finalDays.isNotEmpty &&
+            finalDays.first.date.day != draft.startDate.day)) {
       finalDays = _generateDays(draft.startDate, draft.endDate);
     }
 
@@ -170,13 +175,14 @@ class TripProvider extends ChangeNotifier {
     try {
       _lastError = null;
       final savedTrip = await SupabaseService.createTrip(newTrip);
-      
+
       // Refresh the entire list from DB to ensure local state perfectly matches DB
       await fetchTrips();
-      
+
       // Update draft with the saved version from our refreshed list
-      _draftTrip = _trips.firstWhere((t) => t.id == savedTrip.id, orElse: () => savedTrip);
-      
+      _draftTrip = _trips.firstWhere((t) => t.id == savedTrip.id,
+          orElse: () => savedTrip);
+
       _log.info('saveTrip SUCCEEDED. Trips count: ${_trips.length}');
       notifyListeners();
       return true;
@@ -442,7 +448,8 @@ class TripProvider extends ChangeNotifier {
   // --- Persistence Helper ---
 
   Future<void> _persistTrip(String tripId) async {
-    final trip = _trips.firstWhere((t) => t.id == tripId, orElse: () => throw Exception('Trip not found'));
+    final trip = _trips.firstWhere((t) => t.id == tripId,
+        orElse: () => throw Exception('Trip not found'));
     try {
       await SupabaseService.updateTrip(trip);
       _log.info('Trip $tripId persisted successfully');

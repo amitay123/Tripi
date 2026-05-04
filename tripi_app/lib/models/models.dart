@@ -69,13 +69,15 @@ class Activity {
   final String? startTime; // "HH:mm"
   final String? endTime; // "HH:mm"
   final String? notes;
-  final String? imageUrl;
+  String? imageUrl;
   final String source; // 'manual' or 'api'
   final String? placeId;
   final List<String>? types;
   final int duration; // in minutes
   final TravelMode? transportModeFromPrevious;
   final int? travelDurationFromPrevious; // in minutes
+  final double? rating;
+  final int? userRatingsTotal;
 
   Activity({
     required this.id,
@@ -93,6 +95,8 @@ class Activity {
     this.duration = 60,
     this.transportModeFromPrevious,
     this.travelDurationFromPrevious,
+    this.rating,
+    this.userRatingsTotal,
   });
 
   factory Activity.fromJson(Map<String, dynamic> json) {
@@ -111,10 +115,16 @@ class Activity {
       types: (json['types'] as List?)?.map((e) => e.toString()).toList(),
       duration: int.tryParse(json['duration']?.toString() ?? '') ?? 60,
       transportModeFromPrevious: TravelMode.values.firstWhere(
-        (e) => e.name == (json['transport_mode_from_previous']?.toString() ?? 'driving'),
+        (e) =>
+            e.name ==
+            (json['transport_mode_from_previous']?.toString() ?? 'driving'),
         orElse: () => TravelMode.driving,
       ),
-      travelDurationFromPrevious: int.tryParse(json['travel_duration_from_previous']?.toString() ?? ''),
+      travelDurationFromPrevious:
+          int.tryParse(json['travel_duration_from_previous']?.toString() ?? ''),
+      rating: double.tryParse(json['rating']?.toString() ?? ''),
+      userRatingsTotal:
+          int.tryParse(json['user_ratings_total']?.toString() ?? ''),
     );
   }
 
@@ -135,6 +145,8 @@ class Activity {
       'duration': duration,
       'transport_mode_from_previous': transportModeFromPrevious?.name,
       'travel_duration_from_previous': travelDurationFromPrevious,
+      'rating': rating,
+      'user_ratings_total': userRatingsTotal,
     };
   }
 
@@ -154,6 +166,8 @@ class Activity {
     int? duration,
     TravelMode? transportModeFromPrevious,
     int? travelDurationFromPrevious,
+    double? rating,
+    int? userRatingsTotal,
   }) {
     return Activity(
       id: id ?? this.id,
@@ -173,6 +187,8 @@ class Activity {
           transportModeFromPrevious ?? this.transportModeFromPrevious,
       travelDurationFromPrevious:
           travelDurationFromPrevious ?? this.travelDurationFromPrevious,
+      rating: rating ?? this.rating,
+      userRatingsTotal: userRatingsTotal ?? this.userRatingsTotal,
     );
   }
 }
@@ -205,7 +221,8 @@ class TripDay {
       date: parseDate(json['date']),
       activities: (json['activities'] as List?)
               ?.where((e) => e != null)
-              .map((e) => Activity.fromJson(Map<String, dynamic>.from(e as Map)))
+              .map(
+                  (e) => Activity.fromJson(Map<String, dynamic>.from(e as Map)))
               .toList() ??
           [],
       startTime: json['start_time']?.toString() ?? "09:00",
@@ -314,8 +331,10 @@ class Trip {
       startDate: parseDate(json['start_date']),
       endDate: parseDate(
           json['end_date'], DateTime.now().add(const Duration(days: 1))),
-      travelersCount: int.tryParse(json['travelers_count']?.toString() ?? '') ?? 1,
-      travelersBreakdown: Map<String, int>.from(json['travelers_breakdown'] ?? {}),
+      travelersCount:
+          int.tryParse(json['travelers_count']?.toString() ?? '') ?? 1,
+      travelersBreakdown:
+          Map<String, int>.from(json['travelers_breakdown'] ?? {}),
       tripType: TripType.values.firstWhere(
         (e) => e.name == (json['trip_type']?.toString() ?? 'leisure'),
         orElse: () => TripType.leisure,
@@ -342,7 +361,9 @@ class Trip {
       coverImageUrl: json['cover_image_url']?.toString(),
       currentStep: int.tryParse(json['current_step']?.toString() ?? '0') ?? 0,
       isCompleted: json['is_completed'] == true,
-      deletedAt: json['deleted_at'] != null ? DateTime.parse(json['deleted_at'].toString()) : null,
+      deletedAt: json['deleted_at'] != null
+          ? DateTime.parse(json['deleted_at'].toString())
+          : null,
     );
   }
 
@@ -480,8 +501,11 @@ class PlaceDetail {
   }
 
   String? get todayHours {
-    if (openingHours == null || openingHours!['weekday_text'] == null) return null;
-    final List<String> weekdayText = List<String>.from(openingHours!['weekday_text']);
+    if (openingHours == null || openingHours!['weekday_text'] == null) {
+      return null;
+    }
+    final List<String> weekdayText =
+        List<String>.from(openingHours!['weekday_text']);
     // Weekday text is usually Monday-Sunday.
     // We need to find today's hours.
     final now = DateTime.now();

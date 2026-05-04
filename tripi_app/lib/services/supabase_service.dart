@@ -35,15 +35,19 @@ class SupabaseService {
   /// [intent] should be 'login' or 'register'
   static Future<void> signInWithGoogle({required String intent}) async {
     final String baseRedirect = kIsWeb
-        ? (Uri.base.origin.endsWith('/') ? Uri.base.origin : '${Uri.base.origin}/')
+        ? (Uri.base.origin.endsWith('/')
+            ? Uri.base.origin
+            : '${Uri.base.origin}/')
         : 'io.supabase.tripi://login-callback';
 
     // Embed intent in the redirect URL so it survives the OAuth page redirect
     final String redirectTo = kIsWeb
-        ? Uri.parse(baseRedirect).replace(queryParameters: {'intent': intent}).toString()
+        ? Uri.parse(baseRedirect)
+            .replace(queryParameters: {'intent': intent}).toString()
         : baseRedirect;
 
-    debugPrint('Social Auth Google: Redirecting to $redirectTo (intent=$intent)');
+    debugPrint(
+        'Social Auth Google: Redirecting to $redirectTo (intent=$intent)');
 
     await _client.auth.signInWithOAuth(
       OAuthProvider.google,
@@ -55,14 +59,18 @@ class SupabaseService {
   /// [intent] should be 'login' or 'register'
   static Future<void> signInWithFacebook({required String intent}) async {
     final String baseRedirect = kIsWeb
-        ? (Uri.base.origin.endsWith('/') ? Uri.base.origin : '${Uri.base.origin}/')
+        ? (Uri.base.origin.endsWith('/')
+            ? Uri.base.origin
+            : '${Uri.base.origin}/')
         : 'io.supabase.tripi://login-callback';
 
     final String redirectTo = kIsWeb
-        ? Uri.parse(baseRedirect).replace(queryParameters: {'intent': intent}).toString()
+        ? Uri.parse(baseRedirect)
+            .replace(queryParameters: {'intent': intent}).toString()
         : baseRedirect;
 
-    debugPrint('Social Auth Facebook: Redirecting to $redirectTo (intent=$intent)');
+    debugPrint(
+        'Social Auth Facebook: Redirecting to $redirectTo (intent=$intent)');
 
     await _client.auth.signInWithOAuth(
       OAuthProvider.facebook,
@@ -151,16 +159,14 @@ class SupabaseService {
 
   /// Soft deletes a trip by setting deleted_at
   static Future<void> deleteTrip(String tripId) async {
-    await _client
-        .from('trips')
-        .update({'deleted_at': DateTime.now().toIso8601String()})
-        .eq('id', tripId);
+    await _client.from('trips').update(
+        {'deleted_at': DateTime.now().toIso8601String()}).eq('id', tripId);
   }
 
   /// Create or update a trip
   static Future<models.Trip> createTrip(models.Trip trip) async {
     final json = trip.toJson();
-    
+
     // For upsert, if id exists and is not a temporary one, keep it.
     // Otherwise remove it to let DB generate a new UUID.
     if (trip.id.isEmpty || trip.id.startsWith('t')) {
@@ -169,7 +175,8 @@ class SupabaseService {
       json['id'] = trip.id;
     }
 
-    debugPrint('***** SupabaseService: Attempting to upsert trip with payload: $json');
+    debugPrint(
+        '***** SupabaseService: Attempting to upsert trip with payload: $json');
 
     try {
       final response = await _client.from('trips').upsert(json).select();
@@ -182,12 +189,14 @@ class SupabaseService {
       }
 
       final savedData = (response as List).first;
-      debugPrint('***** SupabaseService: Trip upserted successfully: $savedData');
-      
+      debugPrint(
+          '***** SupabaseService: Trip upserted successfully: $savedData');
+
       try {
         return models.Trip.fromJson(savedData);
       } catch (parseErr) {
-        debugPrint('***** SupabaseService: fromJson failed ($parseErr), returning original with DB id');
+        debugPrint(
+            '***** SupabaseService: fromJson failed ($parseErr), returning original with DB id');
         return trip.copyWith(
           id: savedData['id']?.toString() ?? '',
           updatedAt: DateTime.now(),
@@ -196,16 +205,18 @@ class SupabaseService {
     } on PostgrestException catch (e) {
       debugPrint(
           '***** SupabaseService PostgrestException: code=${e.code} message=${e.message} details=${e.details} hint=${e.hint}');
-      
+
       if (e.code == '42P01') {
         throw Exception('The "trips" table does not exist in the database.');
       } else if (e.code == '23503') {
-        throw Exception('User ID reference failure. Please ensure you are correctly logged in.');
+        throw Exception(
+            'User ID reference failure. Please ensure you are correctly logged in.');
       } else if (e.code == '42703') {
         debugPrint('***** SCHEMA MISMATCH: ${e.message}');
-        throw Exception('Database schema mismatch: The column "budget_total" is missing. Please run the SQL migration in your Supabase dashboard.');
+        throw Exception(
+            'Database schema mismatch: The column "budget_total" is missing. Please run the SQL migration in your Supabase dashboard.');
       }
-      
+
       rethrow;
     } catch (e) {
       debugPrint('***** SupabaseService ERROR (${e.runtimeType}): $e');

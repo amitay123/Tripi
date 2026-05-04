@@ -575,14 +575,18 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                                               arguments: activity.placeId,
                                             );
                                           } else {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              const SnackBar(content: Text('Details not available for this activity')),
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              const SnackBar(
+                                                  content: Text(
+                                                      'Details not available for this activity')),
                                             );
                                           }
                                         },
                                         borderRadius: BorderRadius.circular(4),
                                         child: const Padding(
-                                          padding: EdgeInsets.symmetric(vertical: 4),
+                                          padding:
+                                              EdgeInsets.symmetric(vertical: 4),
                                           child: Text(
                                             'View Details →',
                                             style: TextStyle(
@@ -691,7 +695,8 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                     border: Border.all(color: const Color(0xFFE2E8F0)),
                     boxShadow: [
                       BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05), blurRadius: 4),
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 4),
                     ],
                   ),
                   child: Icon(_getTransportIcon(mode),

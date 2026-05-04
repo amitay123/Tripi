@@ -12,7 +12,8 @@ class PlacesService {
 
   List<Map<String, dynamic>> _parseAutocompleteResponse(dynamic data) {
     try {
-      final Map<String, dynamic> json = data is String ? jsonDecode(data) : data;
+      final Map<String, dynamic> json =
+          data is String ? jsonDecode(data) : data;
       return List<Map<String, dynamic>>.from(json['predictions'] ?? []);
     } catch (e) {
       debugPrint('Error parsing autocomplete response: $e');
@@ -107,12 +108,12 @@ class PlacesService {
       );
 
       if (response.status == 200) {
-        final Map<String, dynamic> data = response.data is String 
-            ? jsonDecode(response.data) 
-            : response.data;
+        final Map<String, dynamic> data =
+            response.data is String ? jsonDecode(response.data) : response.data;
         final result = data['result'];
         if (result != null) {
           return {
+            'place_id': placeId,
             'name': result['name'],
             'formatted_address': result['formatted_address'],
             'lat': result['geometry']['location']['lat'],
@@ -142,7 +143,17 @@ class PlacesService {
   }
 
   String? getPhotoUrl(String? photoReference) {
-    if (photoReference == null) return null;
+    if (photoReference == null || photoReference.isEmpty) return null;
+
+    // If it's already a full URL, return it directly (or proxy it if needed for CORS)
+    if (photoReference.startsWith('http')) {
+      // Avoid double-proxying
+      if (photoReference.contains('weserv.nl')) return photoReference;
+      
+      // For web, we still might want to proxy to avoid CORS issues if it's from a strict domain
+      return 'https://images.weserv.nl/?url=${Uri.encodeComponent(photoReference)}';
+    }
+
     const String apiKey = 'AIzaSyDNxKWoy8qIDOMyO8FTf1DED_wByeKzm2M';
     final String url =
         'https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=$photoReference&key=$apiKey';
@@ -166,9 +177,8 @@ class PlacesService {
       );
 
       if (response.status == 200) {
-        final Map<String, dynamic> data = response.data is String 
-            ? jsonDecode(response.data) 
-            : response.data;
+        final Map<String, dynamic> data =
+            response.data is String ? jsonDecode(response.data) : response.data;
         if (data['status'] == 'OK' &&
             data['rows'] != null &&
             data['rows'].isNotEmpty &&
@@ -213,9 +223,8 @@ class PlacesService {
       );
 
       if (response.status == 200) {
-        final Map<String, dynamic> data = response.data is String 
-            ? jsonDecode(response.data) 
-            : response.data;
+        final Map<String, dynamic> data =
+            response.data is String ? jsonDecode(response.data) : response.data;
         if (data['results'] != null) {
           return List<Map<String, dynamic>>.from(data['results']);
         }

@@ -30,8 +30,16 @@ class _EditPreferencesModalState extends State<EditPreferencesModal> {
   late List<String> _selectedPreferences;
 
   final List<String> _allPreferences = [
-    'Nature', 'Culture', 'Food', 'Adventure', 'Relaxation', 
-    'Shopping', 'Nightlife', 'History', 'Art', 'Beach'
+    'Nature',
+    'Culture',
+    'Food',
+    'Adventure',
+    'Relaxation',
+    'Shopping',
+    'Nightlife',
+    'History',
+    'Art',
+    'Beach'
   ];
 
   @override
@@ -160,7 +168,10 @@ class _EditPreferencesModalState extends State<EditPreferencesModal> {
     );
   }
 
-  Widget _buildChoiceChip({required String label, required bool selected, required Function(bool) onSelected}) {
+  Widget _buildChoiceChip(
+      {required String label,
+      required bool selected,
+      required Function(bool) onSelected}) {
     return ChoiceChip(
       label: Text(label),
       selected: selected,
@@ -178,7 +189,10 @@ class _EditPreferencesModalState extends State<EditPreferencesModal> {
     );
   }
 
-  Widget _buildFilterChip({required String label, required bool selected, required Function(bool) onSelected}) {
+  Widget _buildFilterChip(
+      {required String label,
+      required bool selected,
+      required Function(bool) onSelected}) {
     return FilterChip(
       label: Text(label),
       selected: selected,
@@ -206,7 +220,8 @@ class _EditPreferencesModalState extends State<EditPreferencesModal> {
               padding: const EdgeInsets.symmetric(vertical: 16),
               foregroundColor: TripiColors.onSurfaceVariant,
             ),
-            child: Text('Cancel', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+            child: Text('Cancel',
+                style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
           ),
         ),
         const SizedBox(width: 16),
@@ -220,7 +235,8 @@ class _EditPreferencesModalState extends State<EditPreferencesModal> {
               );
               final provider = context.read<TripProvider>();
               provider.resumeTrip(updatedTrip);
-              final success = await provider.saveTrip(isCompleted: widget.trip.isCompleted);
+              final success =
+                  await provider.saveTrip(isCompleted: widget.trip.isCompleted);
               if (success && mounted) {
                 Navigator.pop(context);
               }
@@ -230,9 +246,11 @@ class _EditPreferencesModalState extends State<EditPreferencesModal> {
               foregroundColor: Colors.white,
               elevation: 0,
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(28)),
             ),
-            child: Text('Update', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+            child: Text('Update',
+                style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
           ),
         ),
       ],
@@ -302,11 +320,15 @@ class _EditTravelersModalState extends State<EditTravelersModal> {
                 ),
               ),
               const SizedBox(height: 32),
-              _buildCounterRow('Adults', '12+ years', _adults, (val) => setState(() => _adults = val), min: 1),
+              _buildCounterRow('Adults', '12+ years', _adults,
+                  (val) => setState(() => _adults = val),
+                  min: 1),
               const SizedBox(height: 24),
-              _buildCounterRow('Children', '2-12 years', _children, (val) => setState(() => _children = val)),
+              _buildCounterRow('Children', '2-12 years', _children,
+                  (val) => setState(() => _children = val)),
               const SizedBox(height: 24),
-              _buildCounterRow('Infants', 'Under 2 years', _infants, (val) => setState(() => _infants = val)),
+              _buildCounterRow('Infants', 'Under 2 years', _infants,
+                  (val) => setState(() => _infants = val)),
               const SizedBox(height: 48),
               _buildActionButtons(),
             ],
@@ -316,7 +338,9 @@ class _EditTravelersModalState extends State<EditTravelersModal> {
     );
   }
 
-  Widget _buildCounterRow(String title, String subtitle, int value, Function(int) onChanged, {int min = 0}) {
+  Widget _buildCounterRow(
+      String title, String subtitle, int value, Function(int) onChanged,
+      {int min = 0}) {
     return Row(
       children: [
         Expanded(
@@ -375,7 +399,8 @@ class _EditTravelersModalState extends State<EditTravelersModal> {
     );
   }
 
-  Widget _buildCircularButton({required IconData icon, VoidCallback? onPressed}) {
+  Widget _buildCircularButton(
+      {required IconData icon, VoidCallback? onPressed}) {
     return IconButton(
       onPressed: onPressed,
       icon: Icon(icon, size: 20),
@@ -396,7 +421,8 @@ class _EditTravelersModalState extends State<EditTravelersModal> {
               padding: const EdgeInsets.symmetric(vertical: 16),
               foregroundColor: TripiColors.onSurfaceVariant,
             ),
-            child: Text('Cancel', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+            child: Text('Cancel',
+                style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
           ),
         ),
         const SizedBox(width: 16),
@@ -413,7 +439,8 @@ class _EditTravelersModalState extends State<EditTravelersModal> {
               );
               final provider = context.read<TripProvider>();
               provider.resumeTrip(updatedTrip);
-              final success = await provider.saveTrip(isCompleted: widget.trip.isCompleted);
+              final success =
+                  await provider.saveTrip(isCompleted: widget.trip.isCompleted);
               if (success && mounted) {
                 Navigator.pop(context);
               }
@@ -423,9 +450,11 @@ class _EditTravelersModalState extends State<EditTravelersModal> {
               foregroundColor: Colors.white,
               elevation: 0,
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(28)),
             ),
-            child: Text('Update', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+            child: Text('Update',
+                style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
           ),
         ),
       ],
@@ -454,7 +483,7 @@ class _EditDetailsModalState extends State<EditDetailsModal> {
   late TextEditingController _nameController;
   late TextEditingController _cityController;
   late TextEditingController _countryController;
-  
+
   // Track IDs and codes just like in wizard
   String? _selectedCountryCode;
   String? _selectedCityPlaceId;
@@ -540,7 +569,9 @@ class _EditDetailsModalState extends State<EditDetailsModal> {
                 key: ValueKey(_selectedCountryCode),
                 controller: _cityController,
                 label: 'City',
-                hint: _selectedCountryCode?.isEmpty == true ? 'Select country first' : 'Search city...',
+                hint: _selectedCountryCode?.isEmpty == true
+                    ? 'Select country first'
+                    : 'Search city...',
                 icon: Icons.location_city,
                 isCountry: false,
                 enabled: _selectedCountryCode?.isNotEmpty == true,
@@ -587,53 +618,65 @@ class _EditDetailsModalState extends State<EditDetailsModal> {
             absorbing: !enabled,
             child: Autocomplete<Map<String, dynamic>>(
               initialValue: TextEditingValue(text: controller.text),
-              displayStringForOption: (option) => option['description'] as String,
+              displayStringForOption: (option) =>
+                  option['description'] as String,
               optionsBuilder: (TextEditingValue textEditingValue) {
                 if (textEditingValue.text.isEmpty) {
                   return const Iterable<Map<String, dynamic>>.empty();
                 }
 
                 if (isCountry) {
-                  if (_countryDebounce?.isActive ?? false) _countryDebounce!.cancel();
+                  if (_countryDebounce?.isActive ?? false) {
+                    _countryDebounce!.cancel();
+                  }
                   final completer = Completer<Iterable<Map<String, dynamic>>>();
-                  _countryDebounce = Timer(const Duration(milliseconds: 500), () async {
-                    final results = await _placesService.autocompleteCountries(textEditingValue.text);
+                  _countryDebounce =
+                      Timer(const Duration(milliseconds: 500), () async {
+                    final results = await _placesService
+                        .autocompleteCountries(textEditingValue.text);
                     completer.complete(results);
                   });
                   return completer.future;
                 } else {
                   if (_cityDebounce?.isActive ?? false) _cityDebounce!.cancel();
                   final completer = Completer<Iterable<Map<String, dynamic>>>();
-                  _cityDebounce = Timer(const Duration(milliseconds: 500), () async {
+                  _cityDebounce =
+                      Timer(const Duration(milliseconds: 500), () async {
                     final results = await _placesService.autocompleteCities(
-                      textEditingValue.text, _selectedCountryCode ?? '');
+                        textEditingValue.text, _selectedCountryCode ?? '');
                     completer.complete(results);
                   });
                   return completer.future;
                 }
               },
               onSelected: (selection) async {
-                final details = await _placesService.getPlaceDetails(selection['place_id']);
+                final details =
+                    await _placesService.getPlaceDetails(selection['place_id']);
                 setState(() {
                   if (isCountry) {
-                    _countryController.text = details?['name'] ?? selection['description'];
+                    _countryController.text =
+                        details?['name'] ?? selection['description'];
                     _selectedCountryCode = details?['country_code'] ?? '';
                     // Reset city if country changed
                     _cityController.text = '';
                     _selectedCityPlaceId = '';
-                    _selectedCoverImageUrl = _placesService.getPhotoUrl(details?['photo_reference']);
+                    _selectedCoverImageUrl =
+                        _placesService.getPhotoUrl(details?['photo_reference']);
                   } else {
-                    _cityController.text = details?['name'] ?? selection['description'];
+                    _cityController.text =
+                        details?['name'] ?? selection['description'];
                     _selectedCityPlaceId = selection['place_id'];
-                    final cityPhoto = _placesService.getPhotoUrl(details?['photo_reference']);
+                    final cityPhoto =
+                        _placesService.getPhotoUrl(details?['photo_reference']);
                     if (cityPhoto != null) _selectedCoverImageUrl = cityPhoto;
                   }
                 });
               },
-              fieldViewBuilder: (context, fieldController, focusNode, onFieldSubmitted) {
+              fieldViewBuilder:
+                  (context, fieldController, focusNode, onFieldSubmitted) {
                 // Keep controllers in sync
                 if (fieldController.text != controller.text) {
-                   fieldController.text = controller.text;
+                  fieldController.text = controller.text;
                 }
                 return TextField(
                   controller: fieldController,
@@ -643,12 +686,14 @@ class _EditDetailsModalState extends State<EditDetailsModal> {
                     hintText: hint,
                     filled: true,
                     fillColor: TripiColors.surfaceContainerHigh,
-                    prefixIcon: Icon(icon, color: TripiColors.primary, size: 20),
+                    prefixIcon:
+                        Icon(icon, color: TripiColors.primary, size: 20),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide.none,
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 16),
                   ),
                 );
               },
@@ -663,17 +708,20 @@ class _EditDetailsModalState extends State<EditDetailsModal> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: TripiColors.surfaceContainerHigh),
+                      border:
+                          Border.all(color: TripiColors.surfaceContainerHigh),
                     ),
                     child: ListView.separated(
                       padding: EdgeInsets.zero,
                       shrinkWrap: true,
                       itemCount: options.length,
-                      separatorBuilder: (context, index) => Divider(height: 1, color: TripiColors.surfaceContainerHigh),
+                      separatorBuilder: (context, index) => const Divider(
+                          height: 1, color: TripiColors.surfaceContainerHigh),
                       itemBuilder: (BuildContext context, int index) {
                         final option = options.elementAt(index);
                         return ListTile(
-                          title: Text(option['description'] as String, style: const TextStyle(fontSize: 14)),
+                          title: Text(option['description'] as String,
+                              style: const TextStyle(fontSize: 14)),
                           onTap: () => onSelected(option),
                         );
                       },
@@ -717,7 +765,8 @@ class _EditDetailsModalState extends State<EditDetailsModal> {
               borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide.none,
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           ),
         ),
       ],
@@ -760,7 +809,7 @@ class _EditDetailsModalState extends State<EditDetailsModal> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.calendar_today, size: 16, color: TripiColors.primary),
+          const Icon(Icons.calendar_today, size: 16, color: TripiColors.primary),
           const SizedBox(width: 8),
           Text(
             'Duration: $duration ${duration == 1 ? 'day' : 'days'}',
@@ -780,10 +829,10 @@ class _EditDetailsModalState extends State<EditDetailsModal> {
       onTap: () async {
         final now = DateTime.now();
         final today = DateTime(now.year, now.month, now.day);
-        
+
         final picked = await showDatePicker(
           context: context,
-          initialDate: isStart 
+          initialDate: isStart
               ? (_startDate.isBefore(today) ? today : _startDate)
               : (_endDate.isBefore(_startDate) ? _startDate : _endDate),
           firstDate: isStart ? today : _startDate,
@@ -791,7 +840,7 @@ class _EditDetailsModalState extends State<EditDetailsModal> {
           builder: (context, child) {
             return Theme(
               data: Theme.of(context).copyWith(
-                colorScheme: ColorScheme.light(
+                colorScheme: const ColorScheme.light(
                   primary: TripiColors.primary,
                   onPrimary: Colors.white,
                   onSurface: TripiColors.onSurface,
@@ -820,7 +869,8 @@ class _EditDetailsModalState extends State<EditDetailsModal> {
         decoration: BoxDecoration(
           color: TripiColors.surfaceContainerHigh,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: TripiColors.outlineVariant.withValues(alpha: 0.1)),
+          border: Border.all(
+              color: TripiColors.outlineVariant.withValues(alpha: 0.1)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -859,7 +909,8 @@ class _EditDetailsModalState extends State<EditDetailsModal> {
               padding: const EdgeInsets.symmetric(vertical: 16),
               foregroundColor: TripiColors.onSurfaceVariant,
             ),
-            child: Text('Cancel', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+            child: Text('Cancel',
+                style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
           ),
         ),
         const SizedBox(width: 16),
@@ -878,7 +929,8 @@ class _EditDetailsModalState extends State<EditDetailsModal> {
               );
               final provider = context.read<TripProvider>();
               provider.resumeTrip(updatedTrip);
-              final success = await provider.saveTrip(isCompleted: widget.trip.isCompleted);
+              final success =
+                  await provider.saveTrip(isCompleted: widget.trip.isCompleted);
               if (success && mounted) {
                 Navigator.pop(context);
               }
@@ -888,9 +940,11 @@ class _EditDetailsModalState extends State<EditDetailsModal> {
               foregroundColor: Colors.white,
               elevation: 0,
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(28)),
             ),
-            child: Text('Update', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+            child: Text('Update',
+                style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
           ),
         ),
       ],

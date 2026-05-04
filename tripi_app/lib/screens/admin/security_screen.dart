@@ -118,7 +118,8 @@ class SecurityScreen extends StatelessWidget {
       child: Row(
         children: [
           Icon(Icons.devices,
-              size: 20, color: TripiColors.onSurfaceVariant.withValues(alpha: 0.5)),
+              size: 20,
+              color: TripiColors.onSurfaceVariant.withValues(alpha: 0.5)),
           const SizedBox(width: 12),
           Expanded(child: Text(label, style: const TextStyle(fontSize: 14))),
           Icon(value ? Icons.check_circle : Icons.circle_outlined,

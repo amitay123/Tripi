@@ -111,7 +111,8 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen>
       return;
     }
     if (password.length < 8 || _strengthScore < 4) {
-      setState(() => _errorMessage = 'Password must meet all security requirements.');
+      setState(() =>
+          _errorMessage = 'Password must meet all security requirements.');
       return;
     }
     if (password != confirm) {
@@ -127,10 +128,11 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen>
       );
       setState(() {
         _isLoading = false;
-        _successMessage = 'Password updated successfully! Redirecting to login...';
+        _successMessage =
+            'Password updated successfully! Redirecting to login...';
         _errorMessage = null;
       });
-      
+
       await Future.delayed(const Duration(seconds: 2));
       if (mounted) {
         Navigator.of(context).pushNamedAndRemoveUntil('/', (_) => false);
@@ -178,8 +180,10 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.arrow_back, color: TripiColors.primary),
-                      onPressed: () => Navigator.of(context).pushReplacementNamed('/'),
+                      icon: const Icon(Icons.arrow_back,
+                          color: TripiColors.primary),
+                      onPressed: () =>
+                          Navigator.of(context).pushReplacementNamed('/'),
                     ),
                     const SizedBox(height: 32),
                     Text(
@@ -203,13 +207,18 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen>
                     if (_errorMessage != null) _buildErrorBanner(),
                     if (_successMessage != null) _buildSuccessBanner(),
                     const SizedBox(height: 12),
-                    _buildInputField('NEW PASSWORD', _passwordController, _showPassword, (v) => setState(() => _showPassword = v)),
+                    _buildInputField(
+                        'NEW PASSWORD',
+                        _passwordController,
+                        _showPassword,
+                        (v) => setState(() => _showPassword = v)),
                     const SizedBox(height: 16),
                     _buildStrengthGrid(),
                     const SizedBox(height: 12),
                     _buildStrengthBar(),
                     const SizedBox(height: 24),
-                    _buildInputField('CONFIRM PASSWORD', _confirmController, _showConfirm, (v) => setState(() => _showConfirm = v)),
+                    _buildInputField('CONFIRM PASSWORD', _confirmController,
+                        _showConfirm, (v) => setState(() => _showConfirm = v)),
                     const SizedBox(height: 40),
                     _buildSubmitButton(),
                   ],
@@ -222,7 +231,8 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen>
     );
   }
 
-  Widget _buildInputField(String label, TextEditingController controller, bool obscure, Function(bool) toggle) {
+  Widget _buildInputField(String label, TextEditingController controller,
+      bool obscure, Function(bool) toggle) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -248,9 +258,11 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen>
               borderRadius: BorderRadius.circular(28),
               borderSide: BorderSide.none,
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
             suffixIcon: IconButton(
-              icon: Icon(obscure ? Icons.visibility_off : Icons.visibility, color: TripiColors.onSurfaceVariant),
+              icon: Icon(obscure ? Icons.visibility_off : Icons.visibility,
+                  color: TripiColors.onSurfaceVariant),
               onPressed: () => toggle(!obscure),
             ),
           ),
@@ -285,9 +297,9 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen>
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(
         children: [
-          Icon(met ? Icons.check_circle : Icons.circle_outlined, 
-               size: 14, 
-               color: met ? TripiColors.primary : TripiColors.onSurfaceVariant),
+          Icon(met ? Icons.check_circle : Icons.circle_outlined,
+              size: 14,
+              color: met ? TripiColors.primary : TripiColors.onSurfaceVariant),
           const SizedBox(width: 8),
           Flexible(
             child: Text(
@@ -310,8 +322,16 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen>
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('STRENGTH', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: _strengthColor)),
-            Text(_passwordController.text.isEmpty ? '' : _strengthLabel, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: _strengthColor)),
+            Text('STRENGTH',
+                style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: _strengthColor)),
+            Text(_passwordController.text.isEmpty ? '' : _strengthLabel,
+                style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: _strengthColor)),
           ],
         ),
         const SizedBox(height: 6),
@@ -325,7 +345,9 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen>
               children: [
                 AnimatedFractionallySizedBox(
                   duration: const Duration(milliseconds: 400),
-                  widthFactor: _passwordController.text.isEmpty ? 0 : _strengthScore / 4.0,
+                  widthFactor: _passwordController.text.isEmpty
+                      ? 0
+                      : _strengthScore / 4.0,
                   child: Container(color: _strengthColor),
                 ),
               ],
@@ -344,9 +366,13 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen>
         backgroundColor: TripiColors.primary,
         foregroundColor: Colors.white,
       ),
-      child: _isLoading 
-        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-        : const Text('Update Password'),
+      child: _isLoading
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                  color: Colors.white, strokeWidth: 2))
+          : const Text('Update Password'),
     );
   }
 
@@ -357,13 +383,16 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen>
       decoration: BoxDecoration(
         color: const Color(0xFFFEF2F2),
         borderRadius: BorderRadius.circular(16),
-        border: const Border(left: BorderSide(color: Color(0xFFDC2626), width: 4)),
+        border:
+            const Border(left: BorderSide(color: Color(0xFFDC2626), width: 4)),
       ),
       child: Row(
         children: [
           const Icon(Icons.error_outline, color: Color(0xFFDC2626)),
           const SizedBox(width: 12),
-          Expanded(child: Text(_errorMessage!, style: const TextStyle(color: Color(0xFFDC2626)))),
+          Expanded(
+              child: Text(_errorMessage!,
+                  style: const TextStyle(color: Color(0xFFDC2626)))),
         ],
       ),
     );
@@ -376,13 +405,16 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen>
       decoration: BoxDecoration(
         color: const Color(0xFFF0FDF4),
         borderRadius: BorderRadius.circular(16),
-        border: const Border(left: BorderSide(color: Color(0xFF16A34A), width: 4)),
+        border:
+            const Border(left: BorderSide(color: Color(0xFF16A34A), width: 4)),
       ),
       child: Row(
         children: [
           const Icon(Icons.check_circle_outline, color: Color(0xFF16A34A)),
           const SizedBox(width: 12),
-          Expanded(child: Text(_successMessage!, style: const TextStyle(color: Color(0xFF16A34A)))),
+          Expanded(
+              child: Text(_successMessage!,
+                  style: const TextStyle(color: Color(0xFF16A34A)))),
         ],
       ),
     );

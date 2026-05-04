@@ -114,8 +114,8 @@ class UsersScreen extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             'You have 24 active team members this month with a 98% security compliance rate.',
-            style:
-                TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13),
+            style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.8), fontSize: 13),
           ),
           const SizedBox(height: 24),
           Row(

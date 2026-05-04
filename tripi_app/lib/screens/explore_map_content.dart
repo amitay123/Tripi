@@ -38,6 +38,11 @@ class _ExploreContentState extends State<ExploreContent> {
   bool _isDetailsSheetOpen = false;
   bool _isUpdatingMarkers = false; // Add lock for marker updates
   
+  Activity? _selectedActivity;
+  Trip? _selectedActivityTrip;
+  int? _selectedActivityDay;
+  Offset? _selectedActivityScreenPos;
+  
   final Map<String, BitmapDescriptor> _customMarkerCache = {};
   Set<Marker> _tripMarkers = {};
   List<Trip>? _lastTrips;
@@ -107,7 +112,7 @@ class _ExploreContentState extends State<ExploreContent> {
     final details = await _placesService.getPlaceDetails(place['place_id']);
     if (details != null && details['lat'] != null) {
       final latlng = LatLng(details['lat'], details['lng']);
-      _mapController?.animateCamera(CameraUpdate.newLatLngZoom(latlng, 14));
+      _mapController?.animateCamera(CameraUpdate.newLatLngZoom(latlng, 16));
       setState(() {
         _currentCenter = latlng;
         // Optionally add the searched place to the map as selected
@@ -337,7 +342,20 @@ class _ExploreContentState extends State<ExploreContent> {
                             fontFamily: 'Plus Jakarta Sans',
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(Icons.location_on_outlined, color: TripiColors.onSurfaceVariant, size: 16),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                place['vicinity'] ?? 'No address available',
+                                style: const TextStyle(color: TripiColors.onSurfaceVariant, fontSize: 13),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
                         Row(
                           children: [
                             const Icon(Icons.star, color: TripiColors.primary, size: 18),
@@ -358,18 +376,6 @@ class _ExploreContentState extends State<ExploreContent> {
                           _buildHotelComparison(place),
                           const SizedBox(height: 16),
                         ],
-                        Row(
-                          children: [
-                            const Icon(Icons.location_on_outlined, color: TripiColors.onSurfaceVariant, size: 18),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                place['vicinity'] ?? 'No address available',
-                                style: const TextStyle(color: TripiColors.onSurfaceVariant),
-                              ),
-                            ),
-                          ],
-                        ),
                         const SizedBox(height: 32),
                         Row(
                           children: [
@@ -420,7 +426,7 @@ class _ExploreContentState extends State<ExploreContent> {
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.4),
+                    color: Colors.black.withValues(alpha: 0.4),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.close, color: Colors.white, size: 20),
@@ -529,6 +535,8 @@ class _ExploreContentState extends State<ExploreContent> {
                   placeId: place['place_id'],
                   source: 'api',
                   imageUrl: photoUrl,
+                  rating: place['rating']?.toDouble(),
+                  userRatingsTotal: place['user_ratings_total'],
                 );
                   context.read<TripProvider>().addActivity(trip.id, dayIndex, activity);
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -569,7 +577,7 @@ class _ExploreContentState extends State<ExploreContent> {
           color: isSelected ? TripiColors.primary : TripiColors.surfaceContainerLowest,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected ? TripiColors.primary : TripiColors.outlineVariant.withOpacity(0.15), 
+            color: isSelected ? TripiColors.primary : TripiColors.outlineVariant.withValues(alpha: 0.15), 
             width: 1
           ),
         ),
@@ -644,15 +652,15 @@ class _ExploreContentState extends State<ExploreContent> {
       return Marker(
         markerId: MarkerId(place['place_id']),
         position: LatLng(lat, lng),
-        // Disabling default InfoWindow to prevent 'bulm' (bubble) on top
-        // and allow the bottom sheet to be the primary interaction.
         infoWindow: InfoWindow.noText,
+        zIndex: isSelected ? 100 : 1,
         icon: BitmapDescriptor.defaultMarkerWithHue(
           addedToTrip ? BitmapDescriptor.hueGreen : 
-          (isSelected ? BitmapDescriptor.hueBlue : 
+          (isSelected ? BitmapDescriptor.hueAzure : 
            (isPopular ? BitmapDescriptor.hueOrange : BitmapDescriptor.hueRed))
         ),
         onTap: () {
+          if (_isDetailsSheetOpen) return;
           setState(() => _selectedPlace = place);
           _showPlaceDetailsSheet(place);
         },
@@ -729,6 +737,17 @@ class _ExploreContentState extends State<ExploreContent> {
           rotateGesturesEnabled: !_isDetailsSheetOpen,
           tiltGesturesEnabled: !_isDetailsSheetOpen,
           onMapCreated: (controller) => _mapController = controller,
+          onTap: (_) {
+            setState(() {
+              _selectedActivity = null;
+              _selectedActivityTrip = null;
+              _selectedActivityDay = null;
+              _selectedActivityScreenPos = null;
+            });
+          },
+          onCameraMove: (position) {
+            _updateBubblePosition();
+          },
         ),
         
         // Blocking Dimmer Overlay
@@ -743,190 +762,145 @@ class _ExploreContentState extends State<ExploreContent> {
                   });
                 },
                 child: Container(
-                  color: Colors.black.withOpacity(0.5),
+                  color: Colors.black.withValues(alpha: 0.5),
                 ),
               ),
             ),
           ),
-        // Top overlay: Search bar and Filters
+
+        // Search Bar and Filters
         Positioned(
           top: 0,
           left: 0,
           right: 0,
-          child: SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(height: 16),
-                // Search Area without floating dropdown
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: PointerInterceptor(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: TripiColors.surfaceContainerLowest,
-                        borderRadius: BorderRadius.circular(32),
-                        border: Border.all(color: TripiColors.outlineVariant.withOpacity(0.15)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF2D3335).withOpacity(0.06),
-                            blurRadius: 32,
-                            offset: const Offset(0, -12),
+          child: PointerInterceptor(
+            child: SafeArea(
+              child: Column(
+                children: [
+                  // Search Bar
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: MouseRegion(
+                      cursor: SystemMouseCursors.text,
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTapDown: (_) {
+                          print('[Search focus] onTapDown');
+                          _searchFocusNode.requestFocus();
+                        },
+                        onTap: () {
+                          print('[Search focus] onTap');
+                          _searchFocusNode.requestFocus();
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: TripiColors.surfaceContainerLowest,
+                            borderRadius: BorderRadius.circular(30),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.1),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: TextField(
-                        controller: _searchController,
-                        focusNode: _searchFocusNode,
-                        onChanged: _onSearchChanged,
-                        decoration: InputDecoration(
-                          hintText: 'Search destinations, hotels...',
-                          hintStyle: const TextStyle(color: TripiColors.onSurfaceVariant),
-                          prefixIcon: const Icon(Icons.search, color: TripiColors.onSurfaceVariant),
-                          suffixIcon: IconButton(
-                            icon: const Icon(Icons.tune, color: TripiColors.primary),
-                            onPressed: () {
-                              showModalBottomSheet(
-                                context: context,
-                                backgroundColor: TripiColors.surfaceContainerLowest,
-                                shape: const RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                                ),
-                                builder: (context) {
-                                  return StatefulBuilder(
-                                    builder: (context, setModalState) {
-                                      return Padding(
-                                        padding: const EdgeInsets.all(24.0),
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            const Text('Advanced Filters', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                                            const SizedBox(height: 24),
-                                            Text('Distance Radius: ${(_filterDistance / 1000).toStringAsFixed(1)} km', 
-                                              style: const TextStyle(fontWeight: FontWeight.w600)
-                                            ),
-                                            Slider(
-                                              value: _filterDistance,
-                                              min: 1000,
-                                              max: 50000,
-                                              divisions: 49,
-                                              activeColor: TripiColors.primary,
-                                              label: '${(_filterDistance / 1000).toStringAsFixed(1)} km',
-                                              onChanged: (value) {
-                                                setModalState(() => _filterDistance = value);
-                                                setState(() => _filterDistance = value);
-                                              },
-                                            ),
-                                            const SizedBox(height: 24),
-                                            SizedBox(
-                                              width: double.infinity,
-                                              child: ElevatedButton(
-                                                onPressed: () {
-                                                  Navigator.pop(context);
-                                                  _searchNearbyPlaces();
-                                                },
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor: TripiColors.primary,
-                                                  foregroundColor: Colors.white,
-                                                  padding: const EdgeInsets.symmetric(vertical: 16),
-                                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                                                ),
-                                                child: const Text('Apply'),
-                                              ),
-                                            ),
-                                            const SizedBox(height: 16),
-                                          ],
-                                        ),
-                                      );
-                                    },
-                                  );
-                                },
-                              );
+                          child: TextField(
+                            controller: _searchController,
+                            focusNode: _searchFocusNode,
+                            onChanged: _onSearchChanged,
+                            onTap: () {
+                              print('[Search focus] TextField onTap');
+                              _searchFocusNode.requestFocus();
                             },
+                            decoration: InputDecoration(
+                              hintText: 'Search places',
+                              prefixIcon: const Icon(Icons.search, color: TripiColors.primary),
+                              suffixIcon: _searchController.text.isNotEmpty
+                                  ? IconButton(
+                                      icon: const Icon(Icons.close),
+                                      onPressed: () {
+                                        _searchController.clear();
+                                        _onSearchChanged('');
+                                      },
+                                    )
+                                  : null,
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                            ),
                           ),
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 16),
                         ),
                       ),
                     ),
                   ),
-                ),
                   
-                // Gap between search area and filters
-                const SizedBox(height: 24),
-                  
-                  // Filter Row: Trip Filter followed by Category Chips
+                  // Filter Row
                   IgnorePointer(
                     ignoring: _isSearchFocused || _searchResults.isNotEmpty,
                     child: Opacity(
                       opacity: (_isSearchFocused || _searchResults.isNotEmpty) ? 0.5 : 1.0,
-                      child: PointerInterceptor(
-                        child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
-                        children: [
-                          // Trip Filter Dropdown
-                          if (trips.isNotEmpty)
-                            Container(
-                              margin: const EdgeInsets.only(right: 12),
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: TripiColors.surfaceContainerLowest,
-                                borderRadius: BorderRadius.circular(24),
-                                border: Border.all(color: TripiColors.outlineVariant.withOpacity(0.15)),
-                              ),
-                              child: DropdownButtonHideUnderline(
-                                child: DropdownButton<Trip?>(
-                                  value: currentTripFilter,
-                                  hint: const Text('All Trips', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-                                  isDense: true,
-                                  items: [
-                                    const DropdownMenuItem(value: null, child: Text('All Trips')),
-                                    ...trips.map((t) => DropdownMenuItem(value: t, child: Text(t.name)))
-                                  ],
-                                  onChanged: (trip) {
-                                    setState(() => _selectedTripFilter = trip);
-                                    if (trip != null) {
-                                      if (trip.days.isNotEmpty && trip.days.first.activities.isNotEmpty) {
-                                        final act = trip.days.first.activities.first;
-                                        if (act.lat != null && act.lng != null) {
-                                          _mapController?.animateCamera(CameraUpdate.newLatLngZoom(LatLng(act.lat!, act.lng!), 12));
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          children: [
+                            // Trip Filter Dropdown
+                            if (trips.isNotEmpty)
+                              Container(
+                                margin: const EdgeInsets.only(right: 12),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: TripiColors.surfaceContainerLowest,
+                                  borderRadius: BorderRadius.circular(24),
+                                  border: Border.all(color: TripiColors.outlineVariant.withValues(alpha: 0.15)),
+                                ),
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<Trip?>(
+                                    value: currentTripFilter,
+                                    hint: const Text('All Trips', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                                    isDense: true,
+                                    items: [
+                                      const DropdownMenuItem(value: null, child: Text('All Trips')),
+                                      ...trips.map((t) => DropdownMenuItem(value: t, child: Text(t.name)))
+                                    ],
+                                    onChanged: (trip) {
+                                      setState(() => _selectedTripFilter = trip);
+                                      if (trip != null) {
+                                        if (trip.days.isNotEmpty && trip.days.first.activities.isNotEmpty) {
+                                          final act = trip.days.first.activities.first;
+                                          if (act.lat != null && act.lng != null) {
+                                            _mapController?.animateCamera(CameraUpdate.newLatLngZoom(LatLng(act.lat!, act.lng!), 12));
+                                          }
                                         }
                                       }
-                                    }
-                                    _searchNearbyPlaces();
-                                  },
+                                    },
+                                  ),
                                 ),
                               ),
-                            ),
-                          
-                          // Category Chips
-                          _buildChip('Hotels', Icons.hotel, 'hotel'),
-                          _buildChip('Dining', Icons.restaurant, 'restaurant'),
-                          _buildChip('Museums', Icons.museum, 'museum'),
-                          _buildChip('Parks', Icons.park, 'park'),
-                          _buildChip('Cafes', Icons.local_cafe, 'cafe'),
-                        ],
+                            
+                            // Category Chips
+                            _buildChip('Hotels', Icons.hotel, 'hotel'),
+                            _buildChip('Dining', Icons.restaurant, 'restaurant'),
+                            _buildChip('Museums', Icons.museum, 'museum'),
+                            _buildChip('Parks', Icons.park, 'park'),
+                            _buildChip('Cafes', Icons.local_cafe, 'cafe'),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
-                  const SizedBox(height: 16),
                 ],
               ),
             ),
           ),
-        
+        ),
+
         // Loading Indicator
         if (_isLoading)
           const Center(
             child: CircularProgressIndicator(),
           ),
           
-        // Autocomplete Dropdown (Floating in the outermost Stack)
+        // Autocomplete Results
         if (_searchResults.isNotEmpty)
           Positioned(
             top: 0,
@@ -942,7 +916,7 @@ class _ExploreContentState extends State<ExploreContent> {
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withValues(alpha: 0.1),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -968,9 +942,173 @@ class _ExploreContentState extends State<ExploreContent> {
             ),
           ),
           
-        // Floating Info Card is now handled by Bottom Sheet on tap, but we can also show a small persistent card.
-        // As per the HTML, the card floats above the nav bar. We used a bottom sheet instead for better interaction,
-        // but if desired we could place a card here.
+        // Floating Info Card for selected numbered pins
+        if (_selectedActivity != null && _selectedActivityTrip != null && _selectedActivityScreenPos != null)
+          Positioned(
+            left: math.max(16, _selectedActivityScreenPos!.dx - 150),
+            top: math.max(100, _selectedActivityScreenPos!.dy - 140), // Increased offset to accommodate more content
+            child: PointerInterceptor(
+              child: Container(
+                width: 280,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: TripiColors.surfaceContainerLowest,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.15),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Stack(
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            width: 60,
+                            height: 60,
+                            decoration: const BoxDecoration(
+                              color: TripiColors.surfaceContainerHigh,
+                              gradient: LinearGradient(
+                                colors: [
+                                  TripiColors.surfaceContainerHigh,
+                                  TripiColors.surfaceContainerLow,
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                            ),
+                            child: (_selectedActivity!.imageUrl != null && _selectedActivity!.imageUrl!.isNotEmpty)
+                              ? Image.network(
+                                  _selectedActivity!.imageUrl!.startsWith('http') 
+                                      ? _selectedActivity!.imageUrl! 
+                                      : (_placesService.getPhotoUrl(_selectedActivity!.imageUrl!) ?? _selectedActivity!.imageUrl!), 
+                                  width: 60, 
+                                  height: 60, 
+                                  fit: BoxFit.cover,
+                                  loadingBuilder: (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return Center(
+                                      child: SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          value: loadingProgress.expectedTotalBytes != null
+                                              ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                              : null,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported_outlined, color: TripiColors.onSurfaceVariant, size: 24),
+                                )
+                              : const Icon(Icons.place_outlined, color: TripiColors.onSurfaceVariant, size: 24),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      _selectedActivityTrip!.name,
+                                      style: const TextStyle(
+                                        color: TripiColors.primary,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  if (_selectedActivityDay != null)
+                                    Container(
+                                      margin: const EdgeInsets.only(left: 4),
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: TripiColors.primary.withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        'Day $_selectedActivityDay',
+                                        style: const TextStyle(
+                                          color: TripiColors.primary,
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                _selectedActivity!.title,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (_selectedActivity!.address != null) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  _selectedActivity!.address!,
+                                  style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                              if (_selectedActivity!.rating != null) ...[
+                                const SizedBox(height: 2),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.star, color: Colors.amber, size: 12),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${_selectedActivity!.rating}',
+                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                                    ),
+                                    if (_selectedActivity!.userRatingsTotal != null)
+                                      Text(
+                                        ' (${_selectedActivity!.userRatingsTotal})',
+                                        style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                                      ),
+                                  ],
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 20),
+                      ],
+                    ),
+                    Positioned(
+                      top: -4,
+                      right: -4,
+                      child: GestureDetector(
+                        onTap: () => setState(() {
+                          _selectedActivity = null;
+                          _selectedActivityTrip = null;
+                        }),
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          child: const Icon(Icons.close, size: 18, color: TripiColors.onSurfaceVariant),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        )
       ],
     );
   }
@@ -982,9 +1120,9 @@ class _ExploreContentState extends State<ExploreContent> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: TripiColors.primary.withOpacity(0.05),
+        color: TripiColors.primary.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: TripiColors.primary.withOpacity(0.1)),
+        border: Border.all(color: TripiColors.primary.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1026,7 +1164,7 @@ class _ExploreContentState extends State<ExploreContent> {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: brandColor.withOpacity(0.1),
+                color: brandColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -1104,12 +1242,42 @@ class _ExploreContentState extends State<ExploreContent> {
                   markerId: MarkerId('trip_activity_${activity.id}'),
                   position: LatLng(activity.lat!, activity.lng!),
                   icon: icon,
-                  infoWindow: InfoWindow(
-                    title: activity.title, // Restore "bulb" (bubble) with activity title
-                  ),
-                  zIndex: 20,
-                  onTap: () {
-                    // Activity details are now in the bulb
+                  infoWindow: InfoWindow.noText,
+                  zIndexInt: 20,
+                  onTap: () async {
+                    if (_isDetailsSheetOpen) return;
+                    
+                    // Fetch image if missing
+                    if ((activity.imageUrl == null || activity.imageUrl!.isEmpty) && activity.placeId != null) {
+                      try {
+                        debugPrint('Fetching details for placeId: ${activity.placeId}');
+                        final details = await _placesService.getPlaceDetails(activity.placeId!);
+                        if (details != null && details['photo_references'] != null && (details['photo_references'] as List).isNotEmpty) {
+                          final photoRef = details['photo_references'][0];
+                          final photoUrl = _placesService.getPhotoUrl(photoRef);
+                          debugPrint('Found photo URL: $photoUrl');
+                          if (photoUrl != null) {
+                            activity.imageUrl = photoUrl;
+                          }
+                        } else {
+                          debugPrint('No photo references found for placeId: ${activity.placeId}');
+                        }
+                      } catch (e) {
+                        debugPrint('Error fetching image on tap: $e');
+                      }
+                    }
+
+                    // Get screen position for the bubble
+                    final screenPos = await _mapController?.getScreenCoordinate(LatLng(activity.lat!, activity.lng!));
+                    
+                    setState(() {
+                      _selectedActivity = activity;
+                      _selectedActivityTrip = filter;
+                      _selectedActivityDay = day.dayIndex;
+                      if (screenPos != null) {
+                        _selectedActivityScreenPos = Offset(screenPos.x.toDouble(), screenPos.y.toDouble());
+                      }
+                    });
                   },
                 ),
               );
@@ -1136,10 +1304,43 @@ class _ExploreContentState extends State<ExploreContent> {
                     markerId: MarkerId('trip_activity_${activity.id}'),
                     position: LatLng(activity.lat!, activity.lng!),
                     icon: icon,
-                    infoWindow: InfoWindow(
-                      title: '${trip.name}: ${activity.title}', // Detailed bulb title
-                    ),
-                    zIndex: 20,
+                    infoWindow: InfoWindow.noText,
+                    zIndexInt: 20,
+                    onTap: () async {
+                      if (_isDetailsSheetOpen) return;
+                      
+                      // Fetch image if missing
+                      if ((activity.imageUrl == null || activity.imageUrl!.isEmpty) && activity.placeId != null) {
+                        try {
+                          debugPrint('Fetching details for placeId: ${activity.placeId}');
+                          final details = await _placesService.getPlaceDetails(activity.placeId!);
+                          if (details != null && details['photo_references'] != null && (details['photo_references'] as List).isNotEmpty) {
+                            final photoRef = details['photo_references'][0];
+                            final photoUrl = _placesService.getPhotoUrl(photoRef);
+                            debugPrint('Found photo URL: $photoUrl');
+                            if (photoUrl != null) {
+                              activity.imageUrl = photoUrl;
+                            }
+                          } else {
+                            debugPrint('No photo references found for placeId: ${activity.placeId}');
+                          }
+                        } catch (e) {
+                          debugPrint('Error fetching image on tap: $e');
+                        }
+                      }
+
+                      // Get screen position for the bubble
+                      final screenPos = await _mapController?.getScreenCoordinate(LatLng(activity.lat!, activity.lng!));
+                      
+                      setState(() {
+                        _selectedActivity = activity;
+                        _selectedActivityTrip = trip;
+                        _selectedActivityDay = day.dayIndex;
+                        if (screenPos != null) {
+                          _selectedActivityScreenPos = Offset(screenPos.x.toDouble(), screenPos.y.toDouble());
+                        }
+                      });
+                    },
                   ),
                 );
               }
@@ -1161,9 +1362,10 @@ class _ExploreContentState extends State<ExploreContent> {
     }
   }
 
-  Future<ui.Image?> _loadImage(String url) async {
+   Future<ui.Image?> _loadImage(String url) async {
     try {
-      final response = await http.get(Uri.parse(url));
+      final proxiedUrl = _placesService.getPhotoUrl(url) ?? url;
+      final response = await http.get(Uri.parse(proxiedUrl));
       if (response.statusCode == 200) {
         final codec = await ui.instantiateImageCodec(response.bodyBytes, targetWidth: 60, targetHeight: 60);
         final frame = await codec.getNextFrame();
@@ -1181,10 +1383,10 @@ class _ExploreContentState extends State<ExploreContent> {
       return _customMarkerCache[cacheKey]!;
     }
 
-    // Reduced Google Map Pin proportions to feel standard: 24x38 logical pixels
-    const double width = 24.0;
-    const double height = 38.0;
-    const double radius = width / 2;
+    // Google Map Pin proportions to feel standard
+    final double width = 27.0 * pixelRatio;
+    final double height = 43.0 * pixelRatio;
+    final double radius = width / 2;
     
     final ui.PictureRecorder pictureRecorder = ui.PictureRecorder();
     final Canvas canvas = Canvas(pictureRecorder);
@@ -1238,8 +1440,8 @@ class _ExploreContentState extends State<ExploreContent> {
       final TextPainter painter = TextPainter(textDirection: TextDirection.ltr);
       painter.text = TextSpan(
         text: number.toString(),
-        style: const TextStyle(
-          fontSize: 12,
+        style: TextStyle(
+          fontSize: 14 * pixelRatio,
           color: Colors.black,
           fontWeight: FontWeight.bold,
         ),
@@ -1253,9 +1455,22 @@ class _ExploreContentState extends State<ExploreContent> {
  
     final img = await pictureRecorder.endRecording().toImage(width.toInt(), height.toInt());
     final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
-    final icon = BitmapDescriptor.fromBytes(byteData!.buffer.asUint8List());
+    final icon = BitmapDescriptor.bytes(byteData!.buffer.asUint8List(), imagePixelRatio: pixelRatio);
     
     _customMarkerCache[cacheKey] = icon;
     return icon;
+  }
+
+  Future<void> _updateBubblePosition() async {
+    if (_selectedActivity != null && _mapController != null) {
+      final screenPos = await _mapController!.getScreenCoordinate(
+        LatLng(_selectedActivity!.lat!, _selectedActivity!.lng!)
+      );
+      if (mounted) {
+        setState(() {
+          _selectedActivityScreenPos = Offset(screenPos.x.toDouble(), screenPos.y.toDouble());
+        });
+      }
+    }
   }
 }

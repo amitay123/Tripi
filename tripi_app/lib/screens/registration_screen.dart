@@ -53,7 +53,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       _hasSymbol = RegExp(r'[!@#$%^&*(),.?:{}|<>_\-+=\[\]\\;~/]').hasMatch(p);
       _hasNumber = RegExp(r'[0-9]').hasMatch(p);
       _hasUppercase = RegExp(r'[A-Z]').hasMatch(p);
-      
+
       // Auto-hide security error once password becomes strong
       if (_strengthScore == 4) {
         _showSecurityError = false;
@@ -135,7 +135,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           // This usually means email confirmation is enabled in Supabase
           setState(() {
             _isLoading = false;
-            _successMessage = 'Registration successful! Please check your email to confirm your account before signing in.';
+            _successMessage =
+                'Registration successful! Please check your email to confirm your account before signing in.';
             _errorMessage = null;
           });
           // Optionally, wait a few seconds and go back to login
@@ -158,7 +159,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       }
     } on AuthException catch (e) {
       setState(() {
-        if (e.code == 'user_already_exists' || e.message.contains('already registered')) {
+        if (e.code == 'user_already_exists' ||
+            e.message.contains('already registered')) {
           _errorMessage = 'This email is already registered.';
         } else {
           _errorMessage = e.message;
@@ -272,7 +274,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     ),
               ),
               const SizedBox(height: 8),
-              if (_errorMessage != null || (_showSecurityError && _strengthScore < 4)) _buildErrorBanner(),
+              if (_errorMessage != null ||
+                  (_showSecurityError && _strengthScore < 4))
+                _buildErrorBanner(),
               if (_successMessage != null) _buildSuccessBanner(),
               const SizedBox(height: 12),
               TripiCard(
@@ -424,8 +428,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     final IconData icon = isSecurityInfo ? Icons.security : Icons.error;
 
     // Colors for Security (Orange) vs Error (Red)
-    final Color bgColor = isSecurityInfo ? const Color(0xFFFFF3E0) : const Color(0xFFF8E8E8);
-    final Color accentColor = isSecurityInfo ? const Color(0xFFE65100) : const Color(0xFFB00020);
+    final Color bgColor =
+        isSecurityInfo ? const Color(0xFFFFF3E0) : const Color(0xFFF8E8E8);
+    final Color accentColor =
+        isSecurityInfo ? const Color(0xFFE65100) : const Color(0xFFB00020);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -651,8 +657,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(28),
-            border:
-                Border.all(color: TripiColors.outlineVariant.withValues(alpha: 0.1)),
+            border: Border.all(
+                color: TripiColors.outlineVariant.withValues(alpha: 0.1)),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.03),
@@ -669,8 +675,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
                   height: 20,
                   width: 20,
-                  errorBuilder: (context, error, stackTrace) =>
-                      const Icon(Icons.g_mobiledata, size: 24, color: Color(0xFF4285F4)),
+                  errorBuilder: (context, error, stackTrace) => const Icon(
+                      Icons.g_mobiledata,
+                      size: 24,
+                      color: Color(0xFF4285F4)),
                 )
               else if (label.toLowerCase().contains('facebook'))
                 const Icon(Icons.facebook, color: Color(0xFF1877F2), size: 24)

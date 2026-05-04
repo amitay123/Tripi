@@ -329,7 +329,8 @@ class DashboardScreen extends StatelessWidget {
             onPressed: () {},
             style: OutlinedButton.styleFrom(
               minimumSize: const Size(double.infinity, 48),
-              side: BorderSide(color: TripiColors.primary.withValues(alpha: 0.1)),
+              side:
+                  BorderSide(color: TripiColors.primary.withValues(alpha: 0.1)),
             ),
             child: const Text('View All Activity'),
           ),

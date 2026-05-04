@@ -5,7 +5,6 @@ import '../theme/tripi_colors.dart';
 import '../services/supabase_service.dart';
 import '../providers/booking_provider.dart';
 import 'package:logging/logging.dart';
-import '../models/models.dart' as models;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -49,7 +48,7 @@ class _LoginScreenState extends State<LoginScreen> {
       _log.info('Attempting login for: $email');
       await SupabaseService.signIn(email: email, password: password);
       _log.info('Login successful');
-      
+
       // Sync with BookingProvider
       if (mounted) {
         // Save "Remember Me" preference
@@ -68,13 +67,14 @@ class _LoginScreenState extends State<LoginScreen> {
       _log.info('Login failed: $e');
       String errorMsg = e.toString();
       if (errorMsg.contains('Email not confirmed')) {
-        errorMsg = 'Your email has not been confirmed yet. Please check your inbox for the confirmation link and try again.';
+        errorMsg =
+            'Your email has not been confirmed yet. Please check your inbox for the confirmation link and try again.';
       } else if (errorMsg.contains('Invalid login credentials')) {
         errorMsg = 'Invalid email or password. Please try again.';
       } else if (errorMsg.contains('Network error')) {
         errorMsg = 'Network error. Please check your connection and try again.';
       }
-      
+
       setState(() {
         _errorMessage = errorMsg;
         _successMessage = null;
@@ -86,7 +86,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _handleForgotPassword() async {
     if (_isSignInLoading) return;
-    
+
     // Unfocus to prevent focus shifts from looking like a button click
     FocusScope.of(context).unfocus();
 
@@ -128,7 +128,7 @@ class _LoginScreenState extends State<LoginScreen> {
         email: email,
         redirectTo: 'https://tripi-app-af1ad.web.app/#/set-new-password',
       );
-      
+
       if (mounted) {
         setState(() {
           _successMessage = 'Password reset email sent! Check your inbox.';
@@ -139,7 +139,9 @@ class _LoginScreenState extends State<LoginScreen> {
       _log.info('Forgot password error: $e');
       if (mounted) {
         setState(() {
-          if (e is AuthException && (e.code == 'over_email_send_rate_limit' || e.statusCode == '429')) {
+          if (e is AuthException &&
+              (e.code == 'over_email_send_rate_limit' ||
+                  e.statusCode == '429')) {
             _successMessage = 'Password reset email sent! Check your inbox.';
             _errorMessage = null;
           } else {
@@ -554,7 +556,8 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildSocialButton(IconData icon, String label, {VoidCallback? onTap}) {
+  Widget _buildSocialButton(IconData icon, String label,
+      {VoidCallback? onTap}) {
     final bool isGoogle = label.toLowerCase().contains('google');
     return Material(
       color: Colors.transparent,
@@ -566,8 +569,8 @@ class _LoginScreenState extends State<LoginScreen> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(28),
-            border:
-                Border.all(color: TripiColors.outlineVariant.withValues(alpha: 0.1)),
+            border: Border.all(
+                color: TripiColors.outlineVariant.withValues(alpha: 0.1)),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.03),
@@ -584,8 +587,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
                   height: 20,
                   width: 20,
-                  errorBuilder: (context, error, stackTrace) =>
-                      const Icon(Icons.g_mobiledata, size: 24, color: Color(0xFF4285F4)),
+                  errorBuilder: (context, error, stackTrace) => const Icon(
+                      Icons.g_mobiledata,
+                      size: 24,
+                      color: Color(0xFF4285F4)),
                 )
               else if (label.toLowerCase().contains('facebook'))
                 const Icon(Icons.facebook, color: Color(0xFF1877F2), size: 24)

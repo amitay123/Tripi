@@ -17,7 +17,7 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
   TextEditingController? _internalCountryController;
   TextEditingController? _internalCityController;
   late TextEditingController _nameController;
-  
+
   Timer? _countryDebounce;
   Timer? _cityDebounce;
 
@@ -25,7 +25,8 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
   void initState() {
     super.initState();
     final tripProvider = context.read<TripProvider>();
-    _nameController = TextEditingController(text: tripProvider.draftTrip?.name ?? '');
+    _nameController =
+        TextEditingController(text: tripProvider.draftTrip?.name ?? '');
   }
 
   @override
@@ -79,14 +80,18 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                 return const Iterable<Map<String, dynamic>>.empty();
               }
 
-              if (_countryDebounce?.isActive ?? false) _countryDebounce!.cancel();
-              
+              if (_countryDebounce?.isActive ?? false) {
+                _countryDebounce!.cancel();
+              }
+
               final completer = Completer<Iterable<Map<String, dynamic>>>();
-              _countryDebounce = Timer(const Duration(milliseconds: 500), () async {
-                final results = await _placesService.autocompleteCountries(textEditingValue.text);
+              _countryDebounce =
+                  Timer(const Duration(milliseconds: 500), () async {
+                final results = await _placesService
+                    .autocompleteCountries(textEditingValue.text);
                 completer.complete(results);
               });
-              
+
               return completer.future;
             },
             onSelected: (selection) async {
@@ -161,14 +166,15 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                   }
 
                   if (_cityDebounce?.isActive ?? false) _cityDebounce!.cancel();
-                  
+
                   final completer = Completer<Iterable<Map<String, dynamic>>>();
-                  _cityDebounce = Timer(const Duration(milliseconds: 500), () async {
+                  _cityDebounce =
+                      Timer(const Duration(milliseconds: 500), () async {
                     final results = await _placesService.autocompleteCities(
                         textEditingValue.text, selectedCountryCode);
                     completer.complete(results);
                   });
-                  
+
                   return completer.future;
                 },
                 onSelected: (selection) async {

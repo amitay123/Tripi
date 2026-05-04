@@ -159,7 +159,8 @@ class _TripsScreenState extends State<TripsScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '${latestTrip.city ?? ''}, ${latestTrip.country}'.replaceAll(RegExp(r'^,\s*'), ''),
+                            '${latestTrip.city ?? ''}, ${latestTrip.country}'
+                                .replaceAll(RegExp(r'^,\s*'), ''),
                             style: const TextStyle(
                                 color: Color(0xFF6B7280), fontSize: 16),
                           ),
@@ -174,7 +175,8 @@ class _TripsScreenState extends State<TripsScreen> {
                           color: const Color(0xFFEFF6FF),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(Icons.edit_outlined, color: Color(0xFF2563EB), size: 20),
+                        child: const Icon(Icons.edit_outlined,
+                            color: Color(0xFF2563EB), size: 20),
                       ),
                     ),
                   ],
@@ -191,11 +193,13 @@ class _TripsScreenState extends State<TripsScreen> {
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    _buildInfoBadge(Icons.person,
+                    _buildInfoBadge(
+                        Icons.person,
                         '${latestTrip.travelersBreakdown['adults'] ?? 1} Adults',
                         () => _editTripField(context, latestTrip, 1)),
                     const SizedBox(width: 12),
-                    _buildInfoBadge(Icons.child_care,
+                    _buildInfoBadge(
+                        Icons.child_care,
                         '${latestTrip.travelersBreakdown['children'] ?? 0} Children',
                         () => _editTripField(context, latestTrip, 1)),
                   ],
@@ -214,14 +218,18 @@ class _TripsScreenState extends State<TripsScreen> {
                   spacing: 12,
                   runSpacing: 12,
                   children: [
-                    _buildInfoTag(Icons.category,
+                    _buildInfoTag(
+                        Icons.category,
                         'Type: ${latestTrip.tripType.name[0].toUpperCase()}${latestTrip.tripType.name.substring(1)}',
                         () => _editTripField(context, latestTrip, 2)),
-                    _buildInfoTag(Icons.speed,
+                    _buildInfoTag(
+                        Icons.speed,
                         'Pace: ${latestTrip.pace.name[0].toUpperCase()}${latestTrip.pace.name.substring(1)}',
                         () => _editTripField(context, latestTrip, 2)),
                     if (latestTrip.preferences.isNotEmpty)
-                      ...latestTrip.preferences.map((p) => _buildInfoTag(Icons.star, p,
+                      ...latestTrip.preferences.map((p) => _buildInfoTag(
+                          Icons.star,
+                          p,
                           () => _editTripField(context, latestTrip, 2))),
                   ],
                 ),
@@ -433,8 +441,8 @@ class _TripsScreenState extends State<TripsScreen> {
                       const Icon(Icons.search, color: Color(0xFF9CA3AF)),
                   suffixIcon: _isSearching
                       ? IconButton(
-                          icon: const Icon(Icons.clear,
-                              color: Color(0xFF9CA3AF)),
+                          icon:
+                              const Icon(Icons.clear, color: Color(0xFF9CA3AF)),
                           onPressed: () {
                             _searchController.clear();
                             setState(() {
@@ -537,7 +545,7 @@ class _TripsScreenState extends State<TripsScreen> {
         children: [
           const SizedBox(height: 16),
           const SizedBox(height: 32),
-          
+
           if (upcomingTrips.isNotEmpty) ...[
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -553,7 +561,8 @@ class _TripsScreenState extends State<TripsScreen> {
                   onPressed: () {},
                   child: const Text('See All',
                       style: TextStyle(
-                          color: Color(0xFF2563EB), fontWeight: FontWeight.bold)),
+                          color: Color(0xFF2563EB),
+                          fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
@@ -571,7 +580,9 @@ class _TripsScreenState extends State<TripsScreen> {
 
           // 3. Rest of the upcoming trips
           if (upcomingTrips.length > 1) ...[
-            ...upcomingTrips.skip(1).map((trip) => _buildTripListItem(context, trip)),
+            ...upcomingTrips
+                .skip(1)
+                .map((trip) => _buildTripListItem(context, trip)),
             const SizedBox(height: 24),
           ],
 
@@ -596,16 +607,16 @@ class _TripsScreenState extends State<TripsScreen> {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final start = DateTime(startDate.year, startDate.month, startDate.day);
-    
+
     if (start.isAtSameMomentAs(today)) {
       return 'today';
     }
-    
+
     if (start.isAfter(today)) {
       final difference = start.difference(today).inDays;
       return 'IN $difference DAYS';
     }
-    
+
     return null;
   }
 
@@ -719,8 +730,8 @@ class _TripsScreenState extends State<TripsScreen> {
                     Material(
                       color: Colors.transparent,
                       child: InkWell(
-                        onTap: () =>
-                            _showDeleteConfirmation(context, trip.id, trip.name),
+                        onTap: () => _showDeleteConfirmation(
+                            context, trip.id, trip.name),
                         borderRadius: BorderRadius.circular(20),
                         child: Container(
                           padding: const EdgeInsets.all(8),
@@ -854,7 +865,8 @@ class _TripsScreenState extends State<TripsScreen> {
                   if (_getCountdownText(trip.startDate) != null) ...[
                     const SizedBox(height: 4),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
                         color: Colors.blue.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
@@ -878,8 +890,7 @@ class _TripsScreenState extends State<TripsScreen> {
               onPressed: () => _showTripInfo(context, trip),
             ),
             IconButton(
-              icon: const Icon(Icons.delete,
-                  color: Colors.redAccent, size: 24),
+              icon: const Icon(Icons.delete, color: Colors.redAccent, size: 24),
               onPressed: () =>
                   _showDeleteConfirmation(context, trip.id, trip.name),
             ),

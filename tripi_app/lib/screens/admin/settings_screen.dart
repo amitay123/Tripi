@@ -150,7 +150,10 @@ class SettingsScreen extends StatelessWidget {
         color: isSelected ? Colors.white : Colors.transparent,
         borderRadius: BorderRadius.circular(10),
         boxShadow: isSelected
-            ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)]
+            ? [
+                BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)
+              ]
             : null,
       ),
       child: Text(

@@ -59,13 +59,13 @@ class _CreateTripWizardState extends State<CreateTripWizard> {
       case 0:
         final hasName = trip.name.trim().isNotEmpty;
         final hasCountry = (trip.countryCode ?? '').isNotEmpty;
-        
+
         final cityName = (trip.city ?? '').trim();
         final cityId = (trip.cityPlaceId ?? '').trim();
-        
+
         // City is valid if it's empty OR if it has a place ID (was selected)
         final cityValid = cityName.isEmpty || cityId.isNotEmpty;
-        
+
         return hasName && hasCountry && cityValid;
       case 1:
         return trip.endDate.isAfter(trip.startDate) ||
@@ -126,24 +126,26 @@ class _CreateTripWizardState extends State<CreateTripWizard> {
         actions: [
           if (tripProvider.currentStep > 0 && tripProvider.currentStep < 3)
             TextButton(
-              onPressed: _isSaving ? null : () async {
-                setState(() => _isSaving = true);
-                final success = await tripProvider.saveTrip();
-                if (!mounted) return;
-                setState(() => _isSaving = false);
+              onPressed: _isSaving
+                  ? null
+                  : () async {
+                      setState(() => _isSaving = true);
+                      final success = await tripProvider.saveTrip();
+                      if (!mounted) return;
+                      setState(() => _isSaving = false);
 
-                if (success && context.mounted) {
-                  Navigator.pop(context);
-                } else if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                          tripProvider.lastError ?? 'Failed to save draft'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              },
+                      if (success && context.mounted) {
+                        Navigator.pop(context);
+                      } else if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(tripProvider.lastError ??
+                                'Failed to save draft'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    },
               child: const Text('Save',
                   style: TextStyle(
                       color: Color(0xFF2563EB), fontWeight: FontWeight.bold)),
@@ -165,8 +167,8 @@ class _CreateTripWizardState extends State<CreateTripWizard> {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
           decoration: BoxDecoration(
             color: Colors.white,
-            border:
-                Border(top: BorderSide(color: Colors.black.withValues(alpha: 0.05))),
+            border: Border(
+                top: BorderSide(color: Colors.black.withValues(alpha: 0.05))),
           ),
           child: Row(
             children: [
@@ -198,7 +200,8 @@ class _CreateTripWizardState extends State<CreateTripWizard> {
                       : () async {
                           if (currentStep == 3) {
                             setState(() => _isSaving = true);
-                            final success = await tripProvider.saveTrip(isCompleted: true);
+                            final success =
+                                await tripProvider.saveTrip(isCompleted: true);
                             if (!mounted) return;
                             setState(() => _isSaving = false);
 
@@ -227,14 +230,19 @@ class _CreateTripWizardState extends State<CreateTripWizard> {
                               _onStepChanged(tripProvider.currentStep);
                             } else {
                               final trip = tripProvider.draftTrip!;
-                              String message = 'Please fill in all required fields.';
+                              String message =
+                                  'Please fill in all required fields.';
                               if (currentStep == 0) {
                                 if (trip.name.trim().isEmpty) {
                                   message = 'Please enter a trip name.';
                                 } else if ((trip.countryCode ?? '').isEmpty) {
-                                  message = 'Please select a country from the list.';
-                                } else if (trip.city != null && trip.city!.trim().isNotEmpty && (trip.cityPlaceId ?? '').isEmpty) {
-                                  message = 'Please select the city from the list or clear the field.';
+                                  message =
+                                      'Please select a country from the list.';
+                                } else if (trip.city != null &&
+                                    trip.city!.trim().isNotEmpty &&
+                                    (trip.cityPlaceId ?? '').isEmpty) {
+                                  message =
+                                      'Please select the city from the list or clear the field.';
                                 }
                               }
                               ScaffoldMessenger.of(context).showSnackBar(
