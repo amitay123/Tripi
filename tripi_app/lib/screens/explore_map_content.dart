@@ -842,7 +842,7 @@ class _ExploreContentState extends State<ExploreContent> {
 
     return Stack(
       children: [
-        // Map
+        // 1. Map
         GoogleMap(
           initialCameraPosition: _initialPosition,
           markers: markers,
@@ -867,8 +867,190 @@ class _ExploreContentState extends State<ExploreContent> {
             _updateBubblePosition();
           },
         ),
+
+        // 2. Floating Info Card for selected numbered pins
+        // Placed before filters in stack so filters stay on top
+        if (_selectedActivity != null && _selectedActivityTrip != null && _selectedActivityScreenPos != null)
+          Positioned(
+            // Positioned relative to the pin's screen coordinates.
+            // Horizontal clamping is removed to keep the bubble perfectly anchored during panning.
+            left: _selectedActivityScreenPos!.dx - 140,
+            // Vertical clamping is also removed as the Stack order handles filter overlap.
+            top: _selectedActivityScreenPos!.dy - 140,
+            child: PointerInterceptor(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 280,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: TripiColors.surfaceContainerLowest,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.15),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Stack(
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Container(
+                                width: 60,
+                                height: 60,
+                                decoration: const BoxDecoration(
+                                  color: TripiColors.surfaceContainerHigh,
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      TripiColors.surfaceContainerHigh,
+                                      TripiColors.surfaceContainerLow,
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                ),
+                                child: (_selectedActivity!.imageUrl != null && _selectedActivity!.imageUrl!.isNotEmpty)
+                                  ? Image.network(
+                                      _selectedActivity!.imageUrl!.startsWith('http') 
+                                          ? _selectedActivity!.imageUrl! 
+                                          : (_placesService.getPhotoUrl(_selectedActivity!.imageUrl!) ?? _selectedActivity!.imageUrl!), 
+                                      width: 60, 
+                                      height: 60, 
+                                      fit: BoxFit.cover,
+                                      loadingBuilder: (context, child, loadingProgress) {
+                                        if (loadingProgress == null) return child;
+                                        return Center(
+                                          child: SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              value: loadingProgress.expectedTotalBytes != null
+                                                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                                  : null,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported_outlined, color: TripiColors.onSurfaceVariant, size: 24),
+                                    )
+                                  : const Icon(Icons.place_outlined, color: TripiColors.onSurfaceVariant, size: 24),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          _selectedActivityTrip!.name,
+                                          style: const TextStyle(
+                                            color: TripiColors.primary,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      if (_selectedActivityDay != null)
+                                        Container(
+                                          margin: const EdgeInsets.only(left: 4),
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: TripiColors.primary.withValues(alpha: 0.1),
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          child: Text(
+                                            'Day $_selectedActivityDay',
+                                            style: const TextStyle(
+                                              color: TripiColors.primary,
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    _selectedActivity!.title,
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  if (_selectedActivity!.address != null) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      _selectedActivity!.address!,
+                                      style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                  if (_selectedActivity!.rating != null) ...[
+                                    const SizedBox(height: 2),
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.star, color: Colors.amber, size: 12),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          '${_selectedActivity!.rating}',
+                                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                                        ),
+                                        if (_selectedActivity!.userRatingsTotal != null)
+                                          Text(
+                                            ' (${_selectedActivity!.userRatingsTotal})',
+                                            style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                                          ),
+                                      ],
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 20),
+                          ],
+                        ),
+                        Positioned(
+                          top: -4,
+                          right: -4,
+                          child: GestureDetector(
+                            onTap: () => setState(() {
+                              _selectedActivity = null;
+                              _selectedActivityTrip = null;
+                            }),
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              child: const Icon(Icons.close, size: 18, color: TripiColors.onSurfaceVariant),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Pointer/Tail
+                  CustomPaint(
+                    size: const Size(20, 10),
+                    painter: BubblePointerPainter(),
+                  ),
+                ],
+              ),
+            ),
+          ),
         
-        // Blocking Dimmer Overlay
+        // 3. Blocking Dimmer Overlay
         if (_isSearchFocused || _searchResults.isNotEmpty)
           Positioned.fill(
             child: PointerInterceptor(
@@ -886,7 +1068,7 @@ class _ExploreContentState extends State<ExploreContent> {
             ),
           ),
 
-        // Search Bar and Filters
+        // 4. Search Bar and Filters
         Positioned(
           top: 0,
           left: 0,
@@ -1034,13 +1216,13 @@ class _ExploreContentState extends State<ExploreContent> {
           ),
         ),
 
-        // Loading Indicator
+        // 5. Loading Indicator
         if (_isLoading)
           const Center(
             child: CircularProgressIndicator(),
           ),
           
-        // Autocomplete Results
+        // 6. Autocomplete Results
         if (_searchResults.isNotEmpty)
           Positioned(
             top: 0,
@@ -1081,174 +1263,6 @@ class _ExploreContentState extends State<ExploreContent> {
               ),
             ),
           ),
-          
-        // Floating Info Card for selected numbered pins
-        if (_selectedActivity != null && _selectedActivityTrip != null && _selectedActivityScreenPos != null)
-          Positioned(
-            left: math.max(16, _selectedActivityScreenPos!.dx - 150),
-            top: math.max(100, _selectedActivityScreenPos!.dy - 140), // Increased offset to accommodate more content
-            child: PointerInterceptor(
-              child: Container(
-                width: 280,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: TripiColors.surfaceContainerLowest,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.15),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Stack(
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Container(
-                            width: 60,
-                            height: 60,
-                            decoration: const BoxDecoration(
-                              color: TripiColors.surfaceContainerHigh,
-                              gradient: LinearGradient(
-                                colors: [
-                                  TripiColors.surfaceContainerHigh,
-                                  TripiColors.surfaceContainerLow,
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                            ),
-                            child: (_selectedActivity!.imageUrl != null && _selectedActivity!.imageUrl!.isNotEmpty)
-                              ? Image.network(
-                                  _selectedActivity!.imageUrl!.startsWith('http') 
-                                      ? _selectedActivity!.imageUrl! 
-                                      : (_placesService.getPhotoUrl(_selectedActivity!.imageUrl!) ?? _selectedActivity!.imageUrl!), 
-                                  width: 60, 
-                                  height: 60, 
-                                  fit: BoxFit.cover,
-                                  loadingBuilder: (context, child, loadingProgress) {
-                                    if (loadingProgress == null) return child;
-                                    return Center(
-                                      child: SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          value: loadingProgress.expectedTotalBytes != null
-                                              ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                              : null,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported_outlined, color: TripiColors.onSurfaceVariant, size: 24),
-                                )
-                              : const Icon(Icons.place_outlined, color: TripiColors.onSurfaceVariant, size: 24),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      _selectedActivityTrip!.name,
-                                      style: const TextStyle(
-                                        color: TripiColors.primary,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  if (_selectedActivityDay != null)
-                                    Container(
-                                      margin: const EdgeInsets.only(left: 4),
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: TripiColors.primary.withValues(alpha: 0.1),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: Text(
-                                        'Day $_selectedActivityDay',
-                                        style: const TextStyle(
-                                          color: TripiColors.primary,
-                                          fontSize: 9,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                _selectedActivity!.title,
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              if (_selectedActivity!.address != null) ...[
-                                const SizedBox(height: 2),
-                                Text(
-                                  _selectedActivity!.address!,
-                                  style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                              if (_selectedActivity!.rating != null) ...[
-                                const SizedBox(height: 2),
-                                Row(
-                                  children: [
-                                    const Icon(Icons.star, color: Colors.amber, size: 12),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '${_selectedActivity!.rating}',
-                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                                    ),
-                                    if (_selectedActivity!.userRatingsTotal != null)
-                                      Text(
-                                        ' (${_selectedActivity!.userRatingsTotal})',
-                                        style: TextStyle(fontSize: 10, color: Colors.grey[600]),
-                                      ),
-                                  ],
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 20),
-                      ],
-                    ),
-                    Positioned(
-                      top: -4,
-                      right: -4,
-                      child: GestureDetector(
-                        onTap: () => setState(() {
-                          _selectedActivity = null;
-                          _selectedActivityTrip = null;
-                        }),
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          child: const Icon(Icons.close, size: 18, color: TripiColors.onSurfaceVariant),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-        )
       ],
     );
   }
@@ -1399,15 +1413,18 @@ class _ExploreContentState extends State<ExploreContent> {
                           if (photoUrl != null) {
                             activity.imageUrl = photoUrl;
                           }
-                        } else {
-                          debugPrint('No photo references found for placeId: ${activity.placeId}');
                         }
                       } catch (e) {
                         debugPrint('Error fetching image on tap: $e');
                       }
                     }
 
-                    // Get screen position for the bubble
+                    // Animate camera to center the marker
+                    _mapController?.animateCamera(
+                      CameraUpdate.newLatLng(LatLng(activity.lat!, activity.lng!)),
+                    );
+
+                    // Get initial screen position
                     final screenPos = await _mapController?.getScreenCoordinate(LatLng(activity.lat!, activity.lng!));
                     
                     setState(() {
@@ -1461,15 +1478,18 @@ class _ExploreContentState extends State<ExploreContent> {
                             if (photoUrl != null) {
                               activity.imageUrl = photoUrl;
                             }
-                          } else {
-                            debugPrint('No photo references found for placeId: ${activity.placeId}');
                           }
                         } catch (e) {
                           debugPrint('Error fetching image on tap: $e');
                         }
                       }
 
-                      // Get screen position for the bubble
+                      // Animate camera to center the marker
+                      _mapController?.animateCamera(
+                        CameraUpdate.newLatLng(LatLng(activity.lat!, activity.lng!)),
+                      );
+
+                      // Get initial screen position
                       final screenPos = await _mapController?.getScreenCoordinate(LatLng(activity.lat!, activity.lng!));
                       
                       setState(() {
@@ -1613,4 +1633,25 @@ class _ExploreContentState extends State<ExploreContent> {
       }
     }
   }
+}
+
+class BubblePointerPainter extends CustomPainter {
+  final Color color;
+  BubblePointerPainter({this.color = TripiColors.surfaceContainerLowest});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+    final path = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width / 2, size.height)
+      ..lineTo(size.width, 0)
+      ..close();
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

@@ -1,6 +1,6 @@
 name: tripi_app
 description: A minimalist travel planner app.
-version: 1.0.0+1
+version: 1.0.0+2
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
