@@ -6,40 +6,76 @@ import '../../models/ai_models.dart';
 ///   2. User preference score (from UserPreferenceService weights)
 ///   3. Popularity (popularityScore field)
 ///   4. Pacing balance (alternate high/low intensity)
+///   5. Toggle-based score modifiers (localGems, focusPopular, familyFriendly)
 class OptimizationEngine {
   /// [anchorLat]/[anchorLng]: starting location for geographic sorting.
-  /// [categoryWeights]: category → preference weight (0.0–1.0) from UserPreferenceService.
+  /// [categoryWeights]: category → preference weight (0.0–1.0).
+  /// [options]: user-selected generation toggles that modulate scores.
   static List<AiSuggestion> rank({
     required List<AiSuggestion> suggestions,
     required Map<String, double> categoryWeights,
     double? anchorLat,
     double? anchorLng,
+    AiGenerationOptions? options,
   }) {
     if (suggestions.isEmpty) return suggestions;
 
     // Step 1: geographic nearest-neighbor sort
     final geoSorted = _nearestNeighborSort(suggestions, anchorLat, anchorLng);
 
-    // Step 2: Within nearby clusters, sort by preference then popularity
-    // We use a composite score to re-rank within geographic proximity bands
+    // Step 2: composite score per suggestion
     final ranked = geoSorted.asMap().entries.map((entry) {
       final i = entry.key;
       final s = entry.value;
+
+      // Base scores
       final prefScore = (categoryWeights[s.category] ?? 0.5) * 40;
       final popScore = (s.popularityScore / 5.0) * 30;
-      // Geographic rank already factored in by position; give bonus to early items
       final geoBonus = (geoSorted.length - i) / geoSorted.length * 20;
-      // Pacing: alternate intensity — light activities get bonus in odd positions
-      final isLightActivity = ['Cafe', 'Park', 'Garden', 'Viewpoint']
-          .contains(s.category);
-      final pacingBonus = (i.isOdd && isLightActivity) ? 10.0 : 0.0;
-      return _ScoredSuggestion(s, prefScore + popScore + geoBonus + pacingBonus);
+
+      // Pacing: light activities get a bonus in odd positions
+      final isLight = ['Cafe', 'Park', 'Garden', 'Viewpoint'].contains(s.category);
+      final pacingBonus = (i.isOdd && isLight) ? 10.0 : 0.0;
+
+      // ── Toggle-based score modifiers ──────────────────────────────────────
+      double toggleBonus = 0.0;
+
+      if (options != null) {
+        // Local Gems: boost hidden gems, penalize very mainstream places
+        if (options.localGems) {
+          if (s.isLocalGem) toggleBonus += 15.0;
+          if (s.popularityScore >= 4.8) toggleBonus -= 8.0;
+        }
+
+        // Must-See Landmarks: boost high-popularity places
+        if (options.focusPopular) {
+          if (s.popularityScore >= 4.7) toggleBonus += 12.0;
+        }
+
+        // Family Friendly: give a nudge to family-safe categories
+        if (options.familyFriendly) {
+          const familyCategories = {'Park', 'Museum', 'Historical Site', 'Market'};
+          if (familyCategories.contains(s.category)) toggleBonus += 8.0;
+        }
+
+        // Restaurants & Cafes: if enabled, bump their priority slightly
+        if (options.includeRestaurants && s.category == 'Restaurant') {
+          toggleBonus += 5.0;
+        }
+        if (options.includeCafes && s.category == 'Cafe') {
+          toggleBonus += 5.0;
+        }
+      }
+
+      final totalScore = prefScore + popScore + geoBonus + pacingBonus + toggleBonus;
+      return _ScoredSuggestion(s, totalScore);
     }).toList()
       ..sort((a, b) => b.score.compareTo(a.score));
 
     // Step 3: Re-sort for pacing — alternate high/low intensity
     return _balancePacing(ranked.map((e) => e.suggestion).toList());
   }
+
 
   // ---------------------------------------------------------------------------
   // Nearest-Neighbor Geographic Sort

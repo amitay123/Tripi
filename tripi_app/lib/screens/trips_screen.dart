@@ -270,13 +270,18 @@ class _TripsScreenState extends State<TripsScreen> {
         onGenerate: (options) {
           // Default to Day 1 when starting from main screen
           const dayIndex = 1;
-          
+
+          // Reset provider to clear any stale state before generation
+          context.read<AiProvider>().reset();
+
+          // Kick off generation
           context.read<AiProvider>().generateDailyItinerary(
                 trip: trip,
                 dayIndex: dayIndex,
                 options: options,
               );
 
+          // Navigate to review screen (it will observe the loading state)
           Navigator.push(
             context,
             MaterialPageRoute(

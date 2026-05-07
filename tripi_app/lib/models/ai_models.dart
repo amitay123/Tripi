@@ -63,6 +63,9 @@ class AiSuggestion {
   /// True if opening-hours validator flagged this slot as potentially closed
   final bool mayBeClosed;
 
+  /// True if this place is a local hidden gem (less touristy)
+  final bool isLocalGem;
+
   /// User's per-item decision (mutable)
   bool isAccepted;
   bool isRejected;
@@ -88,6 +91,7 @@ class AiSuggestion {
     required this.confidence,
     this.distanceFromPreviousKm = 0.0,
     this.mayBeClosed = false,
+    this.isLocalGem = false,
     this.isAccepted = false,
     this.isRejected = false,
     this.dayIndex,
@@ -111,6 +115,7 @@ class AiSuggestion {
     AiConfidence? confidence,
     double? distanceFromPreviousKm,
     bool? mayBeClosed,
+    bool? isLocalGem,
     bool? isAccepted,
     bool? isRejected,
     int? dayIndex,
@@ -135,6 +140,7 @@ class AiSuggestion {
       distanceFromPreviousKm:
           distanceFromPreviousKm ?? this.distanceFromPreviousKm,
       mayBeClosed: mayBeClosed ?? this.mayBeClosed,
+      isLocalGem: isLocalGem ?? this.isLocalGem,
       isAccepted: isAccepted ?? this.isAccepted,
       isRejected: isRejected ?? this.isRejected,
       dayIndex: dayIndex ?? this.dayIndex,

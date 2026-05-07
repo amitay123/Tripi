@@ -14,6 +14,9 @@ class AiProvider extends ChangeNotifier {
 
   AiProvider(this._aiService, this._prefs, this._tripProvider, this._visitedRegistry);
 
+  // Guard against duplicate concurrent generation calls
+  bool _isGenerating = false;
+
   AiGenerationStatus _status = AiGenerationStatus.idle;
   AiGenerationStatus get status => _status;
 
@@ -39,7 +42,12 @@ class AiProvider extends ChangeNotifier {
     AiGenerationOptions? options,
     RegenerationStyle? style,
   }) async {
+    // Prevent duplicate concurrent calls
+    if (_isGenerating) return;
+    _isGenerating = true;
+
     _status = AiGenerationStatus.loading;
+    _suggestions = [];
     _error = null;
     if (options != null) _currentOptions = options;
     notifyListeners();
@@ -59,10 +67,66 @@ class AiProvider extends ChangeNotifier {
 
       _suggestions = result;
       _status = AiGenerationStatus.ready;
-      notifyListeners();
     } catch (e) {
       _status = AiGenerationStatus.error;
       _error = e.toString();
+    } finally {
+      _isGenerating = false;
+      notifyListeners();
+    }
+  }
+
+  /// Generates suggestions across ALL days of a trip.
+  /// Merges all days into a single flat list of [AiSuggestion] with dayIndex set.
+  Future<void> generateTripItinerary({
+    required Trip trip,
+    AiGenerationOptions? options,
+  }) async {
+    if (_isGenerating) return;
+    _isGenerating = true;
+
+    _status = AiGenerationStatus.loading;
+    _suggestions = [];
+    _error = null;
+    if (options != null) _currentOptions = options;
+    notifyListeners();
+
+    try {
+      _visitedRegistry.clear();
+      _visitedRegistry.seedFromTrips(_tripProvider.trips);
+      _visitedRegistry.seedFromPreferences(_prefs);
+
+      final allSuggestions = <AiSuggestion>[];
+
+      final days = trip.days.isNotEmpty
+          ? trip.days
+          : List.generate(
+              trip.durationDays,
+              (i) => TripDay(
+                dayIndex: i + 1,
+                date: trip.startDate.add(Duration(days: i)),
+              ),
+            );
+
+      for (final day in days) {
+        final daySuggestions = await _aiService.generateDailyItinerary(
+          trip: trip,
+          dayIndex: day.dayIndex,
+          options: _currentOptions,
+        );
+        // Tag each suggestion with its day
+        allSuggestions.addAll(
+          daySuggestions.map((s) => s.copyWith(dayIndex: day.dayIndex)),
+        );
+      }
+
+      _suggestions = allSuggestions;
+      _status = AiGenerationStatus.ready;
+    } catch (e) {
+      _status = AiGenerationStatus.error;
+      _error = e.toString();
+    } finally {
+      _isGenerating = false;
       notifyListeners();
     }
   }
@@ -131,6 +195,7 @@ class AiProvider extends ChangeNotifier {
   }
 
   void reset() {
+    _isGenerating = false;
     _status = AiGenerationStatus.idle;
     _suggestions = [];
     _error = null;
