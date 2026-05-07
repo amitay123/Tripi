@@ -41,7 +41,7 @@ class _AiReviewScreenState extends State<AiReviewScreen> {
           children: [
             const Text('AI Assistant', style: TextStyle(fontWeight: FontWeight.bold)),
             Text(
-              'Reviewing Day ${widget.dayIndex + 1} in ${widget.trip.city ?? widget.trip.country}',
+              'Reviewing Day ${widget.dayIndex} in ${widget.trip.city ?? widget.trip.country}',
               style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
             ),
           ],
@@ -54,12 +54,12 @@ class _AiReviewScreenState extends State<AiReviewScreen> {
             ),
         ],
       ),
-      body: _buildBody(aiProvider),
+      body: _buildBody(aiProvider, theme),
       bottomNavigationBar: _buildBottomBar(aiProvider),
     );
   }
 
-  Widget _buildBody(AiProvider aiProvider) {
+  Widget _buildBody(AiProvider aiProvider, ThemeData theme) {
     if (aiProvider.status == AiGenerationStatus.loading) {
       return AiGenerationLoading(
         destination: widget.trip.city ?? widget.trip.country,
@@ -73,7 +73,7 @@ class _AiReviewScreenState extends State<AiReviewScreen> {
           children: [
             const Icon(Icons.error_outline, size: 64, color: Colors.red),
             const SizedBox(height: 16),
-            Text('Generation Failed', style: Theme.of(context).textTheme.titleLarge),
+            Text('Generation Failed', style: theme.textTheme.titleLarge),
             const SizedBox(height: 8),
             Text(aiProvider.error ?? 'Unknown error occurred'),
             const SizedBox(height: 24),
@@ -90,7 +90,46 @@ class _AiReviewScreenState extends State<AiReviewScreen> {
     }
 
     if (aiProvider.suggestions.isEmpty) {
-      return const Center(child: Text('No suggestions found for this criteria.'));
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.search_off_rounded, size: 48, color: Colors.blue[400]),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'No new suggestions found',
+                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'We couldn\'t find any new places that match your preferences for ${widget.trip.city ?? widget.trip.country}. Try adjusting your filters or choosing a different day.',
+                style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              OutlinedButton.icon(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.arrow_back),
+                label: const Text('Go Back'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     return ListView.builder(

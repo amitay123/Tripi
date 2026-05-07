@@ -38,7 +38,7 @@ class _AiPlanningOptionsSheetState extends State<AiPlanningOptionsSheet> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: TripiColors.primary.withOpacity(0.1),
+                  color: TripiColors.primary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(Icons.auto_awesome, color: TripiColors.primary),
@@ -230,7 +230,7 @@ class _AiPlanningOptionsSheetState extends State<AiPlanningOptionsSheet> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? TripiColors.primary.withOpacity(0.1) : Colors.white,
+          color: isSelected ? TripiColors.primary.withValues(alpha: 0.1) : Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected ? TripiColors.primary : Colors.grey[300]!,

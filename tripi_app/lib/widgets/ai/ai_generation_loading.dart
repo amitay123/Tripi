@@ -66,14 +66,14 @@ class _AiGenerationLoadingState extends State<AiGenerationLoading>
                   value: _controller.value,
                   strokeWidth: 4,
                   valueColor: AlwaysStoppedAnimation<Color>(TripiColors.primary),
-                  backgroundColor: TripiColors.primary.withOpacity(0.1),
+                  backgroundColor: TripiColors.primary.withValues(alpha: 0.1),
                 ),
               ),
               Container(
                 height: 80,
                 width: 80,
                 decoration: BoxDecoration(
-                  color: TripiColors.primary.withOpacity(0.1),
+                  color: TripiColors.primary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(

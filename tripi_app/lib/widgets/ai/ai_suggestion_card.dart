@@ -25,23 +25,23 @@ class AiSuggestionCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: isAccepted
-            ? TripiColors.primary.withOpacity(0.05)
+            ? TripiColors.primary.withValues(alpha: 0.05)
             : isRejected
-                ? Colors.grey.withOpacity(0.05)
+                ? Colors.grey.withValues(alpha: 0.05)
                 : Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isAccepted
-              ? TripiColors.primary.withOpacity(0.3)
+              ? TripiColors.primary.withValues(alpha: 0.3)
               : isRejected
-                  ? Colors.grey.withOpacity(0.2)
-                  : Colors.grey.withOpacity(0.1),
+                  ? Colors.grey.withValues(alpha: 0.2)
+                  : Colors.grey.withValues(alpha: 0.1),
           width: isAccepted ? 2 : 1,
         ),
         boxShadow: [
           if (!isRejected)
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -127,7 +127,7 @@ class AiSuggestionCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
-                          color: TripiColors.primary.withOpacity(0.1),
+                          color: TripiColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
@@ -266,7 +266,7 @@ class AiSuggestionCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.3),
+            color: color.withValues(alpha: 0.3),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),

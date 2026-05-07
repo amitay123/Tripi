@@ -1853,7 +1853,11 @@ class _ExploreContentState extends State<ExploreContent> {
       }
     }
     
-    if (points.isEmpty) return;
+    if (points.isEmpty) {
+      // Fallback: If no activities, try to fit to current center or show global view
+      _mapController?.animateCamera(CameraUpdate.newLatLngZoom(_currentCenter, 10));
+      return;
+    }
     
     if (points.length == 1) {
       _mapController?.animateCamera(CameraUpdate.newLatLngZoom(points.first, 12));

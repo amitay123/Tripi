@@ -61,38 +61,51 @@ class TimeBudgetValidator {
     if (!hasLunchCovered) mealMinutes += _lunchReserve;
     if (!hasDinnerCovered) mealMinutes += _dinnerReserve;
 
-    final totalUsed =
+    final initialTotalUsed =
         activityMinutes + travelMinutes + transitionMinutes + mealMinutes;
-    final freeMinutes = max(0, _totalDayMinutes - totalUsed);
-    final isRealistic = totalUsed <= _totalDayMinutes;
+    final freeMinutes = max(0, _totalDayMinutes - initialTotalUsed);
+    final isRealistic = initialTotalUsed <= _totalDayMinutes;
 
     String? warning;
     if (!isRealistic) {
-      final over = totalUsed - _totalDayMinutes;
+      final over = initialTotalUsed - _totalDayMinutes;
       warning =
           'Day is ${_formatMinutes(over)} over budget. Some activities may be removed.';
     }
 
     // Trim suggestions if over budget
-    final trimmed = _trim(suggestions, activityMinutes, travelMinutes,
-        transitionMinutes, mealMinutes);
+    var trimmed = List<AiSuggestion>.from(suggestions);
+    int currentTotalUsed = initialTotalUsed;
 
-    // Recalculate after trim
-    final trimmedActivity =
-        trimmed.fold(0, (sum, s) => sum + s.estimatedDuration);
+    while (trimmed.isNotEmpty && currentTotalUsed > _totalDayMinutes) {
+      final removed = trimmed.removeLast();
+      final removedTravel = (removed.distanceFromPreviousKm > 0
+          ? min(60, (removed.distanceFromPreviousKm / 30.0 * 60).round())
+          : 10);
+      currentTotalUsed -= (removed.estimatedDuration + _transitionBuffer + removedTravel);
+    }
+
+    // Recalculate final metrics
+    final finalActivity = trimmed.fold(0, (sum, s) => sum + s.estimatedDuration);
+    final finalTravel = trimmed.fold(0, (sum, s) {
+      return sum + (s.distanceFromPreviousKm > 0
+          ? min(60, (s.distanceFromPreviousKm / 30.0 * 60).round())
+          : 10);
+    });
+    final finalTransition = trimmed.length * _transitionBuffer;
 
     return (
       suggestions: trimmed,
       budget: AiDayBudget(
-        totalActivityMinutes: trimmedActivity,
-        totalTravelMinutes: travelMinutes,
+        totalActivityMinutes: finalActivity,
+        totalTravelMinutes: finalTravel,
         totalMealBreakMinutes: mealMinutes,
         totalFreeMinutes: max(
             0,
             _totalDayMinutes -
-                trimmedActivity -
-                travelMinutes -
-                transitionMinutes -
+                finalActivity -
+                finalTravel -
+                finalTransition -
                 mealMinutes),
         isRealistic: isRealistic,
         warningMessage: warning,
@@ -100,24 +113,6 @@ class TimeBudgetValidator {
     );
   }
 
-  static List<AiSuggestion> _trim(
-    List<AiSuggestion> suggestions,
-    int activityMins,
-    int travelMins,
-    int transitionMins,
-    int mealMins,
-  ) {
-    int total = activityMins + travelMins + transitionMins + mealMins;
-    if (total <= _totalDayMinutes) return suggestions;
-
-    // Remove suggestions from the end (least important) until it fits
-    final result = List<AiSuggestion>.from(suggestions);
-    while (result.isNotEmpty && total > _totalDayMinutes) {
-      final removed = result.removeLast();
-      total -= removed.estimatedDuration + _transitionBuffer;
-    }
-    return result;
-  }
 
   static bool _hourBetween(String hhmm, int startH, int endH) {
     final parts = hhmm.split(':');

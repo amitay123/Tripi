@@ -45,7 +45,8 @@ class AiProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Seed registry
+      // Clear and re-seed registry to ensure fresh state for this attempt
+      _visitedRegistry.clear();
       _visitedRegistry.seedFromTrips(_tripProvider.trips);
       _visitedRegistry.seedFromPreferences(_prefs);
 
