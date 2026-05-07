@@ -655,19 +655,17 @@ class _EditDetailsModalState extends State<EditDetailsModal> {
                 setState(() {
                   if (isCountry) {
                     _countryController.text =
-                        details?['name'] ?? selection['description'];
-                    _selectedCountryCode = details?['country_code'] ?? '';
+                        details?.name ?? selection['description'];
+                    _selectedCountryCode = details?.countryCode ?? '';
                     // Reset city if country changed
                     _cityController.text = '';
                     _selectedCityPlaceId = '';
-                    _selectedCoverImageUrl =
-                        _placesService.getPhotoUrl(details?['photo_reference']);
+                    _selectedCoverImageUrl = details?.imageUrl;
                   } else {
                     _cityController.text =
-                        details?['name'] ?? selection['description'];
+                        details?.name ?? selection['description'];
                     _selectedCityPlaceId = selection['place_id'];
-                    final cityPhoto =
-                        _placesService.getPhotoUrl(details?['photo_reference']);
+                    final cityPhoto = details?.imageUrl;
                     if (cityPhoto != null) _selectedCoverImageUrl = cityPhoto;
                   }
                 });

@@ -79,6 +79,8 @@ class Activity {
   final double? rating;
   final int? userRatingsTotal;
 
+  final int? positionIndex;
+
   Activity({
     required this.id,
     required this.title,
@@ -97,6 +99,7 @@ class Activity {
     this.travelDurationFromPrevious,
     this.rating,
     this.userRatingsTotal,
+    this.positionIndex,
   });
 
   factory Activity.fromJson(Map<String, dynamic> json) {
@@ -125,6 +128,7 @@ class Activity {
       rating: double.tryParse(json['rating']?.toString() ?? ''),
       userRatingsTotal:
           int.tryParse(json['user_ratings_total']?.toString() ?? ''),
+      positionIndex: int.tryParse(json['position_index']?.toString() ?? ''),
     );
   }
 
@@ -147,6 +151,7 @@ class Activity {
       'travel_duration_from_previous': travelDurationFromPrevious,
       'rating': rating,
       'user_ratings_total': userRatingsTotal,
+      'position_index': positionIndex,
     };
   }
 
@@ -168,6 +173,7 @@ class Activity {
     int? travelDurationFromPrevious,
     double? rating,
     int? userRatingsTotal,
+    int? positionIndex,
   }) {
     return Activity(
       id: id ?? this.id,
@@ -189,6 +195,7 @@ class Activity {
           travelDurationFromPrevious ?? this.travelDurationFromPrevious,
       rating: rating ?? this.rating,
       userRatingsTotal: userRatingsTotal ?? this.userRatingsTotal,
+      positionIndex: positionIndex ?? this.positionIndex,
     );
   }
 }

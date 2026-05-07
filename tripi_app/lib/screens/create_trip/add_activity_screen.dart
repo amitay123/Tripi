@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
+import '../../models/place_result.dart';
 import '../../providers/trip_provider.dart';
 import '../../theme/tripi_colors.dart';
 import '../../widgets/tripi_card.dart';
@@ -55,8 +56,8 @@ class _AddActivityScreenState extends State<AddActivityScreen>
       final details = await _placesService.getPlaceDetails(placeId);
       if (details != null) {
         setState(() {
-          _destLat = details['lat'];
-          _destLng = details['lng'];
+          _destLat = details.lat;
+          _destLng = details.lng;
         });
       }
     }
@@ -143,14 +144,12 @@ class _AddActivityScreenState extends State<AddActivityScreen>
 
     final activity = Activity(
       id: 'act_${DateTime.now().millisecondsSinceEpoch}',
-      title: details?['name'] ?? place['name'],
-      address: details?['formatted_address'] ?? place['address'],
-      lat: details?['lat'],
-      lng: details?['lng'],
-      types: details?['types'] != null
-          ? List<String>.from(details!['types'])
-          : null,
-      imageUrl: _placesService.getPhotoUrl(details?['photo_reference']),
+      title: details?.name ?? place['name'],
+      address: details?.formattedAddress ?? place['address'],
+      lat: details?.lat,
+      lng: details?.lng,
+      types: details?.types,
+      imageUrl: details?.imageUrl,
       placeId: place['place_id'],
       source: 'api',
     );

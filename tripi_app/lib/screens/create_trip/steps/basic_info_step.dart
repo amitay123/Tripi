@@ -102,12 +102,13 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                   await _placesService.getPlaceDetails(selection['place_id']);
 
               tripProvider.updateDraft(draft.copyWith(
-                country: details?['name'] ?? selection['description'],
-                countryCode: details?['country_code'] ?? '',
+                country: details?.name ?? selection['description'],
+                countryCode: details?.countryCode ?? '',
                 city: '',
                 cityPlaceId: '',
-                coverImageUrl:
-                    _placesService.getPhotoUrl(details?['photo_reference']),
+                coverImageUrl: details != null && details.photoReferences.isNotEmpty
+                    ? _placesService.getPhotoUrl(details.photoReferences[0])
+                    : null,
               ));
               _internalCityController?.text = '';
             },
@@ -181,12 +182,13 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                   final details = await _placesService
                       .getPlaceDetails(selection['place_id']);
 
-                  final cityPhoto =
-                      _placesService.getPhotoUrl(details?['photo_reference']);
+                  final cityPhoto = details != null && details.photoReferences.isNotEmpty
+                      ? _placesService.getPhotoUrl(details.photoReferences[0])
+                      : null;
                   final finalPhoto = cityPhoto ?? draft.coverImageUrl;
 
                   tripProvider.updateDraft(draft.copyWith(
-                    city: details?['name'] ?? selection['description'],
+                    city: details?.name ?? selection['description'],
                     cityPlaceId: selection['place_id'],
                     coverImageUrl: finalPhoto,
                   ));
@@ -274,10 +276,11 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                   tripProvider.updateDraft(draft.copyWith(
                     country: s,
                     city: '',
-                    countryCode: details?['country_code'] ?? '',
+                    countryCode: details?.countryCode ?? '',
                     cityPlaceId: '',
-                    coverImageUrl:
-                        _placesService.getPhotoUrl(details?['photo_reference']),
+                    coverImageUrl: details != null && details.photoReferences.isNotEmpty
+                        ? _placesService.getPhotoUrl(details.photoReferences[0])
+                        : null,
                   ));
                 } else {
                   tripProvider.updateDraft(draft.copyWith(

@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/tripi_colors.dart';
-import '../models/models.dart';
 import '../services/places_service.dart';
+import '../models/place_result.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:provider/provider.dart';
+import '../providers/trip_provider.dart';
+import '../models/models.dart';
 
 class PlaceDetailsScreen extends StatefulWidget {
   const PlaceDetailsScreen({super.key});
@@ -13,7 +17,7 @@ class PlaceDetailsScreen extends StatefulWidget {
 
 class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
   bool _isLoading = true;
-  PlaceDetail? _placeDetail;
+  PlaceResult? _placeDetail;
   bool _isDescriptionExpanded = false;
   final PageController _pageController = PageController();
   int _currentImageIndex = 0;
@@ -41,7 +45,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
       final data = await PlacesService().getPlaceDetails(placeId);
       if (data != null) {
         setState(() {
-          _placeDetail = PlaceDetail.fromMap(data);
+          _placeDetail = data;
           _isLoading = false;
         });
       } else {
@@ -395,13 +399,32 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
       right: 24,
       child: Column(
         children: [
-          if (_placeDetail!.website != null)
+          if (_placeDetail!.types.contains('lodging')) ...[
+            Row(
+              children: [
+                Expanded(
+                  child: _buildBookingButton(
+                    'Booking.com',
+                    'https://www.booking.com/searchresults.html?ss=${Uri.encodeComponent(_placeDetail!.name)}',
+                    const Color(0xFF003580),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildBookingButton(
+                    'Agoda',
+                    'https://www.agoda.com/search?text=${Uri.encodeComponent(_placeDetail!.name)}',
+                    const Color(0xFFF33D5D),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+          ] else if (_placeDetail!.website != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 12.0),
               child: OutlinedButton(
-                onPressed: () {
-                  // TODO: Open external link
-                },
+                onPressed: () => launchUrl(Uri.parse(_placeDetail!.website!)),
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 56),
                   side: const BorderSide(color: TripiColors.primary),
@@ -409,7 +432,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
                       borderRadius: BorderRadius.circular(28)),
                 ),
                 child: Text(
-                  'Book Tickets',
+                  'Visit Website',
                   style: GoogleFonts.inter(
                       fontWeight: FontWeight.bold, color: TripiColors.primary),
                 ),
@@ -435,7 +458,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
             ),
             child: ElevatedButton(
               onPressed: () {
-                // TODO: Add to itinerary logic
+                _showAddToTripDialog();
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.transparent,
@@ -453,6 +476,143 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildBookingButton(String label, String url, Color color) {
+    return ElevatedButton(
+      onPressed: () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        minimumSize: const Size(double.infinity, 48),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        elevation: 0,
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.inter(
+          color: Colors.white,
+          fontSize: 13,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  void _showAddToTripDialog() {
+    final tripProvider = Provider.of<TripProvider>(context, listen: false);
+    if (tripProvider.trips.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No active trips found. Create a trip first!')),
+      );
+      return;
+    }
+
+    // Use the first trip or a logic to select a trip if multiple exist
+    final trip = tripProvider.trips.first; 
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (context) => Container(
+        padding: const EdgeInsets.only(bottom: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 24),
+            Text(
+              'Add to Trip',
+              style: GoogleFonts.inter(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: TripiColors.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              trip.name,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: TripiColors.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              height: 100,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                itemCount: trip.days.length,
+                itemBuilder: (context, index) {
+                  final day = trip.days[index];
+                  return GestureDetector(
+                    onTap: () {
+                      final activity = Activity(
+                        id: DateTime.now().millisecondsSinceEpoch.toString(),
+                        title: _placeDetail!.name,
+                        types: _placeDetail!.types,
+                        lat: _placeDetail!.lat,
+                        lng: _placeDetail!.lng,
+                        placeId: _placeDetail!.placeId,
+                        imageUrl: _placeDetail!.photoReferences.isNotEmpty
+                            ? PlacesService()
+                                .getPhotoUrl(_placeDetail!.photoReferences.first)
+                            : null,
+                        address: _placeDetail!.formattedAddress,
+                        rating: _placeDetail!.rating,
+                      );
+                      
+                      tripProvider.addActivity(trip.id, day.dayIndex, activity);
+                      Navigator.pop(context);
+                      
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Added to Day ${day.dayIndex}'),
+                          backgroundColor: TripiColors.primary,
+                        ),
+                      );
+                    },
+                    child: Container(
+                      width: 80,
+                      margin: const EdgeInsets.only(right: 12),
+                      decoration: BoxDecoration(
+                        color: TripiColors.primary.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                            color: TripiColors.primary.withValues(alpha: 0.2)),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Day',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: TripiColors.primary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${day.dayIndex}',
+                            style: GoogleFonts.inter(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: TripiColors.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

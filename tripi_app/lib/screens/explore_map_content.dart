@@ -12,6 +12,8 @@ import '../services/places_service.dart';
 import '../services/hotel_service.dart';
 import '../providers/trip_provider.dart';
 import '../models/models.dart';
+import '../models/place_result.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ExploreContent extends StatefulWidget {
   const ExploreContent({super.key});
@@ -25,8 +27,8 @@ class _ExploreContentState extends State<ExploreContent> {
   final PlacesService _placesService = PlacesService();
   final HotelService _hotelService = HotelService();
   
-  List<Map<String, dynamic>> _places = [];
-  Map<String, dynamic>? _selectedPlace;
+  List<PlaceResult> _places = [];
+  PlaceResult? _selectedPlace;
   String? _searchResultPlaceId; // Track the place selected via search bar
   LatLng _currentCenter = const LatLng(48.8566, 2.3522); // Default Paris
   bool _isLoading = false;
@@ -35,13 +37,14 @@ class _ExploreContentState extends State<ExploreContent> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   
-  Set<String> _selectedCategories = {};
+  final List<String> _selectedCategories = [];
   Trip? _selectedTripFilter;
   double _filterDistance = 3.0; // Default to 3km
   bool _isSearching = false;
   bool _isDetailsSheetOpen = false;
   bool _isRadiusPopupOpen = false;
   bool _isUpdatingMarkers = false; // Add lock for marker updates
+  int _markerUpdateId = 0; // Track latest marker update request
   
   Activity? _selectedActivity;
   Trip? _selectedActivityTrip;
@@ -78,6 +81,8 @@ class _ExploreContentState extends State<ExploreContent> {
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<TripProvider>().fetchTrips();
+      // Start initial discovery if map is ready
+      _searchNearbyPlaces();
     });
     // All filters off by default on startup
   }
@@ -111,32 +116,17 @@ class _ExploreContentState extends State<ExploreContent> {
     _searchController.clear();
     _searchFocusNode.unfocus();
     
-    final details = await _placesService.getPlaceDetails(place['place_id']);
-    if (details != null && details['lat'] != null) {
-      final latlng = LatLng(details['lat'], details['lng']);
+    final result = await _placesService.getPlaceDetails(place['place_id']);
+    if (result != null) {
+      final latlng = LatLng(result.lat, result.lng);
       
       // Focus camera on selected place
       _mapController?.animateCamera(CameraUpdate.newLatLngZoom(latlng, 16));
       
-      // Ensure the selected place has the expected structure
-      final Map<String, dynamic> structuredPlace = Map.from(details);
-      structuredPlace['geometry'] = {
-        'location': {
-          'lat': details['lat'],
-          'lng': details['lng'],
-        }
-      };
-      
-      if (details['photo_references'] != null) {
-        structuredPlace['photos'] = (details['photo_references'] as List).map((ref) => {
-          'photo_reference': ref
-        }).toList();
-      }
-
       setState(() {
         _currentCenter = latlng;
-        _selectedPlace = structuredPlace;
-        _searchResultPlaceId = details['place_id']; // Mark as the search result
+        _selectedPlace = result;
+        _searchResultPlaceId = result.placeId; // Mark as the search result
       });
       
       // Trigger discovery around the selected place if categories are selected
@@ -151,13 +141,33 @@ class _ExploreContentState extends State<ExploreContent> {
         setState(() {
           _places = [_selectedPlace!];
           _isLoading = false;
+          _isSearching = false;
         });
       }
     }
   }
 
+  bool _matchesAnyCategory(PlaceResult place, List<String> categories) {
+    if (categories.isEmpty) return true;
+    for (final cat in categories) {
+      final categoryData = _getCategoryData(cat);
+      final types = categoryData['types'] as List<String>;
+      // Check if place has at least one of the category types
+      if (place.types.any((t) => types.contains(t))) return true;
+    }
+    return false;
+  }
+
   Future<void> _searchNearbyPlaces() async {
     if (_isSearching) return;
+    if (_selectedCategories.isEmpty) {
+      setState(() {
+        _places = [];
+        _isLoading = false;
+        _isSearching = false;
+      });
+      return;
+    }
     if (!mounted) return;
 
     if (_selectedCategories.isEmpty) {
@@ -177,111 +187,120 @@ class _ExploreContentState extends State<ExploreContent> {
       
       // 1. Determine Anchor Points
       if (_selectedTripFilter != null) {
-        final List<LatLng> activityPoints = [];
+        final List<LatLng> tripPath = [];
         for (var day in _selectedTripFilter!.days) {
-          for (var activity in day.activities) {
+          // Sort activities by positionIndex if available
+          final activities = List<Activity>.from(day.activities)
+            ..sort((a, b) => (a.positionIndex ?? 0).compareTo(b.positionIndex ?? 0));
+            
+          for (var activity in activities) {
             if (activity.lat != null && activity.lng != null) {
-              activityPoints.add(LatLng(activity.lat!, activity.lng!));
+              tripPath.add(LatLng(activity.lat!, activity.lng!));
             }
           }
         }
 
-        if (activityPoints.isNotEmpty) {
-          anchorPoints.add(activityPoints.first);
-          // Interpolate path discovery
-          for (int i = 0; i < activityPoints.length - 1; i++) {
-            final start = activityPoints[i];
-            final end = activityPoints[i + 1];
-            final dist = _calculateDistance(start.latitude, start.longitude, end.latitude, end.longitude);
-            
-            anchorPoints.add(end); // Add original activity point
-
-            // If activities are > 5km apart, add intermediate search points every 5km
-            if (dist > 5.0) {
-              int pointsToAdd = (dist / 5.0).floor();
-              for (int j = 1; j <= pointsToAdd; j++) {
-                double fraction = j / (pointsToAdd + 1);
-                double lat = start.latitude + (end.latitude - start.latitude) * fraction;
-                double lng = start.longitude + (end.longitude - start.longitude) * fraction;
-                anchorPoints.add(LatLng(lat, lng));
-              }
+        if (tripPath.isEmpty) {
+          // Fallback Case: Trip exists but no activities, use map center
+          anchorPoints.add(_currentCenter);
+        } else if (tripPath.length == 1) {
+          anchorPoints.add(tripPath.first);
+        } else {
+          // Optimized sampling: every 5km to reduce API load and improve performance
+          anchorPoints.add(tripPath.first);
+          double accumulatedDist = 0;
+          for (int i = 0; i < tripPath.length - 1; i++) {
+            final d = _calculateDistance(
+              tripPath[i].latitude, tripPath[i].longitude,
+              tripPath[i+1].latitude, tripPath[i+1].longitude
+            );
+            accumulatedDist += d;
+            if (accumulatedDist >= 5.0) { 
+              anchorPoints.add(tripPath[i+1]);
+              accumulatedDist = 0;
             }
           }
-        } else {
-          // Fallback Case 1: Trip exists but no activities yet
-          // Try to use city center coordinates
-          if (_selectedTripFilter!.cityPlaceId != null) {
-            final cityDetails = await _placesService.getPlaceDetails(_selectedTripFilter!.cityPlaceId!);
-            if (cityDetails != null && cityDetails['lat'] != null) {
-              anchorPoints.add(LatLng(cityDetails['lat'], cityDetails['lng']));
-            } else {
-              anchorPoints.add(_currentCenter);
+          if (anchorPoints.last != tripPath.last) {
+            anchorPoints.add(tripPath.last);
+          }
+          
+          // Limit total anchor points to 10 for performance
+          if (anchorPoints.length > 10) {
+            final List<LatLng> limitedAnchors = [];
+            final step = anchorPoints.length / 10;
+            for (int i = 0; i < 10; i++) {
+              limitedAnchors.add(anchorPoints[(i * step).toInt()]);
             }
-          } else if (_selectedTripFilter!.countryPlaceId != null) {
-            final countryDetails = await _placesService.getPlaceDetails(_selectedTripFilter!.countryPlaceId!);
-            if (countryDetails != null && countryDetails['lat'] != null) {
-              anchorPoints.add(LatLng(countryDetails['lat'], countryDetails['lng']));
-            } else {
-              anchorPoints.add(_currentCenter);
-            }
-          } else {
-            anchorPoints.add(_currentCenter);
+            anchorPoints.clear();
+            anchorPoints.addAll(limitedAnchors);
           }
         }
       } else {
-        // Fallback to map center if no trip selected
+        // Fallback: No trip selected, use map center
         anchorPoints.add(_currentCenter);
       }
 
-      // 2. Perform Batch Search
-      final Map<String, Map<String, dynamic>> allPlacesMap = {};
-      
+      // 2. Build Batch Search Points
+      final List<Map<String, dynamic>> searchQueries = [];
       for (final anchor in anchorPoints) {
         for (final cat in _selectedCategories) {
-          final types = _getCategoryTypes(cat);
+          final categoryData = _getCategoryData(cat);
+          final types = categoryData['types'] as List<String>;
+          final keyword = categoryData['keyword'] as String?;
+          
           for (final type in types) {
-            final results = await _placesService.searchPlaces(
-              lat: anchor.latitude,
-              lng: anchor.longitude,
-              type: type,
-              radius: (_filterDistance * 1000).toInt(), // Convert KM to Meters
-            );
-            
-            for (var p in results) {
-              if (p['place_id'] != null) {
-                allPlacesMap[p['place_id']] = p;
-              }
-            }
+            searchQueries.add({
+              'lat': anchor.latitude,
+              'lng': anchor.longitude,
+              'type': type,
+              'keyword': keyword,
+              'radius': (_filterDistance * 1000).toInt(),
+              'anchor': anchor, // Save anchor for scoring later
+            });
           }
         }
       }
 
-      final List<Map<String, dynamic>> deduplicatedPlaces = allPlacesMap.values.toList();
+      // 3. Execute Batch Search (via PlacesService with rate limiting)
+      final List<PlaceResult> discoveredPlaces = await _placesService.searchBatch(searchQueries);
       
-      // 3. Sort by popularity (Rating * Reviews)
-      deduplicatedPlaces.sort((a, b) {
-        double ratingA = (a['rating'] ?? 0).toDouble();
-        double ratingB = (b['rating'] ?? 0).toDouble();
-        int reviewsA = a['user_ratings_total'] ?? 0;
-        int reviewsB = b['user_ratings_total'] ?? 0;
-        
-        double scoreA = ratingA * math.log(reviewsA + 1);
-        double scoreB = ratingB * math.log(reviewsB + 1);
-        return scoreB.compareTo(scoreA);
-      });
-
-      if (!mounted) return;
-
-      setState(() {
-        _places = deduplicatedPlaces;
-        if (_selectedPlace != null && !_places.any((p) => p['place_id'] == _selectedPlace!['place_id'])) {
-          _places.add(_selectedPlace!);
+      // 4. Rank and Filter Results
+      final List<PlaceResult> scoredPlaces = discoveredPlaces.map((p) {
+        // Find nearest anchor for this place to calculate proximity score
+        LatLng nearestAnchor = anchorPoints.first;
+        double minDist = double.infinity;
+        for (final anchor in anchorPoints) {
+          final d = _calculateDistance(p.lat, p.lng, anchor.latitude, anchor.longitude);
+          if (d < minDist) {
+            minDist = d;
+            nearestAnchor = anchor;
+          }
         }
-        _isLoading = false;
-        _isSearching = false;
-      });
+        
+        final score = _calculatePlaceScore(p, nearestAnchor);
+        return p.copyWith(distance: minDist, score: score);
+      }).toList();
+
+      // Sort by score descending
+      scoredPlaces.sort((a, b) => (b.score ?? 0).compareTo(a.score ?? 0));
+
+      // 5. Strict Category Filter & Global Slicing
+      final filteredResults = scoredPlaces.where((p) => _matchesAnyCategory(p, _selectedCategories)).toList();
+      final finalResults = filteredResults.take(50).toList();
+
+      if (mounted) {
+        setState(() {
+          _places = finalResults;
+          // If we had a search result, keep it visible
+          if (_selectedPlace != null && !finalResults.any((p) => p.placeId == _selectedPlace!.placeId)) {
+            _places.insert(0, _selectedPlace!);
+          }
+          _isLoading = false;
+          _isSearching = false;
+        });
+      }
     } catch (e) {
-      debugPrint('Error in _searchNearbyPlaces: $e');
+      debugPrint('Discovery Engine Error: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -291,16 +310,25 @@ class _ExploreContentState extends State<ExploreContent> {
     }
   }
 
-  List<String> _getCategoryTypes(String category) {
+
+  Map<String, dynamic> _getCategoryData(String category) {
     switch (category) {
-      case 'hotel': return ['lodging'];
-      case 'restaurant': return ['restaurant', 'food'];
-      case 'museum': return ['museum'];
-      case 'park': return ['park'];
-      case 'cafe': return ['cafe'];
-      case 'bar': return ['bar'];
-      case 'shopping': return ['shopping_mall'];
-      default: return ['point_of_interest'];
+      case 'hotel': 
+        return {'types': ['lodging'], 'keyword': 'hotel'};
+      case 'restaurant': 
+        return {'types': ['restaurant'], 'keyword': 'restaurant'};
+      case 'museum': 
+        return {'types': ['museum'], 'keyword': 'museum'};
+      case 'park': 
+        return {'types': ['park', 'tourist_attraction'], 'keyword': 'park'};
+      case 'cafe': 
+        return {'types': ['cafe'], 'keyword': 'coffee'};
+      case 'bar': 
+        return {'types': ['bar'], 'keyword': 'bar'};
+      case 'shopping': 
+        return {'types': ['shopping_mall'], 'keyword': 'shopping'};
+      default: 
+        return {'types': ['point_of_interest', 'tourist_attraction'], 'keyword': null};
     }
   }
   
@@ -312,8 +340,42 @@ class _ExploreContentState extends State<ExploreContent> {
     return 12742 * math.asin(math.sqrt(a)); // 2 * R; R = 6371 km
   }
 
-  void _showPlaceDetailsSheet(Map<String, dynamic> place) {
+  Future<void> _showPlaceDetailsSheet(PlaceResult place) async {
     setState(() => _isDetailsSheetOpen = true);
+    
+    // Fetch full details if missing (opening hours, website, description)
+    if (place.website == null || place.openingHours == null || place.description == null) {
+      try {
+        final details = await _placesService.getPlaceDetails(place.placeId);
+        if (details != null && mounted) {
+          setState(() {
+            // Update the place in our list and selected place
+            final index = _places.indexWhere((p) => p.placeId == place.placeId);
+            final updatedPlace = place.copyWith(
+              website: details.website,
+              openingHours: details.openingHours,
+              description: details.description,
+              photoReferences: details.photoReferences,
+              // Keep original image URL if we already had one, or use new one
+              imageUrl: place.imageUrl ?? (details.photoReferences.isNotEmpty ? _placesService.getPhotoUrl(details.photoReferences[0]) : null),
+            );
+            
+            if (index != -1) {
+              _places[index] = updatedPlace;
+            }
+            if (_selectedPlace?.placeId == place.placeId) {
+              _selectedPlace = updatedPlace;
+            }
+          });
+          place = _selectedPlace!; // Use updated place for the sheet
+        }
+      } catch (e) {
+        debugPrint('Error fetching lazy details: $e');
+      }
+    }
+
+    if (!mounted) return;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -328,11 +390,8 @@ class _ExploreContentState extends State<ExploreContent> {
     });
   }
 
-  Widget _buildPlaceDetailsSheet(Map<String, dynamic> place) {
-    final photoRef = (place['photos'] != null && (place['photos'] as List).isNotEmpty) 
-        ? place['photos'][0]['photo_reference'] 
-        : null;
-    final photoUrl = _placesService.getPhotoUrl(photoRef);
+  Widget _buildPlaceDetailsSheet(PlaceResult place) {
+    final photoUrl = place.imageUrl;
     
     return Container(
       width: double.infinity,
@@ -386,7 +445,7 @@ class _ExploreContentState extends State<ExploreContent> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          place['name'] ?? 'Unknown Place',
+                          place.name,
                           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             fontFamily: 'Plus Jakarta Sans',
@@ -399,7 +458,7 @@ class _ExploreContentState extends State<ExploreContent> {
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
-                                place['vicinity'] ?? 'No address available',
+                                place.address ?? 'No address available',
                                 style: const TextStyle(color: TripiColors.onSurfaceVariant, fontSize: 13),
                               ),
                             ),
@@ -411,22 +470,79 @@ class _ExploreContentState extends State<ExploreContent> {
                             const Icon(Icons.star, color: TripiColors.primary, size: 18),
                             const SizedBox(width: 4),
                             Text(
-                              '${place['rating'] ?? 'N/A'} (${place['user_ratings_total'] ?? 0} reviews)',
+                              '${place.rating ?? 'N/A'} (${place.userRatingsTotal ?? 0} reviews)',
                               style: const TextStyle(fontWeight: FontWeight.w600),
                             ),
                             const SizedBox(width: 16),
-                            Text(
-                              (place['types'] as List?)?.first?.toString().replaceAll('_', ' ').toUpperCase() ?? 'PLACE',
-                              style: const TextStyle(color: TripiColors.onSurfaceVariant, fontSize: 12, fontWeight: FontWeight.bold),
+                            if (place.priceLevel != null) ...[
+                              Text(
+                                place.priceLevelString,
+                                style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 13),
+                              ),
+                              const SizedBox(width: 16),
+                            ],
+                            Expanded(
+                              child: Text(
+                                place.types.firstOrNull?.toString().replaceAll('_', ' ').toUpperCase() ?? 'PLACE',
+                                style: const TextStyle(color: TripiColors.onSurfaceVariant, fontSize: 12, fontWeight: FontWeight.bold),
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 16),
-                        if (_selectedCategories.contains('hotel') || (place['types'] as List?)?.contains('lodging') == true) ...[
+                        if (place.todayHours != null) ...[
+                          Row(
+                            children: [
+                              const Icon(Icons.access_time, color: TripiColors.onSurfaceVariant, size: 16),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Today: ${place.todayHours}',
+                                style: const TextStyle(color: TripiColors.onSurfaceVariant, fontSize: 13),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                        if (place.website != null && place.website!.isNotEmpty) ...[
+                          GestureDetector(
+                            onTap: () async {
+                              final uri = Uri.parse(place.website!);
+                              if (await canLaunchUrl(uri)) {
+                                await launchUrl(uri);
+                              }
+                            },
+                            child: Row(
+                              children: [
+                                const Icon(Icons.language, color: TripiColors.primary, size: 16),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Visit Website',
+                                  style: TextStyle(color: TripiColors.primary, fontWeight: FontWeight.w600, fontSize: 13),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                        if (place.description != null && place.description!.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            place.description!,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              height: 1.5,
+                              color: TripiColors.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                        const SizedBox(height: 16),
+                        if (_selectedCategories.contains('hotel') || place.types.contains('lodging')) ...[
                           _buildHotelComparison(place),
                           const SizedBox(height: 16),
                         ],
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 24),
                         Row(
                           children: [
                             Expanded(
@@ -489,7 +605,7 @@ class _ExploreContentState extends State<ExploreContent> {
     );
   }
 
-  void _showAddToTripSheet(Map<String, dynamic> place) {
+  void _showAddToTripSheet(PlaceResult place) {
     showModalBottomSheet(
       context: context,
       backgroundColor: TripiColors.surfaceContainerLowest,
@@ -543,12 +659,7 @@ class _ExploreContentState extends State<ExploreContent> {
     );
   }
 
-  void _showSelectDaySheet(Trip trip, Map<String, dynamic> place) {
-    final photoRef = (place['photos'] != null && (place['photos'] as List).isNotEmpty) 
-        ? place['photos'][0]['photo_reference'] 
-        : null;
-    final photoUrl = _placesService.getPhotoUrl(photoRef);
-
+  void _showSelectDaySheet(Trip trip, PlaceResult place) {
     showModalBottomSheet(
       context: context,
       backgroundColor: TripiColors.surfaceContainerLowest,
@@ -578,20 +689,23 @@ class _ExploreContentState extends State<ExploreContent> {
                 // Add activity to provider
                 final activity = Activity(
                   id: 'a_${DateTime.now().millisecondsSinceEpoch}',
-                  title: place['name'],
-                  lat: place['geometry']['location']['lat'],
-                  lng: place['geometry']['location']['lng'],
-                  address: place['vicinity'],
-                  placeId: place['place_id'],
+                  title: place.name,
+                  types: place.types,
+                  lat: place.lat,
+                  lng: place.lng,
+                  address: place.address,
+                  placeId: place.placeId,
                   source: 'api',
-                  imageUrl: photoUrl,
-                  rating: place['rating']?.toDouble(),
-                  userRatingsTotal: place['user_ratings_total'],
+                  imageUrl: place.imageUrl ?? (place.photoReferences.isNotEmpty 
+                      ? PlacesService().getPhotoUrl(place.photoReferences.first) 
+                      : null),
+                  rating: place.rating?.toDouble(),
+                  userRatingsTotal: place.userRatingsTotal,
                 );
                   context.read<TripProvider>().addActivity(trip.id, dayIndex, activity);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('${place['name']} added to ${trip.name} Day $dayIndex'),
+                    content: Text('${place.name} added to ${trip.name} Day $dayIndex'),
                     behavior: SnackBarBehavior.floating,
                     backgroundColor: TripiColors.primary,
                   ),
@@ -728,26 +842,21 @@ class _ExploreContentState extends State<ExploreContent> {
     }
     
     // Create markers from places
-    final allMapPlaces = List<Map<String, dynamic>>.from(_places);
-    if (_selectedPlace != null && !allMapPlaces.any((p) => p['place_id'].toString() == _selectedPlace!['place_id'].toString())) {
+    final List<PlaceResult> allMapPlaces = List<PlaceResult>.from(_places);
+    if (_selectedPlace != null && !allMapPlaces.any((p) => p.placeId == _selectedPlace!.placeId)) {
       allMapPlaces.add(_selectedPlace!);
     }
 
-    Set<Marker> markers = allMapPlaces.where((p) => 
-      p['geometry'] != null && 
-      p['geometry']['location'] != null &&
-      p['geometry']['location']['lat'] != null &&
-      p['geometry']['location']['lng'] != null
-    ).map((place) {
-      final lat = place['geometry']['location']['lat'];
-      final lng = place['geometry']['location']['lng'];
-      final isSelected = _selectedPlace != null && _selectedPlace!['place_id'].toString() == place['place_id'].toString();
+    Set<Marker> markers = allMapPlaces.map((place) {
+      final lat = place.lat;
+      final lng = place.lng;
+      final isSelected = _selectedPlace != null && _selectedPlace!.placeId == place.placeId;
       
       // Check if added to any trip
       bool addedToTrip = false;
       for (var trip in trips) {
         for (var day in trip.days) {
-          if (day.activities.any((a) => a.placeId.toString() == place['place_id'].toString())) {
+          if (day.activities.any((a) => a.placeId == place.placeId)) {
             addedToTrip = true;
             break;
           }
@@ -757,24 +866,24 @@ class _ExploreContentState extends State<ExploreContent> {
       // Check if popular (top 5 by our score)
       bool isPopular = false;
       for (int i = 0; i < math.min(5, _places.length); i++) {
-        if (_places[i]['place_id'].toString() == place['place_id'].toString()) {
+        if (_places[i].placeId == place.placeId) {
           isPopular = true;
           break;
         }
       }
 
-      final isSearchResult = _searchResultPlaceId != null && _searchResultPlaceId.toString() == place['place_id'].toString();
+      final isSearchResult = _searchResultPlaceId != null && _searchResultPlaceId == place.placeId;
       
       return Marker(
-        markerId: MarkerId(place['place_id']),
+        markerId: MarkerId(place.placeId),
         position: LatLng(lat, lng),
         infoWindow: InfoWindow.noText,
-        zIndex: isSearchResult ? 300 : (isSelected ? 200 : 100),
+        zIndexInt: isSearchResult ? 300 : (isSelected ? 200 : 100),
         icon: BitmapDescriptor.defaultMarkerWithHue(
-          isSearchResult ? 270.0 : ( // hueViolet
+          isSearchResult ? 300.0 : ( // hueMagenta
             addedToTrip ? BitmapDescriptor.hueGreen : 
             (isSelected ? BitmapDescriptor.hueAzure : 
-             (isPopular ? BitmapDescriptor.hueOrange : BitmapDescriptor.hueRed))
+            (isPopular ? BitmapDescriptor.hueOrange : BitmapDescriptor.hueRed))
           )
         ),
         onTap: () {
@@ -876,7 +985,7 @@ class _ExploreContentState extends State<ExploreContent> {
             // Horizontal clamping is removed to keep the bubble perfectly anchored during panning.
             left: _selectedActivityScreenPos!.dx - 140,
             // Vertical clamping is also removed as the Stack order handles filter overlap.
-            top: _selectedActivityScreenPos!.dy - 140,
+            top: _selectedActivityScreenPos!.dy - 110,
             child: PointerInterceptor(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -1128,13 +1237,9 @@ class _ExploreContentState extends State<ExploreContent> {
                   ),
                   
                   // Filter Row
-                  IgnorePointer(
-                    ignoring: _isSearchFocused || _searchResults.isNotEmpty,
-                    child: Opacity(
-                      opacity: (_isSearchFocused || _searchResults.isNotEmpty) ? 0.5 : 1.0,
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Row(
                           children: [
                             // Trip Filter Dropdown
@@ -1161,22 +1266,29 @@ class _ExploreContentState extends State<ExploreContent> {
                                       setState(() {
                                         _selectedTripFilter = trip;
                                         _searchResultPlaceId = null; // Clear search highlight
+                                        _selectedActivity = null; // Clear activity bubble
+                                        _selectedActivityTrip = null;
+                                        _selectedPlace = null; // Clear selected place
+                                        _searchResults = [];
+                                        _searchController.clear();
                                       });
+                                      _searchFocusNode.unfocus();
                                       if (trip != null) {
-                                        if (trip.days.isNotEmpty && trip.days.first.activities.isNotEmpty) {
-                                          final act = trip.days.first.activities.first;
-                                          if (act.lat != null && act.lng != null) {
-                                            _mapController?.animateCamera(CameraUpdate.newLatLngZoom(LatLng(act.lat!, act.lng!), 12));
-                                          }
-                                        }
+                                        _fitTripBounds(trip);
+                                      } else if (trips.isNotEmpty) {
+                                        _fitAllTripsBounds(trips);
+                                      }
+                                      // Trigger discovery refresh when trip filter changes if categories are active
+                                      if (_selectedCategories.isNotEmpty) {
+                                        _searchNearbyPlaces();
                                       }
                                     },
                                     itemBuilder: (context) => [
-                                      const PopupMenuItem(
+                                      PopupMenuItem<Trip?>(
                                         value: null, 
-                                        child: Text('All Trips', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: TripiColors.onSurface)),
+                                        child: const Text('All Trips', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: TripiColors.onSurface)),
                                       ),
-                                      ...trips.map((t) => PopupMenuItem(
+                                      ...trips.map((t) => PopupMenuItem<Trip?>(
                                         value: t, 
                                         child: Text(t.name, style: const TextStyle(fontSize: 14, color: TripiColors.onSurface)),
                                       ))
@@ -1208,10 +1320,8 @@ class _ExploreContentState extends State<ExploreContent> {
                           ],
                         ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
             ),
           ),
         ),
@@ -1267,9 +1377,9 @@ class _ExploreContentState extends State<ExploreContent> {
     );
   }
 
-  Widget _buildHotelComparison(Map<String, dynamic> place) {
-    final pricing = _hotelService.getSimulatedPricing(place['name']);
-    final city = place['vicinity']?.split(',').last.trim() ?? '';
+  Widget _buildHotelComparison(PlaceResult place) {
+    final pricing = _hotelService.getSimulatedPricing(place.name);
+    final city = place.address?.split(',').last.trim() ?? '';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1290,14 +1400,14 @@ class _ExploreContentState extends State<ExploreContent> {
             'Booking.com',
             'Booking',
             pricing['booking']['price'],
-            () => _hotelService.launchBooking(place['name'], city),
+            () => _hotelService.launchBooking(place.name, city),
           ),
           const Divider(height: 24, color: TripiColors.outlineVariant),
           _buildProviderRow(
             'Agoda',
             'Agoda',
             pricing['agoda']['price'],
-            () => _hotelService.launchAgoda(place['name'], city),
+            () => _hotelService.launchAgoda(place.name, city),
           ),
         ],
       ),
@@ -1370,12 +1480,17 @@ class _ExploreContentState extends State<ExploreContent> {
 
   Future<void> _updateTripMarkers(List<Trip> trips, Trip? filter) async {
     if (!mounted) return;
-    if (_isUpdatingMarkers) return;
+    
+    final int requestId = ++_markerUpdateId;
     _isUpdatingMarkers = true;
 
     try {
       final List<Marker> newMarkers = [];
       final double pixelRatio = MediaQuery.of(context).devicePixelRatio;
+      
+      // Optimization: Only load images when a specific trip is selected.
+      // Loading images for ALL trips is too heavy and causes significant lag.
+      final bool shouldLoadImages = filter != null;
       
       if (filter != null) {
         // Single trip scope: number per day
@@ -1387,8 +1502,9 @@ class _ExploreContentState extends State<ExploreContent> {
             final activity = day.activities[j];
             if (activity.lat != null && activity.lng != null) {
               ui.Image? placeImage;
-              if (activity.imageUrl != null) {
+              if (shouldLoadImages && activity.imageUrl != null) {
                 placeImage = await _loadImage(activity.imageUrl!);
+                if (requestId != _markerUpdateId) return; // Cancel if newer request arrived
               }
               final icon = await _createNumberedMarkerIcon(j + 1, dayColor, pixelRatio, placeImage, activity.imageUrl);
               newMarkers.add(
@@ -1406,8 +1522,8 @@ class _ExploreContentState extends State<ExploreContent> {
                       try {
                         debugPrint('Fetching details for placeId: ${activity.placeId}');
                         final details = await _placesService.getPlaceDetails(activity.placeId!);
-                        if (details != null && details['photo_references'] != null && (details['photo_references'] as List).isNotEmpty) {
-                          final photoRef = details['photo_references'][0];
+                        if (details != null && details.photoReferences.isNotEmpty) {
+                          final photoRef = details.photoReferences[0];
                           final photoUrl = _placesService.getPhotoUrl(photoRef);
                           debugPrint('Found photo URL: $photoUrl');
                           if (photoUrl != null) {
@@ -1452,8 +1568,9 @@ class _ExploreContentState extends State<ExploreContent> {
             for (var activity in day.activities) {
               if (activity.lat != null && activity.lng != null) {
                 ui.Image? placeImage;
-                if (activity.imageUrl != null) {
+                if (shouldLoadImages && activity.imageUrl != null) {
                   placeImage = await _loadImage(activity.imageUrl!);
+                  if (requestId != _markerUpdateId) return; // Cancel if newer request arrived
                 }
                 final icon = await _createNumberedMarkerIcon(activityCounter++, tripColor, pixelRatio, placeImage, activity.imageUrl);
                 newMarkers.add(
@@ -1471,8 +1588,8 @@ class _ExploreContentState extends State<ExploreContent> {
                         try {
                           debugPrint('Fetching details for placeId: ${activity.placeId}');
                           final details = await _placesService.getPlaceDetails(activity.placeId!);
-                          if (details != null && details['photo_references'] != null && (details['photo_references'] as List).isNotEmpty) {
-                            final photoRef = details['photo_references'][0];
+                          if (details != null && details.photoReferences.isNotEmpty) {
+                            final photoRef = details.photoReferences[0];
                             final photoUrl = _placesService.getPhotoUrl(photoRef);
                             debugPrint('Found photo URL: $photoUrl');
                             if (photoUrl != null) {
@@ -1509,6 +1626,8 @@ class _ExploreContentState extends State<ExploreContent> {
         }
       }
 
+      if (requestId != _markerUpdateId) return;
+
       if (!mounted) return;
       setState(() {
         _tripMarkers = newMarkers.toSet();
@@ -1516,7 +1635,7 @@ class _ExploreContentState extends State<ExploreContent> {
       });
     } catch (e) {
       debugPrint('Error updating trip markers: $e');
-      if (mounted) {
+      if (mounted && requestId == _markerUpdateId) {
         setState(() => _isUpdatingMarkers = false);
       }
     }
@@ -1632,6 +1751,132 @@ class _ExploreContentState extends State<ExploreContent> {
         });
       }
     }
+  }
+
+
+
+  List<LatLng> _interpolatePoints(LatLng start, LatLng end, double stepKm) {
+    final dist = _calculateDistance(start.latitude, start.longitude, end.latitude, end.longitude);
+    if (dist <= stepKm) return [];
+    
+    final List<LatLng> points = [];
+    final int pointsToAdd = (dist / stepKm).floor();
+    
+    // Cap at 10 points per segment as per plan
+    final int actualPoints = math.min(pointsToAdd, 10);
+    
+    for (int i = 1; i <= actualPoints; i++) {
+      double fraction = i / (actualPoints + 1);
+      double lat = start.latitude + (end.latitude - start.latitude) * fraction;
+      double lng = start.longitude + (end.longitude - start.longitude) * fraction;
+      points.add(LatLng(lat, lng));
+    }
+    return points;
+  }
+
+  double _calculatePlaceScore(PlaceResult place, LatLng anchor) {
+    final dist = _calculateDistance(place.lat, place.lng, anchor.latitude, anchor.longitude);
+    
+    // 1. Proximity score (0-1): closer is better. 0 at radius limit
+    final double proximityScore = math.max(0.0, 1.0 - (dist / _filterDistance));
+    
+    // 2. Rating score (0-1): 0-5 stars mapped to 0-1
+    final double ratingScore = (place.rating ?? 3.0) / 5.0;
+    
+    // 3. Popularity score (0-1): log scale for reviews
+    final double reviewCount = (place.userRatingsTotal ?? 0).toDouble();
+    final double popularityScore = math.min(1.0, math.log(reviewCount + 1) / math.log(1000));
+
+    // Weighted Score as per plan: 0.4*proximity + 0.4*rating + 0.2*popularity
+    return (0.4 * proximityScore) + (0.4 * ratingScore) + (0.2 * popularityScore);
+  }
+
+  void _fitTripBounds(Trip trip) {
+    if (_mapController == null) return;
+    
+    final List<LatLng> points = [];
+    for (var day in trip.days) {
+      for (var activity in day.activities) {
+        if (activity.lat != null && activity.lng != null) {
+          points.add(LatLng(activity.lat!, activity.lng!));
+        }
+      }
+    }
+    
+    if (points.isEmpty) {
+      // Fallback to city center if available
+      if (trip.cityPlaceId != null) {
+        _placesService.getPlaceDetailsRaw(trip.cityPlaceId!).then((details) {
+          if (details != null && details['lat'] != null) {
+            _mapController?.animateCamera(
+              CameraUpdate.newLatLngZoom(LatLng(details['lat'], details['lng']), 12)
+            );
+          }
+        });
+      }
+      return;
+    }
+    
+    if (points.length == 1) {
+      _mapController?.animateCamera(CameraUpdate.newLatLngZoom(points.first, 14));
+      return;
+    }
+    
+    double minLat = 90.0, maxLat = -90.0, minLng = 180.0, maxLng = -180.0;
+    for (final p in points) {
+      if (p.latitude < minLat) minLat = p.latitude;
+      if (p.latitude > maxLat) maxLat = p.latitude;
+      if (p.longitude < minLng) minLng = p.longitude;
+      if (p.longitude > maxLng) maxLng = p.longitude;
+    }
+    
+    _mapController?.animateCamera(
+      CameraUpdate.newLatLngBounds(
+        LatLngBounds(
+          southwest: LatLng(minLat, minLng),
+          northeast: LatLng(maxLat, maxLng),
+        ),
+        80, // padding
+      ),
+    );
+  }
+
+  void _fitAllTripsBounds(List<Trip> trips) {
+    final List<LatLng> points = [];
+    for (var trip in trips) {
+      for (var day in trip.days) {
+        for (var activity in day.activities) {
+          if (activity.lat != null && activity.lng != null) {
+            points.add(LatLng(activity.lat!, activity.lng!));
+          }
+        }
+      }
+    }
+    
+    if (points.isEmpty) return;
+    
+    if (points.length == 1) {
+      _mapController?.animateCamera(CameraUpdate.newLatLngZoom(points.first, 12));
+      return;
+    }
+    
+    double minLat = 90.0, maxLat = -90.0, minLng = 180.0, maxLng = -180.0;
+    for (final p in points) {
+      if (p.latitude < minLat) minLat = p.latitude;
+      if (p.latitude > maxLat) maxLat = p.latitude;
+      if (p.longitude < minLng) minLng = p.longitude;
+      if (p.longitude > maxLng) maxLng = p.longitude;
+    }
+    
+    _mapController?.animateCamera(
+      CameraUpdate.newLatLngBounds(
+        LatLngBounds(
+          southwest: LatLng(minLat, minLng),
+          northeast: LatLng(maxLat, maxLng),
+        ),
+        80, // padding
+      ),
+    );
   }
 }
 
