@@ -5,6 +5,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:logging/logging.dart';
 import 'theme/tripi_theme.dart';
+import 'services/user_preference_service.dart';
+import 'services/visited_places_registry.dart';
+import 'services/ai_trip_service.dart';
+import 'providers/ai_provider.dart';
 import 'providers/booking_provider.dart';
 import 'providers/trip_provider.dart';
 import 'screens/login_screen.dart';
@@ -67,10 +71,33 @@ Future<void> main() async {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => BookingProvider()),
         ChangeNotifierProvider(create: (_) => TripProvider()),
+        ChangeNotifierProvider(create: (_) => BookingProvider()),
+        ChangeNotifierProvider(create: (_) => UserPreferenceService()),
+        Provider(create: (_) => VisitedPlacesRegistry()),
+        ProxyProvider2<UserPreferenceService, VisitedPlacesRegistry, AiTripService>(
+          update: (_, prefs, visited, __) => AiTripService(prefs, visited),
+        ),
+        ChangeNotifierProxyProvider3<AiTripService, UserPreferenceService, TripProvider, AiProvider>(
+          create: (context) => AiProvider(
+            context.read<AiTripService>(),
+            context.read<UserPreferenceService>(),
+            context.read<TripProvider>(),
+            context.read<VisitedPlacesRegistry>(),
+          ),
+          update: (context, service, prefs, trip, existing) =>
+              existing ?? AiProvider(service, prefs, trip, context.read<VisitedPlacesRegistry>()),
+        ),
       ],
-      child: const TripiApp(),
+      child: Builder(
+        builder: (context) {
+          final user = Supabase.instance.client.auth.currentUser;
+          if (user != null) {
+            context.read<UserPreferenceService>().load(user.id);
+          }
+          return const TripiApp();
+        },
+      ),
     ),
   );
 }

@@ -10,6 +10,9 @@ import '../widgets/modals/trip_edit_modals.dart';
 import 'create_trip/create_trip_wizard.dart';
 import 'itinerary_screen.dart';
 import '../services/mock_data_service.dart';
+import '../widgets/ai/ai_planning_options_sheet.dart';
+import 'ai_review_screen.dart';
+import '../providers/ai_provider.dart';
 
 class TripsScreen extends StatefulWidget {
   const TripsScreen({super.key});
@@ -251,6 +254,33 @@ class _TripsScreenState extends State<TripsScreen> {
                   ),
                 ),
               ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showAiOptions(BuildContext context, Trip trip) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => AiPlanningOptionsSheet(
+        onGenerate: (options) {
+          // Default to Day 1 when starting from main screen
+          const dayIndex = 1;
+          
+          context.read<AiProvider>().generateDailyItinerary(
+                trip: trip,
+                dayIndex: dayIndex,
+                options: options,
+              );
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => AiReviewScreen(trip: trip, dayIndex: dayIndex),
             ),
           );
         },
@@ -706,6 +736,30 @@ class _TripsScreenState extends State<TripsScreen> {
                     Material(
                       color: Colors.transparent,
                       child: InkWell(
+                        onTap: () => _showAiOptions(context, trip),
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: TripiColors.primary.withValues(alpha: 0.9),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.2),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(Icons.auto_awesome,
+                              color: Colors.white, size: 20),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
                         onTap: () => _showTripInfo(context, trip),
                         borderRadius: BorderRadius.circular(20),
                         child: Container(
@@ -883,6 +937,11 @@ class _TripsScreenState extends State<TripsScreen> {
                   ],
                 ],
               ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.auto_awesome,
+                  color: TripiColors.primary, size: 24),
+              onPressed: () => _showAiOptions(context, trip),
             ),
             IconButton(
               icon: const Icon(Icons.info_outline,

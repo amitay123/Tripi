@@ -13,6 +13,7 @@ class TripProvider extends ChangeNotifier {
   // --- Trips List ---
   List<Trip> _trips = [];
   List<Trip> get trips => _trips;
+  String? get userId => SupabaseService.currentUser?.id;
 
   Future<void> fetchTrips() async {
     final userId = SupabaseService.currentUser?.id;
@@ -216,9 +217,17 @@ class TripProvider extends ChangeNotifier {
     return days;
   }
 
+  Trip? getTripById(String id) {
+    try {
+      return _trips.firstWhere((t) => t.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
+
   // --- Itinerary Management ---
 
-  void addActivity(String tripId, int dayIndex, Activity activity) {
+  Future<void> addActivity(String tripId, int dayIndex, Activity activity) async {
     final tripIndex = _trips.indexWhere((t) => t.id == tripId);
     if (tripIndex == -1) return;
 
@@ -237,7 +246,7 @@ class TripProvider extends ChangeNotifier {
     _trips[tripIndex] =
         trip.copyWith(days: updatedDays, updatedAt: DateTime.now());
     notifyListeners();
-    _persistTrip(tripId);
+    await _persistTrip(tripId);
 
     // Trigger real-time calculation immediately
     updateActivityTransportAuto(

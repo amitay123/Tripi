@@ -3,6 +3,9 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/models.dart';
 import '../providers/trip_provider.dart';
+import '../widgets/ai/ai_planning_options_sheet.dart';
+import '../screens/ai_review_screen.dart';
+import '../providers/ai_provider.dart';
 import '../theme/tripi_colors.dart';
 import '../widgets/tripi_card.dart';
 import 'create_trip/add_activity_screen.dart';
@@ -26,6 +29,7 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
     _scrollController.dispose();
     super.dispose();
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -324,19 +328,29 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                   ),
                 ],
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE2E8F0),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${day.activities.length} items',
-                  style: const TextStyle(
-                      color: Color(0xFF475569),
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold),
-                ),
+              Row(
+                children: [
+                  if (day.activities.isNotEmpty)
+                    IconButton(
+                      onPressed: () => _showAiOptions(context, day.dayIndex),
+                      icon: const Icon(Icons.auto_awesome, color: TripiColors.primary, size: 20),
+                      tooltip: 'AI Assistant',
+                    ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE2E8F0),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${day.activities.length} items',
+                      style: const TextStyle(
+                          color: Color(0xFF475569),
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -822,6 +836,8 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
             textAlign: TextAlign.center,
             style: TextStyle(color: Color(0xFF64748B), fontSize: 14),
           ),
+          const SizedBox(height: 32),
+          _buildAiAssistantButton(context, day.dayIndex),
         ],
       ),
     );
@@ -846,5 +862,95 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
         );
       }
     });
+  }
+  Widget _buildAiAssistantButton(BuildContext context, int dayIndex) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [TripiColors.primary.withOpacity(0.1), Colors.white],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: TripiColors.primary.withOpacity(0.2)),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _showAiOptions(context, dayIndex),
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: TripiColors.primary,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: TripiColors.primary.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(Icons.auto_awesome, color: Colors.white, size: 20),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Plan my day',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      Text(
+                        'AI-powered recommendations based on your style',
+                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_right, color: TripiColors.primary),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showAiOptions(BuildContext context, int dayIndex) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => AiPlanningOptionsSheet(
+        onGenerate: (options) {
+          final tripProvider = context.read<TripProvider>();
+          final trip = tripProvider.getTripById(widget.tripId);
+          if (trip == null) return;
+
+          // Start generation
+          context.read<AiProvider>().generateDailyItinerary(
+            trip: trip,
+            dayIndex: dayIndex,
+            options: options,
+          );
+
+          // Navigate to review screen
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => AiReviewScreen(trip: trip, dayIndex: dayIndex),
+            ),
+          );
+        },
+      ),
+    );
   }
 }
