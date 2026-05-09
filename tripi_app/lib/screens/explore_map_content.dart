@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
@@ -43,6 +45,7 @@ class _ExploreContentState extends State<ExploreContent> {
   bool _isSearching = false;
   bool _isDetailsSheetOpen = false;
   bool _isRadiusPopupOpen = false;
+  bool _isSchedulePopupDismissed = false;
   bool _isUpdatingMarkers = false; // Add lock for marker updates
   int _markerUpdateId = 0; // Track latest marker update request
   
@@ -179,7 +182,10 @@ class _ExploreContentState extends State<ExploreContent> {
       return;
     }
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _isSchedulePopupDismissed = false;
+    });
     _isSearching = true;
     
     try {
@@ -826,18 +832,25 @@ class _ExploreContentState extends State<ExploreContent> {
     // Ensure the selected trip filter is always the latest version from the provider
     Trip? currentTripFilter;
     if (_selectedTripFilter != null) {
-      try {
-        currentTripFilter = trips.firstWhere((t) => t.id == _selectedTripFilter!.id);
-      } catch (_) {
-        // Trip might have been deleted
-        currentTripFilter = null;
+      // Find the latest version of the selected trip by ID
+      final matchingTrips = trips.where((t) => t.id == _selectedTripFilter!.id).toList();
+      if (matchingTrips.isNotEmpty) {
+        currentTripFilter = matchingTrips.first;
+      } else {
+        // Fallback: If trip not found in list (e.g. just updated), keep the one we have
+        // unless it's clearly gone.
+        currentTripFilter = _selectedTripFilter;
       }
     }
 
     // Trigger marker update if trips or filter changed
-    if (_lastTrips != trips || _lastFilter != currentTripFilter) {
+    final bool tripsChanged = !listEquals(_lastTrips, trips);
+    final bool filterChanged = _lastFilter?.id != currentTripFilter?.id;
+    
+    if (tripsChanged || filterChanged) {
       _lastTrips = trips;
       _lastFilter = currentTripFilter;
+      // Use microtask to avoid calling setState during build if _updateTripMarkers completes synchronously
       Future.microtask(() => _updateTripMarkers(trips, currentTripFilter));
     }
     
@@ -1255,16 +1268,21 @@ class _ExploreContentState extends State<ExploreContent> {
                                   data: Theme.of(context).copyWith(
                                     hoverColor: Colors.transparent,
                                   ),
-                                  child: PopupMenuButton<Trip?>(
-                                    initialValue: currentTripFilter,
+                                  child: PopupMenuButton<String>(
+                                    initialValue: currentTripFilter?.id ?? 'all',
                                     tooltip: 'Filter by Trip',
                                     offset: const Offset(0, 45),
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                                     color: TripiColors.surfaceContainerLowest,
                                     elevation: 8,
-                                    onSelected: (trip) {
+                                    onSelected: (tripId) {
                                       setState(() {
-                                        _selectedTripFilter = trip;
+                                        if (tripId == 'all') {
+                                          _selectedTripFilter = null;
+                                        } else {
+                                          _selectedTripFilter = trips.firstWhere((t) => t.id == tripId);
+                                        }
+                                        
                                         _searchResultPlaceId = null; // Clear search highlight
                                         _selectedActivity = null; // Clear activity bubble
                                         _selectedActivityTrip = null;
@@ -1274,24 +1292,25 @@ class _ExploreContentState extends State<ExploreContent> {
                                         _searchController.clear();
                                       });
                                       _searchFocusNode.unfocus();
-                                      _updateTripMarkers(trips, trip);
-                                      if (trip != null) {
-                                        _fitTripBounds(trip);
+                                      
+                                      if (_selectedTripFilter != null) {
+                                        _fitTripBounds(_selectedTripFilter!);
                                       } else if (trips.isNotEmpty) {
                                         _fitAllTripsBounds(trips);
                                       }
+                                      
                                       // Trigger discovery refresh when trip filter changes if categories are active
                                       if (_selectedCategories.isNotEmpty) {
                                         _searchNearbyPlaces();
                                       }
                                     },
                                     itemBuilder: (context) => [
-                                      PopupMenuItem<Trip?>(
-                                        value: null, 
-                                        child: const Text('All Trips', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: TripiColors.onSurface)),
+                                      const PopupMenuItem<String>(
+                                        value: 'all', 
+                                        child: Text('All Trips', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: TripiColors.onSurface)),
                                       ),
-                                      ...trips.map((t) => PopupMenuItem<Trip?>(
-                                        value: t, 
+                                      ...trips.map((t) => PopupMenuItem<String>(
+                                        value: t.id, 
                                         child: Text(t.name, style: const TextStyle(fontSize: 14, color: TripiColors.onSurface)),
                                       ))
                                     ],
@@ -1371,6 +1390,76 @@ class _ExploreContentState extends State<ExploreContent> {
                       },
                     ),
                   ),
+                ),
+              ),
+            ),
+          ),
+          
+        // 7. Schedule For Me Popup
+        if (_places.isNotEmpty && !_isSchedulePopupDismissed && !_isDetailsSheetOpen && _selectedActivity == null && !_isLoading)
+          Positioned(
+            bottom: 24,
+            left: 16,
+            right: 16,
+            child: PointerInterceptor(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                decoration: BoxDecoration(
+                  color: TripiColors.surfaceContainerLowest,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 15,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    const Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Found great places!',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          ),
+                          Text(
+                            'Want to schedule your trip?',
+                            style: TextStyle(color: TripiColors.onSurfaceVariant, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    ElevatedButton(
+                      onPressed: () {
+                        // Non-functional for now as requested
+                        debugPrint('Schedule for me clicked');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: TripiColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        elevation: 0,
+                      ),
+                      child: const Text('Schedule for me', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.close, size: 18, color: TripiColors.onSurfaceVariant),
+                      onPressed: () {
+                        setState(() {
+                          _isSchedulePopupDismissed = true;
+                        });
+                      },
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
                 ),
               ),
             ),
