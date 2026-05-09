@@ -3,9 +3,14 @@ import '../../models/ai_models.dart';
 import '../../theme/tripi_colors.dart';
 
 class AiPlanningOptionsSheet extends StatefulWidget {
-  final Function(AiGenerationOptions) onGenerate;
+  final int maxDays;
+  final Function(int dayIndex, AiGenerationOptions options) onGenerate;
 
-  const AiPlanningOptionsSheet({super.key, required this.onGenerate});
+  const AiPlanningOptionsSheet({
+    super.key,
+    required this.onGenerate,
+    this.maxDays = 1,
+  });
 
   @override
   State<AiPlanningOptionsSheet> createState() => _AiPlanningOptionsSheetState();
@@ -18,6 +23,14 @@ class _AiPlanningOptionsSheetState extends State<AiPlanningOptionsSheet> {
   bool focusPopular = true;
   bool familyFriendly = false;
   bool leaveFreetime = false;
+  ExplorationStyle explorationStyle = ExplorationStyle.insideCity;
+  late int selectedDay;
+
+  @override
+  void initState() {
+    super.initState();
+    selectedDay = 1;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,161 +42,359 @@ class _AiPlanningOptionsSheetState extends State<AiPlanningOptionsSheet> {
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Header ───────────────────────────────────────────────────────
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: TripiColors.primary.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.auto_awesome, color: TripiColors.primary),
+                ),
+                const SizedBox(width: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'AI Trip Assistant',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'Tailor your perfect itinerary',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 28),
+
+            // ── Day Selector ─────────────────────────────────────────────────
+            if (widget.maxDays > 1) ...[
+              Text(
+                'SELECT DAY',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: Colors.grey[600],
+                  letterSpacing: 1.2,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 48,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: widget.maxDays,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (context, index) {
+                    final day = index + 1;
+                    final isSelected = selectedDay == day;
+                    return InkWell(
+                      onTap: () => setState(() => selectedDay = day),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        decoration: BoxDecoration(
+                          color: isSelected ? TripiColors.primary : Colors.grey[100],
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isSelected ? TripiColors.primary : Colors.grey[300]!,
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          'Day $day',
+                          style: TextStyle(
+                            color: isSelected ? Colors.white : Colors.black87,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
+
+            // ── Trip Exploration Style ────────────────────────────────────────
+            Text(
+              'TRIP EXPLORATION STYLE',
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: Colors.grey[600],
+                letterSpacing: 1.2,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            _buildExplorationStyleSelector(),
+            const SizedBox(height: 8),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              child: Container(
+                key: ValueKey(explorationStyle),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: TripiColors.primary.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
+                  color: explorationStyle == ExplorationStyle.insideCity
+                      ? const Color(0xFFEFF6FF)
+                      : const Color(0xFFECFDF5),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(Icons.auto_awesome, color: TripiColors.primary),
-              ),
-              const SizedBox(width: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'AI Trip Assistant',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
+                child: Row(
+                  children: [
+                    Icon(
+                      explorationStyle == ExplorationStyle.insideCity
+                          ? Icons.info_outline
+                          : Icons.explore_outlined,
+                      size: 15,
+                      color: explorationStyle == ExplorationStyle.insideCity
+                          ? const Color(0xFF3B82F6)
+                          : const Color(0xFF10B981),
                     ),
-                  ),
-                  Text(
-                    'Tailor your perfect itinerary',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[600],
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        explorationStyle == ExplorationStyle.insideCity
+                            ? 'Museums, restaurants, landmarks & walkable city experiences'
+                            : 'Castles, historic towns, day-trip landmarks, parks & scenic attractions outside the city',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: explorationStyle == ExplorationStyle.insideCity
+                              ? const Color(0xFF3B82F6)
+                              : const Color(0xFF10B981),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const Spacer(),
-              IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close),
-              ),
-            ],
-          ),
-          const SizedBox(height: 32),
-          Text(
-            'INTERESTS & PREFERENCES',
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: Colors.grey[600],
-              letterSpacing: 1.2,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-          _buildOptionTile(
-            title: 'Include Local Gems',
-            subtitle: 'Places favored by locals, off the beaten path',
-            value: localGems,
-            onChanged: (v) => setState(() => localGems = v),
-            icon: Icons.explore_outlined,
-          ),
-          _buildOptionTile(
-            title: 'Must-See Landmarks',
-            subtitle: 'Focus on top-rated, popular destinations',
-            value: focusPopular,
-            onChanged: (v) => setState(() => focusPopular = v),
-            icon: Icons.star_outline,
-          ),
-          _buildOptionTile(
-            title: 'Family Friendly',
-            subtitle: 'Activities suitable for all ages',
-            value: familyFriendly,
-            onChanged: (v) => setState(() => familyFriendly = v),
-            icon: Icons.family_restroom_outlined,
-          ),
-          const Divider(height: 32),
-          Text(
-            'FOOD & PACING',
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: Colors.grey[600],
-              letterSpacing: 1.2,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildChipOption(
-                  label: 'Restaurants',
-                  isSelected: includeRestaurants,
-                  onTap: () => setState(() => includeRestaurants = !includeRestaurants),
-                  icon: Icons.restaurant,
+                  ],
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildChipOption(
-                  label: 'Cafes',
-                  isSelected: includeCafes,
-                  onTap: () => setState(() => includeCafes = !includeCafes),
-                  icon: Icons.coffee,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _buildOptionTile(
-            title: 'Leave Room for Spontaneity',
-            subtitle: 'Generate a lighter schedule with more gaps',
-            value: leaveFreetime,
-            onChanged: (v) => setState(() => leaveFreetime = v),
-            icon: Icons.hourglass_empty_rounded,
-          ),
-          const SizedBox(height: 32),
-          SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: ElevatedButton(
-              onPressed: () {
-                final opts = AiGenerationOptions(
-                  includeRestaurants: includeRestaurants,
-                  includeCafes: includeCafes,
-                  localGems: localGems,
-                  focusPopular: focusPopular,
-                  familyFriendly: familyFriendly,
-                  leaveFreetime: leaveFreetime,
-                );
-                widget.onGenerate(opts);
-                Navigator.pop(context);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: TripiColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                elevation: 0,
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.auto_awesome),
-                  SizedBox(width: 12),
-                  Text(
-                    'Generate Itinerary',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
               ),
             ),
+            const SizedBox(height: 24),
+
+            const Divider(height: 1),
+            const SizedBox(height: 20),
+
+            // ── Interests & Preferences ───────────────────────────────────────
+            Text(
+              'INTERESTS & PREFERENCES',
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: Colors.grey[600],
+                letterSpacing: 1.2,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildOptionTile(
+              title: 'Include Local Gems',
+              subtitle: 'Places favored by locals, off the beaten path',
+              value: localGems,
+              onChanged: (v) => setState(() => localGems = v),
+              icon: Icons.explore_outlined,
+            ),
+            _buildOptionTile(
+              title: 'Must-See Landmarks',
+              subtitle: 'Focus on top-rated, popular destinations',
+              value: focusPopular,
+              onChanged: (v) => setState(() => focusPopular = v),
+              icon: Icons.star_outline,
+            ),
+            _buildOptionTile(
+              title: 'Family Friendly',
+              subtitle: 'Activities suitable for all ages',
+              value: familyFriendly,
+              onChanged: (v) => setState(() => familyFriendly = v),
+              icon: Icons.family_restroom_outlined,
+            ),
+            const Divider(height: 32),
+            Text(
+              'FOOD & PACING',
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: Colors.grey[600],
+                letterSpacing: 1.2,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildChipOption(
+                    label: 'Restaurants',
+                    isSelected: includeRestaurants,
+                    onTap: () => setState(() => includeRestaurants = !includeRestaurants),
+                    icon: Icons.restaurant,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildChipOption(
+                    label: 'Cafes',
+                    isSelected: includeCafes,
+                    onTap: () => setState(() => includeCafes = !includeCafes),
+                    icon: Icons.coffee,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _buildOptionTile(
+              title: 'Leave Room for Spontaneity',
+              subtitle: 'Generate a lighter schedule with more gaps',
+              value: leaveFreetime,
+              onChanged: (v) => setState(() => leaveFreetime = v),
+              icon: Icons.hourglass_empty_rounded,
+            ),
+            const SizedBox(height: 32),
+
+            // ── Generate Button ───────────────────────────────────────────────
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton(
+                onPressed: () {
+                  final opts = AiGenerationOptions(
+                    includeRestaurants: includeRestaurants,
+                    includeCafes: includeCafes,
+                    localGems: localGems,
+                    focusPopular: focusPopular,
+                    familyFriendly: familyFriendly,
+                    leaveFreetime: leaveFreetime,
+                    explorationStyle: explorationStyle,
+                  );
+                  Navigator.pop(context);
+                  widget.onGenerate(selectedDay, opts);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: TripiColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 0,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.auto_awesome),
+                    const SizedBox(width: 12),
+                    Text(
+                      explorationStyle == ExplorationStyle.outsideCity
+                          ? 'Generate Day Trip'
+                          : 'Generate Itinerary',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Exploration Style Segmented Selector ────────────────────────────────────
+
+  Widget _buildExplorationStyleSelector() {
+    return Container(
+      height: 52,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      padding: const EdgeInsets.all(4),
+      child: Row(
+        children: [
+          _buildStyleSegment(
+            label: 'Stay Inside the City',
+            icon: Icons.location_city_rounded,
+            style: ExplorationStyle.insideCity,
           ),
-          const SizedBox(height: 12),
+          _buildStyleSegment(
+            label: 'Explore Outside',
+            icon: Icons.terrain_rounded,
+            style: ExplorationStyle.outsideCity,
+          ),
         ],
       ),
     );
   }
+
+  Widget _buildStyleSegment({
+    required String label,
+    required IconData icon,
+    required ExplorationStyle style,
+  }) {
+    final isSelected = explorationStyle == style;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => explorationStyle = style),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.white : Colors.transparent,
+            borderRadius: BorderRadius.circular(11),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 15,
+                color: isSelected ? TripiColors.primary : Colors.grey[500],
+              ),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    color: isSelected ? TripiColors.primary : Colors.grey[600],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Shared Tile Builders ────────────────────────────────────────────────────
 
   Widget _buildOptionTile({
     required String title,
@@ -213,7 +424,8 @@ class _AiPlanningOptionsSheetState extends State<AiPlanningOptionsSheet> {
       trailing: Switch.adaptive(
         value: value,
         onChanged: onChanged,
-        activeColor: TripiColors.primary,
+        activeThumbColor: TripiColors.primary,
+        activeTrackColor: TripiColors.primary.withValues(alpha: 0.5),
       ),
     );
   }

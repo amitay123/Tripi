@@ -4,7 +4,10 @@
 /// the provider, and all UI widgets. The pipeline architecture ensures
 /// that swapping the mock AI for a real LLM requires no changes here.
 
+library;
+
 // ---------------------------------------------------------------------------
+
 // Enums
 // ---------------------------------------------------------------------------
 
@@ -23,11 +26,24 @@ enum RegenerationStyle {
   morePopular,
 }
 
+/// Whether the AI should look for places inside or outside the city
+enum ExplorationStyle {
+  insideCity,
+  outsideCity,
+}
+
 /// Whether the AI is generating for a single day or the full trip
 enum AiGenerationMode { day, trip }
 
 /// Lifecycle of an AI generation request
 enum AiGenerationStatus { idle, loading, ready, applying, done, error }
+
+/// Which recommendation section a suggestion belongs to
+enum RecommendationSection {
+  landmark, // Must-See Landmarks
+  localGem, // Local Gems
+  food, // Food & Drinks (restaurants + cafes)
+}
 
 // ---------------------------------------------------------------------------
 // AiSuggestion
@@ -54,6 +70,7 @@ class AiSuggestion {
 
   final String source; // always 'ai'
   final double popularityScore; // 0.0–5.0
+  final int userRatingsTotal; // raw review count
   final List<String> types; // Google Places-style type strings
   final AiConfidence confidence;
 
@@ -65,6 +82,12 @@ class AiSuggestion {
 
   /// True if this place is a local hidden gem (less touristy)
   final bool isLocalGem;
+
+  /// Which recommendation section this suggestion belongs to
+  final RecommendationSection section;
+
+  /// Composite recommendation score (0–100), used for sorting within sections
+  final double recommendationScore;
 
   /// User's per-item decision (mutable)
   bool isAccepted;
@@ -87,11 +110,14 @@ class AiSuggestion {
     required this.explanation,
     this.source = 'ai',
     required this.popularityScore,
+    this.userRatingsTotal = 0,
     required this.types,
     required this.confidence,
     this.distanceFromPreviousKm = 0.0,
     this.mayBeClosed = false,
     this.isLocalGem = false,
+    this.section = RecommendationSection.landmark,
+    this.recommendationScore = 50.0,
     this.isAccepted = false,
     this.isRejected = false,
     this.dayIndex,
@@ -111,11 +137,14 @@ class AiSuggestion {
     String? explanation,
     String? source,
     double? popularityScore,
+    int? userRatingsTotal,
     List<String>? types,
     AiConfidence? confidence,
     double? distanceFromPreviousKm,
     bool? mayBeClosed,
     bool? isLocalGem,
+    RecommendationSection? section,
+    double? recommendationScore,
     bool? isAccepted,
     bool? isRejected,
     int? dayIndex,
@@ -135,17 +164,54 @@ class AiSuggestion {
       explanation: explanation ?? this.explanation,
       source: source ?? this.source,
       popularityScore: popularityScore ?? this.popularityScore,
+      userRatingsTotal: userRatingsTotal ?? this.userRatingsTotal,
       types: types ?? this.types,
       confidence: confidence ?? this.confidence,
       distanceFromPreviousKm:
           distanceFromPreviousKm ?? this.distanceFromPreviousKm,
       mayBeClosed: mayBeClosed ?? this.mayBeClosed,
       isLocalGem: isLocalGem ?? this.isLocalGem,
+      section: section ?? this.section,
+      recommendationScore: recommendationScore ?? this.recommendationScore,
       isAccepted: isAccepted ?? this.isAccepted,
       isRejected: isRejected ?? this.isRejected,
       dayIndex: dayIndex ?? this.dayIndex,
     );
   }
+}
+
+// ---------------------------------------------------------------------------
+// AiRecommendationSet
+// ---------------------------------------------------------------------------
+
+/// The grouped output of the AI recommendation engine.
+/// Each list is pre-sorted highest score first.
+class AiRecommendationSet {
+  /// Must-See Landmarks: iconic tourist attractions, museums, monuments
+  final List<AiSuggestion> landmarks;
+
+  /// Local Gems: high-rated but low-footprint places loved by locals
+  final List<AiSuggestion> localGems;
+
+  /// Food & Drinks: restaurants and/or cafes
+  final List<AiSuggestion> food;
+
+  const AiRecommendationSet({
+    required this.landmarks,
+    required this.localGems,
+    required this.food,
+  });
+
+  /// All suggestions flattened into a single list (for apply-to-itinerary logic)
+  List<AiSuggestion> get allSuggestions =>
+      [...landmarks, ...localGems, ...food];
+
+  /// All accepted suggestions across all sections
+  List<AiSuggestion> get accepted =>
+      allSuggestions.where((s) => s.isAccepted).toList();
+
+  bool get isEmpty =>
+      landmarks.isEmpty && localGems.isEmpty && food.isEmpty;
 }
 
 // ---------------------------------------------------------------------------
@@ -159,6 +225,7 @@ class AiGenerationOptions {
   final bool leaveFreetime;
   final bool familyFriendly;
   final bool localGems;
+  final ExplorationStyle explorationStyle;
 
   const AiGenerationOptions({
     this.includeRestaurants = true,
@@ -167,6 +234,7 @@ class AiGenerationOptions {
     this.leaveFreetime = false,
     this.familyFriendly = false,
     this.localGems = false,
+    this.explorationStyle = ExplorationStyle.insideCity,
   });
 
   AiGenerationOptions copyWith({
@@ -176,6 +244,7 @@ class AiGenerationOptions {
     bool? leaveFreetime,
     bool? familyFriendly,
     bool? localGems,
+    ExplorationStyle? explorationStyle,
   }) {
     return AiGenerationOptions(
       includeRestaurants: includeRestaurants ?? this.includeRestaurants,
@@ -184,6 +253,7 @@ class AiGenerationOptions {
       leaveFreetime: leaveFreetime ?? this.leaveFreetime,
       familyFriendly: familyFriendly ?? this.familyFriendly,
       localGems: localGems ?? this.localGems,
+      explorationStyle: explorationStyle ?? this.explorationStyle,
     );
   }
 }

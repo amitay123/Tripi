@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -161,7 +162,7 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                         target: _getDayInitialLocation(day),
                         zoom: 12,
                       ),
-                      markers: _createDayMarkers(day),
+                      markers: _createDayMarkers(day, trip),
                       polylines: _createPolylines(day),
                       onMapCreated: (controller) {
                         _fitBounds(controller, day);
@@ -240,15 +241,43 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
     return const LatLng(51.5074, -0.1278);
   }
 
-  Set<Marker> _createDayMarkers(TripDay day) {
+  Set<Marker> _createDayMarkers(TripDay day, [Trip? trip]) {
+    // Resolve city centre for distance check
+    double? cityLat;
+    double? cityLng;
+    if (trip != null) {
+      for (final d in trip.days) {
+        for (final a in d.activities) {
+          if (a.lat != null && a.lng != null) {
+            cityLat = a.lat;
+            cityLng = a.lng;
+            break;
+          }
+        }
+        if (cityLat != null) break;
+      }
+    }
+
     Set<Marker> markers = {};
     for (int i = 0; i < day.activities.length; i++) {
       final activity = day.activities[i];
       if (activity.lat != null && activity.lng != null) {
+        // Determine pin hue: amber for outside-city (>12 km), default blue
+        double hue = BitmapDescriptor.hueAzure;
+        if (cityLat != null && cityLng != null) {
+          final distKm = _haversineKm(
+            cityLat, cityLng,
+            activity.lat!, activity.lng!,
+          );
+          if (distKm > 12.0) {
+            hue = BitmapDescriptor.hueOrange;
+          }
+        }
         markers.add(
           Marker(
             markerId: MarkerId(activity.id),
             position: LatLng(activity.lat!, activity.lng!),
+            icon: BitmapDescriptor.defaultMarkerWithHue(hue),
             infoWindow: InfoWindow(
               title: '${i + 1}. ${activity.title}',
               snippet: activity.address,
@@ -258,6 +287,17 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
       }
     }
     return markers;
+  }
+
+  static double _haversineKm(
+      double lat1, double lng1, double lat2, double lng2) {
+    const r = 6371.0;
+    final dLat = (lat2 - lat1) * pi / 180;
+    final dLng = (lng2 - lng1) * pi / 180;
+    final a = sin(dLat / 2) * sin(dLat / 2) +
+        cos(lat1 * pi / 180) * cos(lat2 * pi / 180) *
+            sin(dLng / 2) * sin(dLng / 2);
+    return r * 2 * atan2(sqrt(a), sqrt(1 - a));
   }
 
   Set<Polyline> _createPolylines(TripDay day) {
@@ -930,15 +970,16 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => AiPlanningOptionsSheet(
-        onGenerate: (options) {
+        // In itinerary screen, we already have a selected day
+        maxDays: 1, 
+        onGenerate: (_, options) {
           final tripProvider = context.read<TripProvider>();
           final trip = tripProvider.getTripById(widget.tripId);
           if (trip == null) return;
 
           // Start generation
-          context.read<AiProvider>().generateDailyItinerary(
+          context.read<AiProvider>().generateRecommendations(
             trip: trip,
-            dayIndex: dayIndex,
             options: options,
           );
 

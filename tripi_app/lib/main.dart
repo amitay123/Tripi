@@ -8,6 +8,8 @@ import 'theme/tripi_theme.dart';
 import 'services/user_preference_service.dart';
 import 'services/visited_places_registry.dart';
 import 'services/ai_trip_service.dart';
+import 'services/places_service.dart';
+import 'services/ai/real_place_discovery_service.dart';
 import 'providers/ai_provider.dart';
 import 'providers/booking_provider.dart';
 import 'providers/trip_provider.dart';
@@ -76,7 +78,11 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => UserPreferenceService()),
         Provider(create: (_) => VisitedPlacesRegistry()),
         ProxyProvider2<UserPreferenceService, VisitedPlacesRegistry, AiTripService>(
-          update: (_, prefs, visited, __) => AiTripService(prefs, visited),
+          update: (_, prefs, visited, __) => AiTripService(
+            prefs,
+            visited,
+            RealPlaceDiscoveryService(PlacesService()),
+          ),
         ),
         ChangeNotifierProxyProvider3<AiTripService, UserPreferenceService, TripProvider, AiProvider>(
           create: (context) => AiProvider(

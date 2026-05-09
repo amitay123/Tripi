@@ -267,17 +267,14 @@ class _TripsScreenState extends State<TripsScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => AiPlanningOptionsSheet(
-        onGenerate: (options) {
-          // Default to Day 1 when starting from main screen
-          const dayIndex = 1;
-
+        maxDays: trip.durationDays,
+        onGenerate: (dayIndex, options) {
           // Reset provider to clear any stale state before generation
           context.read<AiProvider>().reset();
 
           // Kick off generation
-          context.read<AiProvider>().generateDailyItinerary(
+          context.read<AiProvider>().generateRecommendations(
                 trip: trip,
-                dayIndex: dayIndex,
                 options: options,
               );
 

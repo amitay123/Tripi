@@ -1,16 +1,172 @@
 import 'dart:math';
 import '../../models/ai_models.dart';
 
-/// Sorts suggestions by the four-priority order defined in the plan:
-///   1. Geographic efficiency (nearest-neighbor clustering)
-///   2. User preference score (from UserPreferenceService weights)
-///   3. Popularity (popularityScore field)
-///   4. Pacing balance (alternate high/low intensity)
-///   5. Toggle-based score modifiers (localGems, focusPopular, familyFriendly)
+/// Ranks suggestions within each recommendation section independently.
+///
+/// Priority order per section:
+///   1. Relevance to active toggles
+///   2. Tourist popularity / review count
+///   3. Rating
+///   4. Geographic efficiency (nearest-neighbour within section)
 class OptimizationEngine {
-  /// [anchorLat]/[anchorLng]: starting location for geographic sorting.
-  /// [categoryWeights]: category → preference weight (0.0–1.0).
-  /// [options]: user-selected generation toggles that modulate scores.
+  // ── Section-aware ranking ─────────────────────────────────────────────────
+
+  /// Ranks each section of [set] independently and returns a new
+  /// [AiRecommendationSet] with sections sorted highest-score first.
+  static AiRecommendationSet rankSections({
+    required AiRecommendationSet set,
+    required AiGenerationOptions options,
+    double? anchorLat,
+    double? anchorLng,
+  }) {
+    final landmarks = _rankSection(
+      set.landmarks,
+      section: RecommendationSection.landmark,
+      options: options,
+      anchorLat: anchorLat,
+      anchorLng: anchorLng,
+      maxResults: options.leaveFreetime ? 5 : 10,
+    );
+
+    final localGems = _rankSection(
+      set.localGems,
+      section: RecommendationSection.localGem,
+      options: options,
+      anchorLat: anchorLat,
+      anchorLng: anchorLng,
+      maxResults: options.leaveFreetime ? 3 : 8,
+    );
+
+    final food = _rankFoodSection(
+      set.food,
+      options: options,
+      anchorLat: anchorLat,
+      anchorLng: anchorLng,
+      maxResults: options.leaveFreetime ? 4 : 8,
+    );
+
+    return AiRecommendationSet(
+      landmarks: landmarks,
+      localGems: localGems,
+      food: food,
+    );
+  }
+
+  static List<AiSuggestion> _rankSection(
+    List<AiSuggestion> suggestions, {
+    required RecommendationSection section,
+    required AiGenerationOptions options,
+    double? anchorLat,
+    double? anchorLng,
+    int maxResults = 10,
+  }) {
+    if (suggestions.isEmpty) return [];
+
+    final geoSorted = _nearestNeighborSort(suggestions, anchorLat, anchorLng);
+
+    final scored = geoSorted.asMap().entries.map((entry) {
+      final i = entry.key;
+      final s = entry.value;
+
+      double score = 0;
+
+      // Rating weight (0–5 → 0–40)
+      score += s.popularityScore * 8.0;
+
+      // Review count (log-scaled, 0–30)
+      score += _logScale(s.userRatingsTotal, max: 30);
+
+      // Geographic proximity bonus (0–15)
+      score += (geoSorted.length - i) / geoSorted.length * 15;
+
+      // Section-specific toggle modifiers
+      if (section == RecommendationSection.landmark) {
+        if (options.focusPopular) {
+          // Strongly boost iconic places
+          if (s.userRatingsTotal >= 5000) {
+            score += 20;
+          } else if (s.userRatingsTotal >= 1000) {
+            score += 10;
+          }
+          if (s.popularityScore >= 4.7) {
+            score += 8;
+          }
+        }
+        if (options.familyFriendly) {
+          const familyCats = {'Museum', 'Park', 'Zoo', 'Aquarium', 'Amusement Park'};
+          if (familyCats.contains(s.category)) score += 10;
+        }
+        // Penalise bars/nightlife in landmark section if family mode
+        if (options.familyFriendly && s.category == 'Bar') score -= 30;
+      }
+
+      if (section == RecommendationSection.localGem) {
+        // Local gems: quality > quantity
+        score += s.popularityScore * 5; // extra weight on rating
+        if (s.isLocalGem) score += 15;
+        // Penalise too-famous places (not really a gem)
+        if (s.userRatingsTotal > 500) score -= 15;
+        if (options.localGems) score += 10; // bonus when toggle is active
+      }
+
+      return _ScoredSuggestion(
+        s.copyWith(recommendationScore: score.clamp(0, 100)),
+        score,
+      );
+    }).toList()
+      ..sort((a, b) => b.score.compareTo(a.score));
+
+    return scored.take(maxResults).map((e) {
+      final s = e.suggestion;
+      final confidence = _scoreToConfidence(e.score);
+      return s.copyWith(confidence: confidence);
+    }).toList();
+  }
+
+  static List<AiSuggestion> _rankFoodSection(
+    List<AiSuggestion> suggestions, {
+    required AiGenerationOptions options,
+    double? anchorLat,
+    double? anchorLng,
+    int maxResults = 8,
+  }) {
+    if (suggestions.isEmpty) return [];
+
+    // Separate restaurants and cafes
+    final restaurants =
+        suggestions.where((s) => s.category == 'Restaurant').toList();
+    final cafes = suggestions
+        .where((s) => s.category == 'Cafe')
+        .toList();
+
+    List<AiSuggestion> pool;
+    if (options.includeRestaurants && options.includeCafes) {
+      // Balanced mix: alternate restaurant/cafe
+      pool = _interleave(
+        _sortByScore(restaurants),
+        _sortByScore(cafes),
+      );
+    } else if (options.includeRestaurants) {
+      pool = _sortByScore(restaurants);
+    } else {
+      pool = _sortByScore(cafes);
+    }
+
+    final geoSorted = _nearestNeighborSort(pool, anchorLat, anchorLng);
+
+    return geoSorted.take(maxResults).toList().asMap().entries.map((e) {
+      final s = e.value;
+      final score = s.popularityScore * 8 + _logScale(s.userRatingsTotal, max: 30);
+      final confidence = _scoreToConfidence(score);
+      return s.copyWith(
+        confidence: confidence,
+        recommendationScore: score.clamp(0, 100),
+      );
+    }).toList();
+  }
+
+  // ── Legacy flat rank (kept for backward compat) ───────────────────────────
+
   static List<AiSuggestion> rank({
     required List<AiSuggestion> suggestions,
     required Map<String, double> categoryWeights,
@@ -20,45 +176,38 @@ class OptimizationEngine {
   }) {
     if (suggestions.isEmpty) return suggestions;
 
-    // Step 1: geographic nearest-neighbor sort
     final geoSorted = _nearestNeighborSort(suggestions, anchorLat, anchorLng);
 
-    // Step 2: composite score per suggestion
     final ranked = geoSorted.asMap().entries.map((entry) {
       final i = entry.key;
       final s = entry.value;
 
-      // Base scores
       final prefScore = (categoryWeights[s.category] ?? 0.5) * 40;
       final popScore = (s.popularityScore / 5.0) * 30;
       final geoBonus = (geoSorted.length - i) / geoSorted.length * 20;
 
-      // Pacing: light activities get a bonus in odd positions
-      final isLight = ['Cafe', 'Park', 'Garden', 'Viewpoint'].contains(s.category);
+      final isLight =
+          ['Cafe', 'Park', 'Garden', 'Viewpoint'].contains(s.category);
       final pacingBonus = (i.isOdd && isLight) ? 10.0 : 0.0;
 
-      // ── Toggle-based score modifiers ──────────────────────────────────────
       double toggleBonus = 0.0;
-
       if (options != null) {
-        // Local Gems: boost hidden gems, penalize very mainstream places
         if (options.localGems) {
           if (s.isLocalGem) toggleBonus += 15.0;
           if (s.popularityScore >= 4.8) toggleBonus -= 8.0;
         }
-
-        // Must-See Landmarks: boost high-popularity places
         if (options.focusPopular) {
           if (s.popularityScore >= 4.7) toggleBonus += 12.0;
         }
-
-        // Family Friendly: give a nudge to family-safe categories
         if (options.familyFriendly) {
-          const familyCategories = {'Park', 'Museum', 'Historical Site', 'Market'};
+          const familyCategories = {
+            'Park',
+            'Museum',
+            'Historical Site',
+            'Market'
+          };
           if (familyCategories.contains(s.category)) toggleBonus += 8.0;
         }
-
-        // Restaurants & Cafes: if enabled, bump their priority slightly
         if (options.includeRestaurants && s.category == 'Restaurant') {
           toggleBonus += 5.0;
         }
@@ -67,19 +216,56 @@ class OptimizationEngine {
         }
       }
 
-      final totalScore = prefScore + popScore + geoBonus + pacingBonus + toggleBonus;
+      final totalScore =
+          prefScore + popScore + geoBonus + pacingBonus + toggleBonus;
       return _ScoredSuggestion(s, totalScore);
     }).toList()
       ..sort((a, b) => b.score.compareTo(a.score));
 
-    // Step 3: Re-sort for pacing — alternate high/low intensity
     return _balancePacing(ranked.map((e) => e.suggestion).toList());
   }
 
+  // ── Helpers ───────────────────────────────────────────────────────────────
 
-  // ---------------------------------------------------------------------------
-  // Nearest-Neighbor Geographic Sort
-  // ---------------------------------------------------------------------------
+  static List<AiSuggestion> _sortByScore(List<AiSuggestion> list) {
+    final copy = List<AiSuggestion>.from(list);
+    copy.sort((a, b) {
+      final sa = a.popularityScore * 8 + _logScale(a.userRatingsTotal, max: 30);
+      final sb = b.popularityScore * 8 + _logScale(b.userRatingsTotal, max: 30);
+      return sb.compareTo(sa);
+    });
+    return copy;
+  }
+
+  static List<AiSuggestion> _interleave(
+      List<AiSuggestion> a, List<AiSuggestion> b) {
+    final result = <AiSuggestion>[];
+    final len = max(a.length, b.length);
+    for (int i = 0; i < len; i++) {
+      if (i < a.length) result.add(a[i]);
+      if (i < b.length) result.add(b[i]);
+    }
+    return result;
+  }
+
+  /// Log-scaled popularity: ln(reviews+1) / ln(maxReviews+1) * maxScore
+  static double _logScale(int reviews, {required double max}) {
+    const maxReviews = 50000;
+    if (reviews <= 0) return 0;
+    return (log(reviews + 1) / log(maxReviews + 1)) * max;
+  }
+
+  static AiConfidence _scoreToConfidence(double score) {
+    if (score >= 70) {
+      return AiConfidence.highlyRecommended;
+    }
+    if (score >= 45) {
+      return AiConfidence.greatMatch;
+    }
+    return AiConfidence.popularChoice;
+  }
+
+  // ── Nearest-Neighbor Geographic Sort ─────────────────────────────────────
 
   static List<AiSuggestion> _nearestNeighborSort(
     List<AiSuggestion> suggestions,
@@ -108,7 +294,6 @@ class OptimizationEngine {
         }
       }
       final chosen = remaining.removeAt(bestIdx);
-      // Annotate distance from previous
       final dist = (chosen.lat != null && chosen.lng != null)
           ? _haversine(curLat, curLng, chosen.lat!, chosen.lng!)
           : 0.0;
@@ -119,22 +304,22 @@ class OptimizationEngine {
     return sorted;
   }
 
-  /// Haversine formula — great-circle distance in km
   static double _haversine(
       double lat1, double lng1, double lat2, double lng2) {
     const r = 6371.0;
     final dLat = _toRad(lat2 - lat1);
     final dLng = _toRad(lng2 - lng1);
     final a = sin(dLat / 2) * sin(dLat / 2) +
-        cos(_toRad(lat1)) * cos(_toRad(lat2)) * sin(dLng / 2) * sin(dLng / 2);
+        cos(_toRad(lat1)) *
+            cos(_toRad(lat2)) *
+            sin(dLng / 2) *
+            sin(dLng / 2);
     return r * 2 * atan2(sqrt(a), sqrt(1 - a));
   }
 
   static double _toRad(double deg) => deg * pi / 180;
 
-  // ---------------------------------------------------------------------------
-  // Pacing Balance
-  // ---------------------------------------------------------------------------
+  // ── Pacing Balance (legacy) ───────────────────────────────────────────────
 
   static List<AiSuggestion> _balancePacing(List<AiSuggestion> suggestions) {
     const lightCategories = {'Cafe', 'Park', 'Garden', 'Viewpoint', 'Beach'};
@@ -150,7 +335,6 @@ class OptimizationEngine {
             !heavyCategories.contains(s.category))
         .toList();
 
-    // Interleave: heavy → other → light → heavy → ...
     final result = <AiSuggestion>[];
     int h = 0, o = 0, l = 0;
     final total = suggestions.length;

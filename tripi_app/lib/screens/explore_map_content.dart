@@ -1268,11 +1268,13 @@ class _ExploreContentState extends State<ExploreContent> {
                                         _searchResultPlaceId = null; // Clear search highlight
                                         _selectedActivity = null; // Clear activity bubble
                                         _selectedActivityTrip = null;
+                                        _isDetailsSheetOpen = false;
                                         _selectedPlace = null; // Clear selected place
                                         _searchResults = [];
                                         _searchController.clear();
                                       });
                                       _searchFocusNode.unfocus();
+                                      _updateTripMarkers(trips, trip);
                                       if (trip != null) {
                                         _fitTripBounds(trip);
                                       } else if (trips.isNotEmpty) {

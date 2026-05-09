@@ -20,11 +20,13 @@ class AiProvider extends ChangeNotifier {
   AiGenerationStatus _status = AiGenerationStatus.idle;
   AiGenerationStatus get status => _status;
 
+  /// Grouped recommendations — the primary data model
+  AiRecommendationSet? _recommendations;
+  AiRecommendationSet? get recommendations => _recommendations;
+
+  /// Legacy flat list — kept for the existing itinerary application path
   List<AiSuggestion> _suggestions = [];
   List<AiSuggestion> get suggestions => _suggestions;
-
-  AiDayBudget? _currentBudget;
-  AiDayBudget? get currentBudget => _currentBudget;
 
   AiGenerationOptions _currentOptions = const AiGenerationOptions();
   AiGenerationOptions get currentOptions => _currentOptions;
@@ -32,9 +34,57 @@ class AiProvider extends ChangeNotifier {
   String? _error;
   String? get error => _error;
 
-  // -------------------------------------------------------------------------
-  // Generation
-  // -------------------------------------------------------------------------
+  // ── Computed helpers ───────────────────────────────────────────────────────
+
+  /// All suggestions across all sections (landmarks + gems + food)
+  List<AiSuggestion> get allSuggestions =>
+      _recommendations?.allSuggestions ?? _suggestions;
+
+  /// Accepted items across all sections
+  List<AiSuggestion> get acceptedSuggestions =>
+      allSuggestions.where((s) => s.isAccepted).toList();
+
+  int get acceptedCount => acceptedSuggestions.length;
+
+  // ── Primary: Grouped Recommendation Generation ────────────────────────────
+
+  /// Generates the three-section recommendation set (main flow).
+  Future<void> generateRecommendations({
+    required Trip trip,
+    required AiGenerationOptions options,
+  }) async {
+    if (_isGenerating) return;
+    _isGenerating = true;
+
+    _status = AiGenerationStatus.loading;
+    _recommendations = null;
+    _suggestions = [];
+    _error = null;
+    _currentOptions = options;
+    notifyListeners();
+
+    try {
+      _visitedRegistry.clear();
+      _visitedRegistry.seedFromTrips(_tripProvider.trips);
+      _visitedRegistry.seedFromPreferences(_prefs);
+
+      final result = await _aiService.generateRecommendations(
+        trip: trip,
+        options: options,
+      );
+
+      _recommendations = result;
+      _status = AiGenerationStatus.ready;
+    } catch (e) {
+      _status = AiGenerationStatus.error;
+      _error = e.toString();
+    } finally {
+      _isGenerating = false;
+      notifyListeners();
+    }
+  }
+
+  // ── Legacy: Flat Itinerary Generation ─────────────────────────────────────
 
   Future<void> generateDailyItinerary({
     required Trip trip,
@@ -42,18 +92,17 @@ class AiProvider extends ChangeNotifier {
     AiGenerationOptions? options,
     RegenerationStyle? style,
   }) async {
-    // Prevent duplicate concurrent calls
     if (_isGenerating) return;
     _isGenerating = true;
 
     _status = AiGenerationStatus.loading;
     _suggestions = [];
+    _recommendations = null;
     _error = null;
     if (options != null) _currentOptions = options;
     notifyListeners();
 
     try {
-      // Clear and re-seed registry to ensure fresh state for this attempt
       _visitedRegistry.clear();
       _visitedRegistry.seedFromTrips(_tripProvider.trips);
       _visitedRegistry.seedFromPreferences(_prefs);
@@ -76,8 +125,6 @@ class AiProvider extends ChangeNotifier {
     }
   }
 
-  /// Generates suggestions across ALL days of a trip.
-  /// Merges all days into a single flat list of [AiSuggestion] with dayIndex set.
   Future<void> generateTripItinerary({
     required Trip trip,
     AiGenerationOptions? options,
@@ -87,6 +134,7 @@ class AiProvider extends ChangeNotifier {
 
     _status = AiGenerationStatus.loading;
     _suggestions = [];
+    _recommendations = null;
     _error = null;
     if (options != null) _currentOptions = options;
     notifyListeners();
@@ -114,7 +162,6 @@ class AiProvider extends ChangeNotifier {
           dayIndex: day.dayIndex,
           options: _currentOptions,
         );
-        // Tag each suggestion with its day
         allSuggestions.addAll(
           daySuggestions.map((s) => s.copyWith(dayIndex: day.dayIndex)),
         );
@@ -131,53 +178,85 @@ class AiProvider extends ChangeNotifier {
     }
   }
 
-  // -------------------------------------------------------------------------
-  // Actions
-  // -------------------------------------------------------------------------
+  // ── Accept / Reject (works across all sections) ───────────────────────────
 
   void toggleAccept(String id) {
-    final idx = _suggestions.indexWhere((s) => s.id == id);
-    if (idx != -1) {
-      _suggestions[idx].isAccepted = !_suggestions[idx].isAccepted;
-      if (_suggestions[idx].isAccepted) _suggestions[idx].isRejected = false;
-      notifyListeners();
+    bool found = false;
+    if (_recommendations != null) {
+      for (final section in [
+        _recommendations!.landmarks,
+        _recommendations!.localGems,
+        _recommendations!.food,
+      ]) {
+        final idx = section.indexWhere((s) => s.id == id);
+        if (idx != -1) {
+          section[idx].isAccepted = !section[idx].isAccepted;
+          if (section[idx].isAccepted) section[idx].isRejected = false;
+          found = true;
+          break;
+        }
+      }
     }
+    if (!found) {
+      final idx = _suggestions.indexWhere((s) => s.id == id);
+      if (idx != -1) {
+        _suggestions[idx].isAccepted = !_suggestions[idx].isAccepted;
+        if (_suggestions[idx].isAccepted) _suggestions[idx].isRejected = false;
+      }
+    }
+    notifyListeners();
   }
 
   void toggleReject(String id) {
-    final idx = _suggestions.indexWhere((s) => s.id == id);
-    if (idx != -1) {
-      _suggestions[idx].isRejected = !_suggestions[idx].isRejected;
-      if (_suggestions[idx].isRejected) _suggestions[idx].isAccepted = false;
-      notifyListeners();
+    bool found = false;
+    if (_recommendations != null) {
+      for (final section in [
+        _recommendations!.landmarks,
+        _recommendations!.localGems,
+        _recommendations!.food,
+      ]) {
+        final idx = section.indexWhere((s) => s.id == id);
+        if (idx != -1) {
+          section[idx].isRejected = !section[idx].isRejected;
+          if (section[idx].isRejected) section[idx].isAccepted = false;
+          found = true;
+          break;
+        }
+      }
     }
+    if (!found) {
+      final idx = _suggestions.indexWhere((s) => s.id == id);
+      if (idx != -1) {
+        _suggestions[idx].isRejected = !_suggestions[idx].isRejected;
+        if (_suggestions[idx].isRejected) _suggestions[idx].isAccepted = false;
+      }
+    }
+    notifyListeners();
   }
 
-  /// Applies accepted suggestions to the actual trip itinerary.
+  // ── Apply to Itinerary ────────────────────────────────────────────────────
+
   Future<void> applyToItinerary(Trip trip, int dayIndex) async {
     _status = AiGenerationStatus.applying;
     notifyListeners();
 
-    final accepted = _suggestions.where((s) => s.isAccepted).toList();
+    final accepted = acceptedSuggestions;
     if (accepted.isEmpty) {
       _status = AiGenerationStatus.done;
       notifyListeners();
       return;
     }
 
-    // Record for learning
     _prefs.recordAccepted(accepted);
-    final rejected = _suggestions.where((s) => s.isRejected).toList();
+    final rejected =
+        allSuggestions.where((s) => s.isRejected).toList();
     _prefs.recordRejected(rejected);
     await _prefs.save(_tripProvider.userId ?? '');
 
-    // Convert to TripActivities and add to provider
     for (final s in accepted) {
       final activity = Activity(
         id: DateTime.now().millisecondsSinceEpoch.toString() + s.id,
         title: s.name,
-        // category is not directly in Activity but we can pass it to notes or types if needed, 
-        // but here it seems the user meant to use the Activity model
         lat: s.lat,
         lng: s.lng,
         address: s.address ?? '',
@@ -198,6 +277,7 @@ class AiProvider extends ChangeNotifier {
     _isGenerating = false;
     _status = AiGenerationStatus.idle;
     _suggestions = [];
+    _recommendations = null;
     _error = null;
     notifyListeners();
   }

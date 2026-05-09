@@ -5,6 +5,7 @@ import '../services/supabase_service.dart';
 import '../services/mock_data_service.dart';
 import '../services/places_service.dart';
 import 'package:logging/logging.dart';
+import '../services/ai/scheduling_service.dart';
 
 class TripProvider extends ChangeNotifier {
   final _placesService = PlacesService();
@@ -465,5 +466,36 @@ class TripProvider extends ChangeNotifier {
     } catch (e, st) {
       _log.severe('Error persisting trip $tripId', e, st);
     }
+  }
+
+  Future<void> autoScheduleDay(String tripId, int dayIndex) async {
+    final tripIndex = _trips.indexWhere((t) => t.id == tripId);
+    if (tripIndex == -1) return;
+
+    final trip = _trips[tripIndex];
+    final updatedDays = List<TripDay>.from(trip.days);
+    final dayIdx = updatedDays.indexWhere((d) => d.dayIndex == dayIndex);
+    if (dayIdx == -1) return;
+
+    final day = updatedDays[dayIdx];
+    if (day.activities.isEmpty) return;
+
+    // Use current day start time or default to 09:00
+    final dayStartTime = day.startTime ?? '09:00';
+
+    // Optimize using our service
+    final optimizedActivities = AiSchedulingService.optimizeRoute(
+      activities: day.activities,
+      dayStartTime: dayStartTime,
+    );
+
+    updatedDays[dayIdx] = day.copyWith(activities: optimizedActivities);
+    _trips[tripIndex] = trip.copyWith(
+      days: updatedDays,
+      updatedAt: DateTime.now(),
+    );
+
+    notifyListeners();
+    await _persistTrip(tripId);
   }
 }
