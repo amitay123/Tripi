@@ -45,8 +45,6 @@ class _ExploreContentState extends State<ExploreContent> {
   bool _isSearching = false;
   bool _isDetailsSheetOpen = false;
   bool _isRadiusPopupOpen = false;
-  bool _isSchedulePopupDismissed = false;
-  bool _isUpdatingMarkers = false; // Add lock for marker updates
   int _markerUpdateId = 0; // Track latest marker update request
   
   Activity? _selectedActivity;
@@ -184,7 +182,6 @@ class _ExploreContentState extends State<ExploreContent> {
 
     setState(() {
       _isLoading = true;
-      _isSchedulePopupDismissed = false;
     });
     _isSearching = true;
     
@@ -601,7 +598,7 @@ class _ExploreContentState extends State<ExploreContent> {
                     color: Colors.black.withValues(alpha: 0.4),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.close, color: Colors.white, size: 20),
+                  child: const Icon(Icons.close, size: 20, color: Colors.white),
                 ),
               ),
             ),
@@ -1394,79 +1391,9 @@ class _ExploreContentState extends State<ExploreContent> {
               ),
             ),
           ),
-          
-        // 7. Schedule For Me Popup
-        if (_places.isNotEmpty && !_isSchedulePopupDismissed && !_isDetailsSheetOpen && _selectedActivity == null && !_isLoading)
-          Positioned(
-            bottom: 24,
-            left: 16,
-            right: 16,
-            child: PointerInterceptor(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                decoration: BoxDecoration(
-                  color: TripiColors.surfaceContainerLowest,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 15,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    const Expanded(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Found great places!',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                          ),
-                          Text(
-                            'Want to schedule your trip?',
-                            style: TextStyle(color: TripiColors.onSurfaceVariant, fontSize: 12),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    ElevatedButton(
-                      onPressed: () {
-                        // Non-functional for now as requested
-                        debugPrint('Schedule for me clicked');
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: TripiColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                        elevation: 0,
-                      ),
-                      child: const Text('Schedule for me', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: const Icon(Icons.close, size: 18, color: TripiColors.onSurfaceVariant),
-                      onPressed: () {
-                        setState(() {
-                          _isSchedulePopupDismissed = true;
-                        });
-                      },
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
+        ],
+      );
+    }
 
   Widget _buildHotelComparison(PlaceResult place) {
     final pricing = _hotelService.getSimulatedPricing(place.name);

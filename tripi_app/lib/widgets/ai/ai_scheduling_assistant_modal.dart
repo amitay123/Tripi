@@ -38,6 +38,12 @@ class AiSchedulingAssistantModal extends StatefulWidget {
 class _AiSchedulingAssistantModalState extends State<AiSchedulingAssistantModal> {
   bool _isLoading = false;
 
+  @override
+  void initState() {
+    super.initState();
+    debugPrint('AiSchedulingAssistantModal: initState with placeCount=${widget.placeCount}');
+  }
+
   Future<void> _handleSchedule() async {
     setState(() => _isLoading = true);
     try {
@@ -51,12 +57,17 @@ class _AiSchedulingAssistantModalState extends State<AiSchedulingAssistantModal>
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(28, 12, 28, 24),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-      ),
+    debugPrint('AiSchedulingAssistantModal: building with isLoading=$_isLoading');
+    return Material(
+      color: Colors.transparent,
+      child: SafeArea(
+        top: false,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(28, 12, 28, 24),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -72,15 +83,27 @@ class _AiSchedulingAssistantModalState extends State<AiSchedulingAssistantModal>
           ),
 
           // Message
-          const Text(
-            'Schedule this trip for you?',
-            style: TextStyle(
+          Text(
+            widget.placeCount == 1 
+                ? 'Added 1 attraction' 
+                : 'Added ${widget.placeCount} attractions',
+            style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w800,
               color: Color(0xFF1A1A1A),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 8),
+          Text(
+            'Would you like me to schedule them for you?',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 15,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 32),
 
           // Primary Action
           SizedBox(
@@ -134,6 +157,8 @@ class _AiSchedulingAssistantModalState extends State<AiSchedulingAssistantModal>
           ),
         ],
       ),
-    );
+    ),
+  ),
+);
   }
 }

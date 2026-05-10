@@ -6,8 +6,7 @@ import '../providers/ai_provider.dart';
 import '../theme/tripi_colors.dart';
 import '../widgets/ai/ai_generation_loading.dart';
 import '../widgets/ai/ai_recommendation_section.dart';
-import '../widgets/ai/ai_scheduling_assistant_modal.dart';
-import '../providers/trip_provider.dart';
+import '../widgets/ai/ai_options_chip_row.dart';
 
 class AiReviewScreen extends StatefulWidget {
   final Trip trip;
@@ -235,7 +234,8 @@ class _AiReviewScreenState extends State<AiReviewScreen> {
 
   Widget? _buildBottomBar(AiProvider aiProvider) {
     if (aiProvider.status != AiGenerationStatus.ready &&
-        aiProvider.status != AiGenerationStatus.applying) {
+        aiProvider.status != AiGenerationStatus.applying &&
+        aiProvider.status != AiGenerationStatus.done) {
       return null;
     }
 
@@ -303,31 +303,12 @@ class _AiReviewScreenState extends State<AiReviewScreen> {
                 child: ElevatedButton(
                   onPressed: aiProvider.status != AiGenerationStatus.applying
                       ? () async {
-                          final count = acceptedCount;
                           await aiProvider.applyToItinerary(
                               widget.trip, widget.dayIndex);
                           
                           if (mounted) {
-                            final tripProvider = context.read<TripProvider>();
-                            
-                            AiSchedulingAssistantModal.show(
-                              context,
-                              placeCount: count,
-                              onSchedule: () async {
-                                // Trigger optimization
-                                await tripProvider.autoScheduleDay(
-                                    widget.trip.id, widget.dayIndex);
-                                
-                                if (mounted) {
-                                  Navigator.pop(context); // Close modal
-                                  Navigator.pop(context); // Return to trip screen
-                                }
-                              },
-                              onSkip: () {
-                                Navigator.pop(context); // Close modal
-                                Navigator.pop(context); // Return to trip screen
-                              },
-                            );
+                            // After applying, simply return to the trip screen
+                            Navigator.pop(context);
                           }
                         }
                       : null,
@@ -352,7 +333,7 @@ class _AiReviewScreenState extends State<AiReviewScreen> {
                           ),
                         )
                       : const Text(
-                          'Schedule for me',
+                          'Add to Trip',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
