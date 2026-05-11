@@ -247,30 +247,46 @@ class AiProvider extends ChangeNotifier {
       return;
     }
 
-    _prefs.recordAccepted(accepted);
-    final rejected =
-        allSuggestions.where((s) => s.isRejected).toList();
-    _prefs.recordRejected(rejected);
-    await _prefs.save(_tripProvider.userId ?? '');
+    try {
+      // Simulate slightly longer loading for the UI transition
+      // so the user sees the "Scheduling..." steps.
+      await Future.delayed(const Duration(seconds: 3));
 
-    for (final s in accepted) {
-      final activity = Activity(
-        id: DateTime.now().millisecondsSinceEpoch.toString() + s.id,
-        title: s.name,
-        lat: s.lat,
-        lng: s.lng,
-        address: s.address ?? '',
-        placeId: s.placeId,
-        source: 'ai',
-        imageUrl: s.imageUrl,
-        startTime: s.recommendedArrivalTime ?? '09:00',
-        duration: s.estimatedDuration,
+      final scheduled = await _aiService.scheduleSelectedSuggestions(
+        selections: accepted,
+        trip: trip,
+        dayIndex: dayIndex,
       );
-      await _tripProvider.addActivity(trip.id, dayIndex, activity);
-    }
 
-    _status = AiGenerationStatus.done;
-    notifyListeners();
+      _prefs.recordAccepted(accepted);
+      final rejected =
+          allSuggestions.where((s) => s.isRejected).toList();
+      _prefs.recordRejected(rejected);
+      await _prefs.save(_tripProvider.userId ?? '');
+
+      for (final s in scheduled) {
+        final activity = Activity(
+          id: DateTime.now().millisecondsSinceEpoch.toString() + s.id,
+          title: s.name,
+          lat: s.lat,
+          lng: s.lng,
+          address: s.address ?? '',
+          placeId: s.placeId,
+          source: 'ai',
+          imageUrl: s.imageUrl,
+          startTime: s.recommendedArrivalTime ?? '09:00',
+          duration: s.estimatedDuration,
+        );
+        await _tripProvider.addActivity(trip.id, dayIndex, activity);
+      }
+
+      _status = AiGenerationStatus.done;
+    } catch (e) {
+      _status = AiGenerationStatus.error;
+      _error = e.toString();
+    } finally {
+      notifyListeners();
+    }
   }
 
   void reset() {

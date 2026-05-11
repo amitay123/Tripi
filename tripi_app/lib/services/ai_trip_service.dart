@@ -231,6 +231,61 @@ class AiTripService {
     }
   }
 
+  /// Takes a list of user-selected suggestions and schedules them into a time-aware day
+  Future<List<AiSuggestion>> scheduleSelectedSuggestions({
+    required List<AiSuggestion> selections,
+    required Trip trip,
+    required int dayIndex,
+    String? anchorTime,
+  }) async {
+    debugPrint('AI: Scheduling ${selections.length} selected suggestions for Day $dayIndex');
+
+    double? anchorLat;
+    double? anchorLng;
+
+    final currentDay = trip.days.firstWhere(
+      (d) => d.dayIndex == dayIndex,
+      orElse: () => trip.days.isNotEmpty
+          ? trip.days[0]
+          : TripDay(dayIndex: dayIndex, date: DateTime.now()),
+    );
+
+    if (currentDay.activities.isNotEmpty) {
+      final last = currentDay.activities.last;
+      anchorLat = last.lat;
+      anchorLng = last.lng;
+    }
+
+    // 1. Rank & order geographically based on anchor
+    var optimized = OptimizationEngine.rank(
+      suggestions: selections,
+      categoryWeights: _prefs.getWeightedCategoryScores(),
+      anchorLat: anchorLat,
+      anchorLng: anchorLng,
+      options: const AiGenerationOptions(),
+    );
+
+    // 2. Assign time blocks and validate time budget
+    final budgetResult = TimeBudgetValidator.validate(
+      optimized,
+      dayStartTime: anchorTime ?? '09:00',
+    );
+    var validated = budgetResult.suggestions;
+
+    // 3. Fill gaps (meals, transit)
+    validated = GapFiller.fill(
+      suggestions: validated,
+      dayStartTime: anchorTime ?? '09:00',
+      anchorLat: anchorLat,
+      anchorLng: anchorLng,
+    );
+
+    // 4. Validate opening hours
+    final withHours = OpeningHoursValidator.validate(validated);
+
+    return withHours;
+  }
+
   // ignore: unused_element
   AiSuggestion _mapToSuggestion(Map<String, dynamic> p) {
     return AiSuggestion(

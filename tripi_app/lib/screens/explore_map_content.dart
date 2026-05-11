@@ -1500,7 +1500,7 @@ class _ExploreContentState extends State<ExploreContent> {
     if (!mounted) return;
     
     final int requestId = ++_markerUpdateId;
-    _isUpdatingMarkers = true;
+
 
     try {
       final List<Marker> newMarkers = [];
@@ -1649,12 +1649,12 @@ class _ExploreContentState extends State<ExploreContent> {
       if (!mounted) return;
       setState(() {
         _tripMarkers = newMarkers.toSet();
-        _isUpdatingMarkers = false;
+
       });
     } catch (e) {
       debugPrint('Error updating trip markers: $e');
       if (mounted && requestId == _markerUpdateId) {
-        setState(() => _isUpdatingMarkers = false);
+
       }
     }
   }

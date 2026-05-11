@@ -5,8 +5,8 @@ import '../models/models.dart';
 import '../providers/ai_provider.dart';
 import '../theme/tripi_colors.dart';
 import '../widgets/ai/ai_generation_loading.dart';
+import '../widgets/ai/ai_scheduling_loading_overlay.dart';
 import '../widgets/ai/ai_recommendation_section.dart';
-import '../widgets/ai/ai_options_chip_row.dart';
 
 class AiReviewScreen extends StatefulWidget {
   final Trip trip;
@@ -31,7 +31,17 @@ class _AiReviewScreenState extends State<AiReviewScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: _buildAppBar(aiProvider, theme),
-      body: _buildBody(aiProvider, theme),
+      body: Stack(
+        children: [
+          _buildBody(aiProvider, theme),
+          if (aiProvider.status == AiGenerationStatus.applying)
+            Positioned.fill(
+              child: AiSchedulingLoadingOverlay(
+                destination: widget.trip.city ?? widget.trip.country,
+              ),
+            ),
+        ],
+      ),
       bottomNavigationBar: _buildBottomBar(aiProvider),
     );
   }
@@ -243,104 +253,102 @@ class _AiReviewScreenState extends State<AiReviewScreen> {
     if (acceptedCount == 0) return const SizedBox.shrink();
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
       decoration: BoxDecoration(
         color: Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 14,
-            offset: const Offset(0, -4),
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 24,
+            offset: const Offset(0, -8),
           ),
         ],
       ),
       child: SafeArea(
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Selection count
-            Expanded(
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.check_circle_rounded,
-                    size: 20,
-                    color: TripiColors.primary,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '$acceptedCount Selected',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 15,
-                            color: Color(0xFF1A1A1A),
-                          ),
-                        ),
-                        Text(
-                          'Adding to Day ${widget.dayIndex + 1}',
-                          style: TextStyle(
-                            color: Colors.grey[500],
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+            const Text(
+              'Ready to build your day?',
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 20,
+                color: Color(0xFF1A1A1A),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'The AI assistant will organize your selected places into an optimized schedule.',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 14,
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
               ),
             ),
-            const SizedBox(width: 16),
-            // Apply button
-            AnimatedSize(
-              duration: const Duration(milliseconds: 200),
-              child: SizedBox(
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: aiProvider.status != AiGenerationStatus.applying
-                      ? () async {
-                          await aiProvider.applyToItinerary(
-                              widget.trip, widget.dayIndex);
-                          
-                          if (mounted) {
-                            // After applying, simply return to the trip screen
-                            Navigator.pop(context);
-                          }
-                        }
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: TripiColors.primary,
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: Colors.grey[200],
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                  ),
-                  child: aiProvider.status == AiGenerationStatus.applying
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : const Text(
-                          'Add to Trip',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                          ),
-                        ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: aiProvider.status != AiGenerationStatus.applying
+                  ? () async {
+                      // Trigger Generation (STEP 2)
+                      // Temporary logic until provider is updated:
+                      // await aiProvider.generateScheduleFromSelections(widget.trip, widget.dayIndex);
+                      // Navigator.pop(context);
+                      await aiProvider.applyToItinerary(
+                          widget.trip, widget.dayIndex);
+                      
+                      if (mounted) {
+                        Navigator.pop(context);
+                      }
+                    }
+                  : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: TripiColors.primary,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: Colors.grey[200],
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
                 ),
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 18),
               ),
+              child: aiProvider.status == AiGenerationStatus.applying
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Text(
+                      'Generate My Day',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () {
+                // For now, doing nothing just allows the user to continue scrolling the list
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.grey[600],
+                textStyle: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: const Text('Continue Editing'),
             ),
           ],
         ),
