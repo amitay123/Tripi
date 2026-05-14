@@ -188,7 +188,7 @@ class AiSuggestionCard extends StatelessWidget {
                         ),
                         child: Text(
                           suggestion.recommendedArrivalTime!,
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: TripiColors.primary,
                             fontWeight: FontWeight.bold,
                             fontSize: 12,
@@ -208,7 +208,7 @@ class AiSuggestionCard extends StatelessWidget {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.auto_awesome,
+                      const Icon(Icons.auto_awesome,
                           size: 16, color: TripiColors.primary),
                       const SizedBox(width: 8),
                       Expanded(

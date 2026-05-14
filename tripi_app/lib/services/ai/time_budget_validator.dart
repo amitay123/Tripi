@@ -63,7 +63,6 @@ class TimeBudgetValidator {
 
     final initialTotalUsed =
         activityMinutes + travelMinutes + transitionMinutes + mealMinutes;
-    final freeMinutes = max(0, _totalDayMinutes - initialTotalUsed);
     final isRealistic = initialTotalUsed <= _totalDayMinutes;
 
     String? warning;

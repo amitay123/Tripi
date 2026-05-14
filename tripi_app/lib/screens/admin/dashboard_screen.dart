@@ -130,9 +130,9 @@ class DashboardScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildStatItem('45,802', 'TOTAL TRIPS'),
-              _buildStatItem('1,204', 'ACTIVE TRIPS'),
-              _buildStatItem('+18.2%', 'MONTHLY GROWTH', isPositive: true),
+              _buildStatItem('${stats.totalTrips}', 'TOTAL TRIPS'),
+              _buildStatItem('${stats.activeTrips}', 'ACTIVE TRIPS'),
+              _buildStatItem('+${stats.monthlyGrowth}%', 'MONTHLY GROWTH', isPositive: true),
             ],
           ),
         ],

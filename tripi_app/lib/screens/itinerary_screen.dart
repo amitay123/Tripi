@@ -908,12 +908,12 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
       width: double.infinity,
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [TripiColors.primary.withOpacity(0.1), Colors.white],
+          colors: [TripiColors.primary.withValues(alpha: 0.1), Colors.white],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: TripiColors.primary.withOpacity(0.2)),
+        border: Border.all(color: TripiColors.primary.withValues(alpha: 0.2)),
       ),
       child: Material(
         color: Colors.transparent,
@@ -931,7 +931,7 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: TripiColors.primary.withOpacity(0.3),
+                        color: TripiColors.primary.withValues(alpha: 0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -955,7 +955,7 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_right, color: TripiColors.primary),
+                const Icon(Icons.chevron_right, color: TripiColors.primary),
               ],
             ),
           ),

@@ -515,10 +515,10 @@ class _ExploreContentState extends State<ExploreContent> {
                                 await launchUrl(uri);
                               }
                             },
-                            child: Row(
+                            child: const Row(
                               children: [
-                                const Icon(Icons.language, color: TripiColors.primary, size: 16),
-                                const SizedBox(width: 8),
+                                Icon(Icons.language, color: TripiColors.primary, size: 16),
+                                SizedBox(width: 8),
                                 Text(
                                   'Visit Website',
                                   style: TextStyle(color: TripiColors.primary, fontWeight: FontWeight.w600, fontSize: 13),
@@ -1772,25 +1772,6 @@ class _ExploreContentState extends State<ExploreContent> {
   }
 
 
-
-  List<LatLng> _interpolatePoints(LatLng start, LatLng end, double stepKm) {
-    final dist = _calculateDistance(start.latitude, start.longitude, end.latitude, end.longitude);
-    if (dist <= stepKm) return [];
-    
-    final List<LatLng> points = [];
-    final int pointsToAdd = (dist / stepKm).floor();
-    
-    // Cap at 10 points per segment as per plan
-    final int actualPoints = math.min(pointsToAdd, 10);
-    
-    for (int i = 1; i <= actualPoints; i++) {
-      double fraction = i / (actualPoints + 1);
-      double lat = start.latitude + (end.latitude - start.latitude) * fraction;
-      double lng = start.longitude + (end.longitude - start.longitude) * fraction;
-      points.add(LatLng(lat, lng));
-    }
-    return points;
-  }
 
   double _calculatePlaceScore(PlaceResult place, LatLng anchor) {
     final dist = _calculateDistance(place.lat, place.lng, anchor.latitude, anchor.longitude);

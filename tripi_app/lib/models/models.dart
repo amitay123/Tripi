@@ -420,6 +420,7 @@ class Trip {
     String? countryCode,
     String? city,
     String? cityPlaceId,
+    String? countryPlaceId,
     DateTime? startDate,
     DateTime? endDate,
     int? travelersCount,

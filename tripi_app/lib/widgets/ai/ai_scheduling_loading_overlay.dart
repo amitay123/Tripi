@@ -65,7 +65,7 @@ class _AiSchedulingLoadingOverlayState extends State<AiSchedulingLoadingOverlay>
                 child: CircularProgressIndicator(
                   value: _controller.value,
                   strokeWidth: 4,
-                  valueColor: AlwaysStoppedAnimation<Color>(TripiColors.primary),
+                  valueColor: const AlwaysStoppedAnimation<Color>(TripiColors.primary),
                   backgroundColor: TripiColors.primary.withValues(alpha: 0.1),
                 ),
               ),
@@ -76,7 +76,7 @@ class _AiSchedulingLoadingOverlayState extends State<AiSchedulingLoadingOverlay>
                   color: TripiColors.primary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
+                child: const Icon(
                   Icons.auto_awesome,
                   size: 40,
                   color: TripiColors.primary,

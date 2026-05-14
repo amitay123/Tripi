@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
-import '../../models/place_result.dart';
 import '../../providers/trip_provider.dart';
 import '../../theme/tripi_colors.dart';
 import '../../widgets/tripi_card.dart';

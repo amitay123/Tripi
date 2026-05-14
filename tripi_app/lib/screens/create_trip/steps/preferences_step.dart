@@ -194,8 +194,6 @@ class PreferencesStep extends StatelessWidget {
         return '6-7 hours/day';
       case TripPace.intensive:
         return '9-10 hours/day';
-      default:
-        return '6-7 hours/day';
     }
   }
 
@@ -207,8 +205,6 @@ class PreferencesStep extends StatelessWidget {
         return Icons.directions_walk;
       case TripPace.intensive:
         return Icons.directions_run;
-      default:
-        return Icons.directions_walk;
     }
   }
 

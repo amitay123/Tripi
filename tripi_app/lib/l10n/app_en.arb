@@ -1,0 +1,106 @@
+{
+  "@@locale": "en",
+  "appName": "Tripi",
+  "@appName": { "description": "Application name" },
+
+  "settings": "Settings",
+  "@settings": { "description": "Settings screen title" },
+
+  "settingsProfile": "Profile",
+  "settingsAccount": "Account & Profile",
+  "settingsTripPreferences": "Trip Preferences",
+  "settingsSecurity": "Security & Privacy",
+  "settingsNotifications": "Notifications",
+  "settingsAppSettings": "App Settings",
+  "settingsSupport": "Support & About",
+
+  "settingsEditProfile": "Edit Profile",
+  "settingsPersonalDetails": "Personal Details",
+  "settingsIntensityLevel": "Intensity Level",
+  "settingsTravelerDefaults": "Traveler Defaults",
+  "settingsTripStyle": "Trip Style",
+  "settingsResetPassword": "Reset Password",
+  "settingsSecurityAlerts": "Security Alerts",
+  "settingsActiveSessions": "Active Sessions",
+  "settingsTwoFactor": "Two-Factor Authentication",
+  "settingsPushNotifications": "Push Notifications",
+  "settingsEmailUpdates": "Email Updates",
+  "settingsDarkMode": "Dark Mode",
+  "settingsLanguage": "Language",
+  "settingsHelpCenter": "Help Center",
+  "settingsTermsOfService": "Terms of Service",
+  "settingsPrivacyPolicy": "Privacy Policy",
+  "settingsVersion": "Version",
+  "settingsLogout": "Log Out",
+
+  "settingsDarkModeSystem": "System",
+  "settingsDarkModeLight": "Light",
+  "settingsDarkModeDark": "Dark",
+
+  "settingsIntensityRelaxed": "Relaxed",
+  "settingsIntensityRelaxedDesc": "Fewer stops, more free time",
+  "settingsIntensityBalanced": "Balanced",
+  "settingsIntensityBalancedDesc": "Mix of activities and downtime",
+  "settingsIntensityIntensive": "Intensive",
+  "settingsIntensityIntensiveDesc": "Pack in as much as possible",
+
+  "settingsLanguageEnglish": "English",
+  "settingsLanguageHebrew": "עברית (Hebrew)",
+
+  "settingsTravelerAdults": "Adults",
+  "settingsTravelerChildren": "Children",
+  "settingsTravelerChildrenAge": "Ages 0–17",
+
+  "settingsTripStyleAdventure": "Adventure",
+  "settingsTripStyleCultural": "Cultural",
+  "settingsTripStyleFood": "Food & Culinary",
+  "settingsTripStyleLuxury": "Luxury",
+  "settingsTripStyleNature": "Nature",
+  "settingsTripStyleRelaxation": "Relaxation",
+  "settingsTripStyleNightlife": "Nightlife",
+  "settingsTripStyleFamily": "Family-Friendly",
+  "settingsTripStyleBudget": "Budget",
+  "settingsTripStyleCoastal": "Coastal & Beach",
+
+  "buttonSave": "Save",
+  "buttonApply": "Apply",
+  "buttonCancel": "Cancel",
+  "buttonDone": "Done",
+  "buttonConfirm": "Confirm",
+  "buttonContinue": "Continue",
+
+  "logoutConfirmTitle": "Log Out?",
+  "logoutConfirmMessage": "You will be signed out of your account on this device.",
+  "logoutConfirm": "Log Out",
+  "logoutCancel": "Stay Signed In",
+
+  "savedSuccessfully": "Saved successfully",
+  "changesSaved": "Changes saved",
+  "settingsUpdated": "Settings updated",
+
+  "errorGeneric": "Something went wrong. Please try again.",
+  "errorOffline": "You're offline. Changes will sync when connected.",
+  "errorUsernameInvalid": "Username must be 3–20 characters, lowercase, no spaces.",
+  "errorUsernameTaken": "This username is already taken.",
+  "errorUsernameReserved": "This username is not available.",
+
+  "currentDevice": "Current Device",
+  "activeSession": "Active Session",
+
+  "profileAvatarChange": "Change Photo",
+  "profileCamera": "Take Photo",
+  "profileGallery": "Choose from Gallery",
+  "profileRemovePhoto": "Remove Photo",
+
+  "securityRecentAuthRequired": "For security, please re-enter your password to continue.",
+  "securityPasswordChanged": "Password changed successfully",
+  "securityEmailChanged": "Email updated successfully",
+
+  "subscriptionFree": "Free Plan",
+  "subscriptionPro": "Tripi Pro",
+  "subscriptionPremium": "Tripi Premium",
+
+  "settingsAbout": "About Tripi",
+  "settingsRateApp": "Rate the App",
+  "settingsFeedback": "Send Feedback"
+}

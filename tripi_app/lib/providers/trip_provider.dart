@@ -481,7 +481,7 @@ class TripProvider extends ChangeNotifier {
     if (day.activities.isEmpty) return;
 
     // Use current day start time or default to 09:00
-    final dayStartTime = day.startTime ?? '09:00';
+    final dayStartTime = day.startTime;
 
     // Optimize using our service
     final optimizedActivities = AiSchedulingService.optimizeRoute(
@@ -498,4 +498,11 @@ class TripProvider extends ChangeNotifier {
     notifyListeners();
     await _persistTrip(tripId);
   }
+
+  /// Clears all in-memory trip data on logout.
+  void reset() {
+    _trips = [];
+    notifyListeners();
+  }
 }
+

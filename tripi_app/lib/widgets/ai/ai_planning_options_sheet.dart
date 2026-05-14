@@ -56,7 +56,7 @@ class _AiPlanningOptionsSheetState extends State<AiPlanningOptionsSheet> {
                     color: TripiColors.primary.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.auto_awesome, color: TripiColors.primary),
+                  child: const Icon(Icons.auto_awesome, color: TripiColors.primary),
                 ),
                 const SizedBox(width: 16),
                 Column(

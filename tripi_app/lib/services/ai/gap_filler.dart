@@ -53,7 +53,7 @@ class GapFiller {
     required double? anchorLat,
     required double? anchorLng,
   }) {
-    final templates = [
+    const templates = [
       _FillerTemplate(
         name: 'Nearby Café Break',
         category: 'Cafe',

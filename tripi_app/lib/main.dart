@@ -12,6 +12,7 @@ import 'services/places_service.dart';
 import 'services/ai/real_place_discovery_service.dart';
 import 'providers/ai_provider.dart';
 import 'providers/booking_provider.dart';
+import 'providers/settings_provider.dart';
 import 'providers/trip_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/explore_screen.dart';
@@ -27,6 +28,7 @@ import 'screens/registration_screen.dart';
 import 'screens/admin/admin_scaffold.dart';
 import 'screens/set_new_password_screen.dart';
 import 'services/supabase_service.dart';
+import 'l10n/app_localizations.dart';
 
 Future<void> main() async {
   // Initialize logging
@@ -73,6 +75,7 @@ Future<void> main() async {
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => SettingsProvider()),
         ChangeNotifierProvider(create: (_) => TripProvider()),
         ChangeNotifierProvider(create: (_) => BookingProvider()),
         ChangeNotifierProvider(create: (_) => UserPreferenceService()),
@@ -100,6 +103,7 @@ Future<void> main() async {
           final user = Supabase.instance.client.auth.currentUser;
           if (user != null) {
             context.read<UserPreferenceService>().load(user.id);
+            context.read<SettingsProvider>().load(user.id);
           }
           return const TripiApp();
         },
@@ -165,6 +169,9 @@ class _TripiAppState extends State<TripiApp> {
         if (navContext != null && navContext.mounted) {
           Provider.of<BookingProvider>(navContext, listen: false)
               .updateUser(null);
+          // Reset providers
+          Provider.of<TripProvider>(navContext, listen: false).reset();
+          Provider.of<AiProvider>(navContext, listen: false).reset();
         }
         _navigatorKey.currentState
             ?.pushNamedAndRemoveUntil('/', (route) => false);
@@ -202,6 +209,10 @@ class _TripiAppState extends State<TripiApp> {
             user.userMetadata?['picture']?.toString(),
         providerType: user.appMetadata['provider']?.toString(),
       ));
+      // Load settings for this user
+      if (navContext.mounted) {
+        Provider.of<SettingsProvider>(navContext, listen: false).load(user.id);
+      }
       log.info('***** EXISTING SESSION valid – navigating to explore');
       _navigatorKey.currentState
           ?.pushNamedAndRemoveUntil('/explore', (route) => false);
@@ -300,6 +311,11 @@ class _TripiAppState extends State<TripiApp> {
 
       bookingProvider.updateUser(userModel);
 
+      // Load settings for the newly signed-in user
+      if (navContext.mounted) {
+        Provider.of<SettingsProvider>(navContext, listen: false).load(user.id);
+      }
+
       log.info('***** NAVIGATING TO EXPLORE');
       _navigatorKey.currentState
           ?.pushNamedAndRemoveUntil('/explore', (route) => false);
@@ -310,11 +326,20 @@ class _TripiAppState extends State<TripiApp> {
 
   @override
   Widget build(BuildContext context) {
+    // Watch SettingsProvider for ThemeMode and Locale changes.
+    // Language changes rebuild app immediately, preserving the navigator stack.
+    final settingsProvider = context.watch<SettingsProvider>();
     return MaterialApp(
       navigatorKey: _navigatorKey,
       title: 'Tripi',
       debugShowCheckedModeBanner: false,
       theme: TripiTheme.lightTheme,
+      darkTheme: TripiTheme.darkTheme,
+      themeMode: settingsProvider.themeMode,
+      // Localization — full RTL support for Hebrew via locale auto-detection
+      locale: settingsProvider.locale,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
       initialRoute: '/',
       routes: {
         '/': (context) => const LoginScreen(),

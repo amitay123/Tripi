@@ -65,7 +65,7 @@ class _AiGenerationLoadingState extends State<AiGenerationLoading>
                 child: CircularProgressIndicator(
                   value: _controller.value,
                   strokeWidth: 4,
-                  valueColor: AlwaysStoppedAnimation<Color>(TripiColors.primary),
+                  valueColor: const AlwaysStoppedAnimation<Color>(TripiColors.primary),
                   backgroundColor: TripiColors.primary.withValues(alpha: 0.1),
                 ),
               ),
@@ -76,7 +76,7 @@ class _AiGenerationLoadingState extends State<AiGenerationLoading>
                   color: TripiColors.primary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
+                child: const Icon(
                   Icons.auto_awesome,
                   size: 40,
                   color: TripiColors.primary,
@@ -108,7 +108,7 @@ class _AiGenerationLoadingState extends State<AiGenerationLoading>
           LinearProgressIndicator(
             value: _controller.value,
             backgroundColor: Colors.grey[200],
-            valueColor: AlwaysStoppedAnimation<Color>(TripiColors.primary),
+            valueColor: const AlwaysStoppedAnimation<Color>(TripiColors.primary),
             minHeight: 2,
           ),
         ],

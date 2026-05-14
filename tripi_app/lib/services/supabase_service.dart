@@ -233,4 +233,150 @@ class SupabaseService {
   static Future<void> hardDeleteTrip(String tripId) async {
     await _client.from('trips').delete().eq('id', tripId);
   }
+
+  // --- PROFILE METHODS ---
+
+  /// Fetch extended profile data for the current user.
+  static Future<Map<String, dynamic>?> getProfile(String userId) async {
+    try {
+      return await _client
+          .from('profiles')
+          .select()
+          .eq('id', userId)
+          .maybeSingle();
+    } catch (e) {
+      debugPrint('[SupabaseService] getProfile error: $e');
+      return null;
+    }
+  }
+
+  /// Update profile fields (partial update — only provided fields).
+  static Future<void> updateProfile(
+      String userId, Map<String, dynamic> fields) async {
+    try {
+      await _client.from('profiles').update(fields).eq('id', userId);
+    } catch (e) {
+      debugPrint('[SupabaseService] updateProfile error: $e');
+      rethrow;
+    }
+  }
+
+  // Reserved usernames that cannot be registered
+  static const _reservedUsernames = {
+    'admin', 'support', 'system', 'tripi', 'help', 'info',
+    'contact', 'root', 'superuser', 'bot', 'official', 'staff',
+  };
+
+  /// Checks if a username is available and valid.
+  /// Returns null if valid, or an error string.
+  static Future<String?> checkUsernameAvailable(
+      String username, String currentUserId) async {
+    final normalized = username.toLowerCase().trim();
+
+    // Format validation
+    if (normalized.length < 3 || normalized.length > 20) {
+      return 'Username must be between 3 and 20 characters.';
+    }
+    if (normalized.contains(' ')) {
+      return 'Username cannot contain spaces.';
+    }
+    if (!RegExp(r'^[a-z0-9._]+$').hasMatch(normalized)) {
+      return 'Only lowercase letters, numbers, dots, and underscores.';
+    }
+    if (_reservedUsernames.contains(normalized)) {
+      return 'This username is not available.';
+    }
+
+    // Uniqueness check
+    try {
+      final result = await _client
+          .from('profiles')
+          .select('id')
+          .eq('username', normalized)
+          .neq('id', currentUserId)
+          .maybeSingle();
+      if (result != null) return 'This username is already taken.';
+      return null; // Available
+    } catch (e) {
+      debugPrint('[SupabaseService] checkUsername error: $e');
+      return null; // Fail open — validate server-side on save
+    }
+  }
+
+  // --- SETTINGS METHODS ---
+
+  /// Fetch user settings from Supabase.
+  static Future<Map<String, dynamic>?> fetchSettings(String userId) async {
+    try {
+      return await _client
+          .from('user_settings')
+          .select()
+          .eq('user_id', userId)
+          .maybeSingle();
+    } catch (e) {
+      debugPrint('[SupabaseService] fetchSettings error: $e');
+      return null;
+    }
+  }
+
+  /// Upsert user settings to Supabase.
+  static Future<void> upsertSettings(
+      String userId, Map<String, dynamic> settingsJson) async {
+    try {
+      await _client.from('user_settings').upsert({
+        'user_id': userId,
+        ...settingsJson,
+        'updated_at': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      debugPrint('[SupabaseService] upsertSettings error: $e');
+      rethrow;
+    }
+  }
+
+  // --- AVATAR METHODS ---
+
+  /// Uploads avatar bytes to Supabase Storage at avatars/{userId}/profile.jpg
+  /// Returns the public CDN URL with a cache-busting query param.
+  static Future<String> uploadAvatar(
+      String userId, List<int> compressedBytes) async {
+    final path = 'avatars/$userId/profile.jpg';
+
+    await _client.storage.from('avatars').uploadBinary(
+          path,
+          Uint8List.fromList(compressedBytes),
+          fileOptions: const FileOptions(
+            contentType: 'image/jpeg',
+            upsert: true, // Overwrite existing
+          ),
+        );
+
+    final baseUrl =
+        _client.storage.from('avatars').getPublicUrl(path);
+
+    // Cache busting: append timestamp so stale CDN images are replaced
+    final cacheBusted =
+        '$baseUrl?v=${DateTime.now().millisecondsSinceEpoch}';
+    return cacheBusted;
+  }
+
+  // --- SECURITY EVENTS ---
+
+  /// Logs a security event for auditing purposes.
+  /// event_type examples: 'password_reset', 'email_change', '2fa_enabled'
+  static Future<void> logSecurityEvent(
+      String userId, String eventType,
+      {Map<String, dynamic>? metadata}) async {
+    try {
+      await _client.from('security_events').insert({
+        'user_id': userId,
+        'event_type': eventType,
+        'metadata': metadata ?? {},
+      });
+      debugPrint('[Security] Logged event: $eventType for user $userId');
+    } catch (e) {
+      debugPrint('[SupabaseService] logSecurityEvent error: $e');
+    }
+  }
 }
+
