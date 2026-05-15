@@ -440,6 +440,7 @@ class _ExploreContentState extends State<ExploreContent> {
     final todayHours = HoursNormalizerUtil.getTodayHours(place.openingHours);
     final isOpen = HoursNormalizerUtil.isOpenNow(place.openingHours);
     final hasWebsite = _isValidUrl(place.website);
+    final isHotel = _selectedCategories.contains('hotel') || place.types.contains('lodging');
     
     return Container(
       width: double.infinity,
@@ -476,10 +477,12 @@ class _ExploreContentState extends State<ExploreContent> {
                           _buildAbout(place),
                         ],
                         const SizedBox(height: 28),
-                        _buildInfoCards(place, todayHours, isOpen),
+                        _buildInfoCards(place, todayHours, isOpen, isHotel: isHotel),
                         const SizedBox(height: 28),
-                        _buildWebsiteButton(place, hasWebsite),
-                        const SizedBox(height: 12),
+                        if (!isHotel) ...[
+                          _buildWebsiteButton(place, hasWebsite),
+                          const SizedBox(height: 12),
+                        ],
                         if (_selectedCategories.contains('hotel') || place.types.contains('lodging')) ...[
                           _buildHotelComparison(place),
                           const SizedBox(height: 16),
@@ -566,7 +569,20 @@ class _ExploreContentState extends State<ExploreContent> {
     ]);
   }
 
-  Widget _buildInfoCards(PlaceResult p, String? todayHours, bool? isOpen) {
+  Widget _buildInfoCards(PlaceResult p, String? todayHours, bool? isOpen, {bool isHotel = false}) {
+    if (isHotel) {
+      return SizedBox(
+        width: double.infinity,
+        child: _infoCard(
+          icon: Icons.access_time_rounded,
+          title: 'HOURS',
+          value: todayHours ?? 'Hours unavailable',
+          badge: isOpen == null ? null : isOpen ? 'Open now' : 'Closed',
+          badgeColor: isOpen == true ? const Color(0xFF22C55E) : const Color(0xFFEF4444),
+        ),
+      );
+    }
+
     return Row(children: [
       Expanded(child: _infoCard(
         icon: Icons.access_time_rounded,
