@@ -16,6 +16,8 @@ import '../providers/trip_provider.dart';
 import '../models/models.dart';
 import '../models/place_result.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/services.dart';
+import '../widgets/place_details/add_to_itinerary_sheet.dart';
 
 class ExploreContent extends StatefulWidget {
   const ExploreContent({super.key});
@@ -45,6 +47,7 @@ class _ExploreContentState extends State<ExploreContent> {
   bool _isSearching = false;
   bool _isDetailsSheetOpen = false;
   bool _isRadiusPopupOpen = false;
+  bool _addSuccess = false;
   int _markerUpdateId = 0; // Track latest marker update request
   
   Activity? _selectedActivity;
@@ -563,18 +566,21 @@ class _ExploreContentState extends State<ExploreContent> {
                             Expanded(
                               flex: 2,
                               child: ElevatedButton(
-                                onPressed: () {
+                                onPressed: _addSuccess ? null : () {
                                   Navigator.pop(context);
-                                  _showAddToTripSheet(place);
+                                  _showAddToItinerary(place);
                                 },
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: TripiColors.primary,
+                                  backgroundColor: _addSuccess ? Colors.green : TripiColors.primary,
                                   foregroundColor: Colors.white,
                                   padding: const EdgeInsets.symmetric(vertical: 16),
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                                   elevation: 0,
                                 ),
-                                child: const Text('Add to Trip', style: TextStyle(fontWeight: FontWeight.bold)),
+                                child: Text(
+                                  _addSuccess ? '✓ Added' : 'Add to Trip', 
+                                  style: const TextStyle(fontWeight: FontWeight.bold)
+                                ),
                               ),
                             ),
                           ],
@@ -608,116 +614,27 @@ class _ExploreContentState extends State<ExploreContent> {
     );
   }
 
-  void _showAddToTripSheet(PlaceResult place) {
+  void _showAddToItinerary(PlaceResult place) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: TripiColors.surfaceContainerLowest,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => AddToItinerarySheet(
+        place: place,
+        tripProvider: context.read<TripProvider>(),
+        onAdded: (tripName, dayIndex) {
+          if (mounted) setState(() => _addSuccess = true);
+          HapticFeedback.lightImpact();
+          Future.delayed(const Duration(milliseconds: 2000), () {
+            if (mounted) setState(() => _addSuccess = false);
+          });
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Added to $tripName — Day $dayIndex'),
+            backgroundColor: TripiColors.primary,
+            behavior: SnackBarBehavior.floating,
+          ));
+        },
       ),
-      builder: (context) {
-        final trips = context.read<TripProvider>().trips;
-        if (trips.isEmpty) {
-          return Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('No Trips Available', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 16),
-                const Text('Create a trip first to add places to it.'),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Got it'),
-                )
-              ],
-            ),
-          );
-        }
-
-        return ListView.builder(
-          shrinkWrap: true,
-          padding: const EdgeInsets.all(24),
-          itemCount: trips.length + 1,
-          itemBuilder: (context, index) {
-            if (index == 0) {
-              return const Padding(
-                padding: EdgeInsets.only(bottom: 16.0),
-                child: Text('Select Trip', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              );
-            }
-            final trip = trips[index - 1];
-            return ListTile(
-              title: Text(trip.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: Text('${trip.startDate.toString().split(' ')[0]} - ${trip.endDate.toString().split(' ')[0]}'),
-              onTap: () {
-                Navigator.pop(context);
-                _showSelectDaySheet(trip, place);
-              },
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _showSelectDaySheet(Trip trip, PlaceResult place) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: TripiColors.surfaceContainerLowest,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        int durationDays = trip.durationDays;
-        return ListView.builder(
-          shrinkWrap: true,
-          padding: const EdgeInsets.all(24),
-          itemCount: durationDays + 1,
-          itemBuilder: (context, index) {
-            if (index == 0) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 16.0),
-                child: Text('Select Day in ${trip.name}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              );
-            }
-            final dayIndex = index;
-            final date = trip.startDate.add(Duration(days: dayIndex - 1));
-            return ListTile(
-              title: Text('Day $dayIndex', style: const TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: Text(date.toString().split(' ')[0]),
-              onTap: () {
-                Navigator.pop(context);
-                // Add activity to provider
-                final activity = Activity(
-                  id: 'a_${DateTime.now().millisecondsSinceEpoch}',
-                  title: place.name,
-                  types: place.types,
-                  lat: place.lat,
-                  lng: place.lng,
-                  address: place.address,
-                  placeId: place.placeId,
-                  source: 'api',
-                  imageUrl: place.imageUrl ?? (place.photoReferences.isNotEmpty 
-                      ? PlacesService().getPhotoUrl(place.photoReferences.first) 
-                      : null),
-                  rating: place.rating?.toDouble(),
-                  userRatingsTotal: place.userRatingsTotal,
-                );
-                  context.read<TripProvider>().addActivity(trip.id, dayIndex, activity);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('${place.name} added to ${trip.name} Day $dayIndex'),
-                    behavior: SnackBarBehavior.floating,
-                    backgroundColor: TripiColors.primary,
-                  ),
-                );
-              },
-            );
-          },
-        );
-      },
     );
   }
 
