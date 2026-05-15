@@ -477,13 +477,13 @@ class _ExploreContentState extends State<ExploreContent> {
                           _buildAbout(place),
                         ],
                         const SizedBox(height: 28),
-                        _buildInfoCards(place, todayHours, isOpen, isHotel: isHotel),
-                        const SizedBox(height: 28),
                         if (!isHotel) ...[
+                          _buildInfoCards(place, todayHours, isOpen),
+                          const SizedBox(height: 28),
                           _buildWebsiteButton(place, hasWebsite),
                           const SizedBox(height: 12),
                         ],
-                        if (_selectedCategories.contains('hotel') || place.types.contains('lodging')) ...[
+                        if (isHotel) ...[
                           _buildHotelComparison(place),
                           const SizedBox(height: 16),
                         ],
@@ -569,20 +569,7 @@ class _ExploreContentState extends State<ExploreContent> {
     ]);
   }
 
-  Widget _buildInfoCards(PlaceResult p, String? todayHours, bool? isOpen, {bool isHotel = false}) {
-    if (isHotel) {
-      return SizedBox(
-        width: double.infinity,
-        child: _infoCard(
-          icon: Icons.access_time_rounded,
-          title: 'HOURS',
-          value: todayHours ?? 'Hours unavailable',
-          badge: isOpen == null ? null : isOpen ? 'Open now' : 'Closed',
-          badgeColor: isOpen == true ? const Color(0xFF22C55E) : const Color(0xFFEF4444),
-        ),
-      );
-    }
-
+  Widget _buildInfoCards(PlaceResult p, String? todayHours, bool? isOpen) {
     return Row(children: [
       Expanded(child: _infoCard(
         icon: Icons.access_time_rounded,
