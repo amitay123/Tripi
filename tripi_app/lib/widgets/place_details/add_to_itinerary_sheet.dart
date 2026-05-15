@@ -10,12 +10,14 @@ class AddToItinerarySheet extends StatefulWidget {
   final PlaceResult place;
   final TripProvider tripProvider;
   final void Function(String tripName, int dayIndex) onAdded;
+  final Trip? preSelectedTrip;
 
   const AddToItinerarySheet({
     super.key,
     required this.place,
     required this.tripProvider,
     required this.onAdded,
+    this.preSelectedTrip,
   });
 
   @override
@@ -24,6 +26,12 @@ class AddToItinerarySheet extends StatefulWidget {
 
 class _AddToItinerarySheetState extends State<AddToItinerarySheet> {
   Trip? _selectedTrip;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedTrip = widget.preSelectedTrip;
+  }
 
   bool _alreadyAdded(Trip trip, int dayIndex) {
     final dayIdx = trip.days.indexWhere((d) => d.dayIndex == dayIndex);
@@ -91,11 +99,13 @@ class _AddToItinerarySheetState extends State<AddToItinerarySheet> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Row(children: [
-              GestureDetector(
-                onTap: () => setState(() => _selectedTrip = null),
-                child: const Icon(Icons.arrow_back_rounded, color: TripiColors.onSurface),
-              ),
-              const SizedBox(width: 12),
+              if (widget.preSelectedTrip == null) ...[
+                GestureDetector(
+                  onTap: () => setState(() => _selectedTrip = null),
+                  child: const Icon(Icons.arrow_back_rounded, color: TripiColors.onSurface),
+                ),
+                const SizedBox(width: 12),
+              ],
               Expanded(child: Text('Choose a Day', style: GoogleFonts.inter(
                 fontSize: 20, fontWeight: FontWeight.bold, color: TripiColors.onSurface,
               ))),

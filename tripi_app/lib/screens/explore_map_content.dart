@@ -63,6 +63,7 @@ class _ExploreContentState extends State<ExploreContent> {
   Set<Marker> _tripMarkers = {};
   List<Trip>? _lastTrips;
   Trip? _lastFilter;
+  bool _initialFitDone = false;
   
   static const List<Color> _routeColors = [
     Color(0xFF3B82F6), // Blue
@@ -708,6 +709,7 @@ class _ExploreContentState extends State<ExploreContent> {
       builder: (context) => AddToItinerarySheet(
         place: place,
         tripProvider: context.read<TripProvider>(),
+        preSelectedTrip: _selectedTripFilter,
         onAdded: (tripName, dayIndex) {
           if (mounted) setState(() => _addSuccess = true);
           HapticFeedback.lightImpact();
@@ -853,6 +855,18 @@ class _ExploreContentState extends State<ExploreContent> {
       // Use microtask to avoid calling setState during build if _updateTripMarkers completes synchronously
       Future.microtask(() => _updateTripMarkers(trips, currentTripFilter));
     }
+
+    // Initial fit when map and trips are ready
+    if (trips.isNotEmpty && _mapController != null && !_initialFitDone) {
+      _initialFitDone = true;
+      Future.microtask(() {
+        if (_selectedTripFilter != null) {
+          _fitTripBounds(_selectedTripFilter!);
+        } else {
+          _fitAllTripsBounds(trips);
+        }
+      });
+    }
     
     // Create markers from places
     final List<PlaceResult> allMapPlaces = List<PlaceResult>.from(_places);
@@ -965,29 +979,48 @@ class _ExploreContentState extends State<ExploreContent> {
     return Stack(
       children: [
         // 1. Map
-        GoogleMap(
-          initialCameraPosition: _initialPosition,
-          markers: markers,
-          polylines: polylines,
-          myLocationEnabled: true,
-          myLocationButtonEnabled: false,
-          zoomControlsEnabled: false,
-          scrollGesturesEnabled: !_isDetailsSheetOpen && !_isRadiusPopupOpen,
-          zoomGesturesEnabled: !_isDetailsSheetOpen && !_isRadiusPopupOpen,
-          rotateGesturesEnabled: !_isDetailsSheetOpen && !_isRadiusPopupOpen,
-          tiltGesturesEnabled: !_isDetailsSheetOpen && !_isRadiusPopupOpen,
-          onMapCreated: (controller) => _mapController = controller,
-          onTap: (_) {
-            setState(() {
-              _selectedActivity = null;
-              _selectedActivityTrip = null;
-              _selectedActivityDay = null;
-              _selectedActivityScreenPos = null;
-            });
-          },
-          onCameraMove: (position) {
-            _updateBubblePosition();
-          },
+        IgnorePointer(
+          ignoring: _isDetailsSheetOpen || _isRadiusPopupOpen,
+          child: GoogleMap(
+            initialCameraPosition: _initialPosition,
+            markers: markers,
+            polylines: polylines,
+            myLocationEnabled: true,
+            myLocationButtonEnabled: false,
+            zoomControlsEnabled: false,
+            scrollGesturesEnabled: !_isDetailsSheetOpen && !_isRadiusPopupOpen,
+            zoomGesturesEnabled: !_isDetailsSheetOpen && !_isRadiusPopupOpen,
+            rotateGesturesEnabled: !_isDetailsSheetOpen && !_isRadiusPopupOpen,
+            tiltGesturesEnabled: !_isDetailsSheetOpen && !_isRadiusPopupOpen,
+            onMapCreated: (controller) {
+              setState(() {
+                _mapController = controller;
+              });
+              // Also trigger the initial fit here if trips are already available
+              final trips = context.read<TripProvider>().trips;
+              if (trips.isNotEmpty && !_initialFitDone) {
+                _initialFitDone = true;
+                Future.microtask(() {
+                  if (_selectedTripFilter != null) {
+                    _fitTripBounds(_selectedTripFilter!);
+                  } else {
+                    _fitAllTripsBounds(trips);
+                  }
+                });
+              }
+            },
+            onTap: (_) {
+              setState(() {
+                _selectedActivity = null;
+                _selectedActivityTrip = null;
+                _selectedActivityDay = null;
+                _selectedActivityScreenPos = null;
+              });
+            },
+            onCameraMove: (position) {
+              _updateBubblePosition();
+            },
+          ),
         ),
 
         // 2. Floating Info Card for selected numbered pins
@@ -1281,6 +1314,8 @@ class _ExploreContentState extends State<ExploreContent> {
                                       setState(() {
                                         if (tripId == 'all') {
                                           _selectedTripFilter = null;
+                                          _selectedCategories.clear();
+                                          _places.clear();
                                         } else {
                                           _selectedTripFilter = trips.firstWhere((t) => t.id == tripId);
                                         }
@@ -1335,11 +1370,32 @@ class _ExploreContentState extends State<ExploreContent> {
                               ),
                             
                             // Category Chips
-                            _buildChip('Hotels', Icons.hotel, 'hotel'),
-                            _buildChip('Dining', Icons.restaurant, 'restaurant'),
-                            _buildChip('Museums', Icons.museum, 'museum'),
-                            _buildChip('Parks', Icons.park, 'park'),
-                            _buildChip('Cafes', Icons.local_cafe, 'cafe'),
+                            AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 300),
+                              transitionBuilder: (Widget child, Animation<double> animation) {
+                                return SizeTransition(
+                                  sizeFactor: animation,
+                                  axis: Axis.horizontal,
+                                  child: FadeTransition(
+                                    opacity: animation,
+                                    child: child,
+                                  ),
+                                );
+                              },
+                              child: _selectedTripFilter != null 
+                                ? Row(
+                                    key: const ValueKey('categories_visible'),
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      _buildChip('Hotels', Icons.hotel, 'hotel'),
+                                      _buildChip('Dining', Icons.restaurant, 'restaurant'),
+                                      _buildChip('Museums', Icons.museum, 'museum'),
+                                      _buildChip('Parks', Icons.park, 'park'),
+                                      _buildChip('Cafes', Icons.local_cafe, 'cafe'),
+                                    ],
+                                  )
+                                : const SizedBox.shrink(key: ValueKey('categories_hidden')),
+                            ),
                           ],
                         ),
                       ),
@@ -1858,8 +1914,18 @@ class _ExploreContentState extends State<ExploreContent> {
     }
     
     if (points.isEmpty) {
-      // Fallback: If no activities, try to fit to current center or show global view
-      _mapController?.animateCamera(CameraUpdate.newLatLngZoom(_currentCenter, 10));
+      // Fallback: If no activities, try to use city center of the first trip
+      if (trips.isNotEmpty && trips.first.cityPlaceId != null) {
+        _placesService.getPlaceDetailsRaw(trips.first.cityPlaceId!).then((details) {
+          if (details != null && details['lat'] != null && _mapController != null) {
+            _mapController?.animateCamera(
+              CameraUpdate.newLatLngZoom(LatLng(details['lat'], details['lng']), 11)
+            );
+          }
+        });
+      } else {
+        _mapController?.animateCamera(CameraUpdate.newLatLngZoom(_currentCenter, 10));
+      }
       return;
     }
     
