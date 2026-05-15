@@ -252,6 +252,7 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen>
           style: GoogleFonts.inter(color: TripiColors.onSurface),
           decoration: InputDecoration(
             hintText: '••••••••',
+            hintStyle: const TextStyle(color: TripiColors.onSurfaceVariant),
             filled: true,
             fillColor: TripiColors.surfaceContainerHigh,
             border: OutlineInputBorder(

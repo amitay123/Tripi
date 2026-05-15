@@ -4,6 +4,7 @@ import '../../../providers/trip_provider.dart';
 import '../../../services/places_service.dart';
 import '../../../services/mock_data_service.dart';
 import 'dart:async';
+import '../../../theme/tripi_colors.dart';
 
 class BasicInfoStep extends StatefulWidget {
   const BasicInfoStep({super.key});
@@ -68,7 +69,11 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
             onChanged: (val) =>
                 tripProvider.updateDraft(draft.copyWith(name: val)),
             decoration: _inputDecoration('e.g. My Dream Vacation'),
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: TripiColors.onSurface,
+            ),
           ),
           const SizedBox(height: 24),
           _buildLabel('Country'),
@@ -119,8 +124,11 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                 controller: controller,
                 focusNode: focusNode,
                 decoration: _inputDecoration('Search country...'),
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: TripiColors.onSurface,
+                ),
               );
             },
             optionsViewBuilder: (context, onSelected, options) => Align(
@@ -205,7 +213,10 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                           : 'Search city...',
                     ),
                     style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w500),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: TripiColors.onSurface,
+                    ),
                   );
                 },
                 optionsViewBuilder: (context, onSelected, options) => Align(

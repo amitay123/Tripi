@@ -151,8 +151,10 @@ class UsersScreen extends StatelessWidget {
 
   Widget _buildSearchBar(BuildContext context) {
     return TextField(
+      style: const TextStyle(color: TripiColors.onSurface),
       decoration: InputDecoration(
         hintText: 'Search by name, email or role...',
+        hintStyle: const TextStyle(color: TripiColors.onSurfaceVariant),
         prefixIcon:
             const Icon(Icons.search, color: TripiColors.onSurfaceVariant),
         filled: true,

@@ -203,8 +203,10 @@ class _AddActivityScreenState extends State<AddActivityScreen>
           child: TextField(
             controller: _searchController,
             onChanged: _searchPlaces,
+            style: const TextStyle(color: TripiColors.onSurface),
             decoration: InputDecoration(
               hintText: 'Search attractions, restaurants...',
+              hintStyle: const TextStyle(color: TripiColors.onSurfaceVariant),
               prefixIcon: const Icon(Icons.search),
               filled: true,
               fillColor: const Color(0xFFF1F5F9),
@@ -287,8 +289,10 @@ class _AddActivityScreenState extends State<AddActivityScreen>
           const SizedBox(height: 8),
           TextField(
             controller: _titleController,
+            style: const TextStyle(color: TripiColors.onSurface),
             decoration: InputDecoration(
               hintText: 'e.g. Dinner with view',
+              hintStyle: const TextStyle(color: TripiColors.onSurfaceVariant),
               filled: true,
               fillColor: const Color(0xFFF1F5F9),
               border: OutlineInputBorder(

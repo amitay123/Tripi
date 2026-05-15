@@ -524,8 +524,10 @@ class _LoginScreenState extends State<LoginScreen> {
         TextField(
           controller: controller,
           obscureText: isPassword,
+          style: const TextStyle(color: TripiColors.onSurface),
           decoration: InputDecoration(
             hintText: hint,
+            hintStyle: const TextStyle(color: TripiColors.onSurfaceVariant),
             prefixIcon: Icon(icon,
                 color: hasError
                     ? const Color(0xFFB00020)

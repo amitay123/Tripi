@@ -448,6 +448,7 @@ class _TripsScreenState extends State<TripsScreen> {
               const SizedBox(height: 16),
               TextField(
                 controller: _searchController,
+                style: const TextStyle(color: TripiColors.onSurface),
                 onChanged: (value) {
                   setState(() {
                     _isSearching = value.isNotEmpty;
@@ -469,12 +470,13 @@ class _TripsScreenState extends State<TripsScreen> {
                 },
                 decoration: InputDecoration(
                   hintText: 'Search trips, destinations...',
+                  hintStyle: const TextStyle(color: TripiColors.onSurfaceVariant),
                   prefixIcon:
-                      const Icon(Icons.search, color: Color(0xFF9CA3AF)),
+                      const Icon(Icons.search, color: TripiColors.onSurfaceVariant),
                   suffixIcon: _isSearching
                       ? IconButton(
                           icon:
-                              const Icon(Icons.clear, color: Color(0xFF9CA3AF)),
+                              const Icon(Icons.clear, color: TripiColors.onSurfaceVariant),
                           onPressed: () {
                             _searchController.clear();
                             setState(() {
@@ -485,7 +487,7 @@ class _TripsScreenState extends State<TripsScreen> {
                         )
                       : null,
                   filled: true,
-                  fillColor: const Color(0xFFF3F4F6),
+                  fillColor: TripiColors.surfaceContainerHigh.withValues(alpha: 0.5),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(30),
                     borderSide: BorderSide.none,

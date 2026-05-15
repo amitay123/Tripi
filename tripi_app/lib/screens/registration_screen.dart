@@ -476,8 +476,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         TextField(
           controller: _passwordController,
           obscureText: !_showPassword,
+          style: const TextStyle(color: TripiColors.onSurface),
           decoration: InputDecoration(
             hintText: '••••••••',
+            hintStyle: const TextStyle(color: TripiColors.onSurfaceVariant),
             filled: true,
             fillColor: TripiColors.surfaceContainerHigh,
             border: OutlineInputBorder(
@@ -628,8 +630,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         TextField(
           controller: controller,
           obscureText: isPassword,
+          style: const TextStyle(color: TripiColors.onSurface),
           decoration: InputDecoration(
             hintText: hint,
+            hintStyle: const TextStyle(color: TripiColors.onSurfaceVariant),
             filled: true,
             fillColor: TripiColors.surfaceContainerHigh,
             border: OutlineInputBorder(

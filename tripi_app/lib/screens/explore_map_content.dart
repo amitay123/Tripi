@@ -1218,12 +1218,14 @@ class _ExploreContentState extends State<ExploreContent> {
                               controller: _searchController,
                               focusNode: _searchFocusNode,
                               onChanged: _onSearchChanged,
+                              style: const TextStyle(color: TripiColors.onSurface),
                               decoration: InputDecoration(
                                 hintText: 'Search for places...',
+                                hintStyle: const TextStyle(color: TripiColors.onSurfaceVariant),
                                 prefixIcon: const Icon(Icons.search, color: TripiColors.primary),
                                 suffixIcon: _searchController.text.isNotEmpty 
                                   ? IconButton(
-                                      icon: const Icon(Icons.clear, size: 20),
+                                      icon: const Icon(Icons.clear, size: 20, color: TripiColors.onSurfaceVariant),
                                       onPressed: () {
                                         _searchController.clear();
                                         _onSearchChanged('');
@@ -1231,7 +1233,7 @@ class _ExploreContentState extends State<ExploreContent> {
                                     )
                                   : null,
                                 border: InputBorder.none,
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                                contentPadding: const EdgeInsets.symmetric(vertical: 15),
                               ),
                             ),
                           ),
