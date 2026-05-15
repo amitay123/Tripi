@@ -1031,7 +1031,7 @@ class _ExploreContentState extends State<ExploreContent> {
             // Horizontal clamping is removed to keep the bubble perfectly anchored during panning.
             left: _selectedActivityScreenPos!.dx - 140,
             // Vertical clamping is also removed as the Stack order handles filter overlap.
-            top: _selectedActivityScreenPos!.dy - 110,
+            top: _selectedActivityScreenPos!.dy - 130,
             child: PointerInterceptor(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
