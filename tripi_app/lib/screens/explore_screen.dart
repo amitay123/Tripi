@@ -3,6 +3,7 @@ import '../theme/tripi_colors.dart';
 import 'trips_screen.dart';
 import 'explore_map_content.dart';
 import 'settings/settings_screen.dart';
+import 'timeline/timeline_screen.dart';
 
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
@@ -16,7 +17,7 @@ class _MainScaffoldState extends State<MainScaffold> {
 
   final List<Widget> _screens = [
     const TripsScreen(),
-    const Center(child: Text('Timeline Screen')),
+    const TimelineScreen(),
     const ExploreContent(),
     const SettingsScreen(),
   ];

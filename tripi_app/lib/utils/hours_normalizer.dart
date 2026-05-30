@@ -35,7 +35,7 @@ class HoursNormalizerUtil {
     if (openingHours == null) return [];
     final weekdayText = openingHours['weekday_text'];
     if (weekdayText == null || weekdayText is! List) return [];
-    return (weekdayText as List)
+    return weekdayText
         .map((e) => normalizeHoursString(e?.toString()))
         .toList();
   }

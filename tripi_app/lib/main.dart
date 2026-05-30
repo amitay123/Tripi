@@ -14,6 +14,7 @@ import 'providers/ai_provider.dart';
 import 'providers/booking_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/trip_provider.dart';
+import 'providers/timeline_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/explore_screen.dart';
 import 'screens/place_details_screen.dart';
@@ -79,6 +80,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => TripProvider()),
         ChangeNotifierProvider(create: (_) => BookingProvider()),
         ChangeNotifierProvider(create: (_) => UserPreferenceService()),
+        ChangeNotifierProvider(create: (_) => TimelineProvider()),
         Provider(create: (_) => VisitedPlacesRegistry()),
         ProxyProvider2<UserPreferenceService, VisitedPlacesRegistry, AiTripService>(
           update: (_, prefs, visited, __) => AiTripService(

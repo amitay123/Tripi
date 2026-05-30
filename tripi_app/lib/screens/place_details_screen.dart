@@ -7,7 +7,6 @@ import '../theme/tripi_colors.dart';
 import '../services/places_service.dart';
 import '../services/place_details_cache_service.dart';
 import '../models/place_result.dart';
-import '../models/models.dart';
 import '../providers/trip_provider.dart';
 import '../utils/hours_normalizer.dart';
 import '../widgets/place_details/image_carousel_widget.dart';
